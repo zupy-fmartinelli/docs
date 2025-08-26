@@ -1,0 +1,456 @@
+---
+title: "List Rewards Catalog"
+api: "GET /loyalty/programs/{program_id}/rewards"
+description: "Get the complete rewards catalog with available redemption options for your loyalty program"
+---
+
+## Overview
+
+This endpoint returns the complete catalog of rewards available in your loyalty program. Customers can redeem their earned points for these rewards. The catalog includes food items, drinks, discounts, and special experiences.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="program_id" type="string" required>
+  Your loyalty program identifier (provided during onboarding)
+  ```
+  prog_bella_vista
+  ```
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="category" type="string">
+  Filter rewards by category
+  ```
+  food | drinks | discounts | experiences
+  ```
+</ParamField>
+
+<ParamField query="min_points" type="number">
+  Filter rewards requiring at least this many points
+  ```
+  100
+  ```
+</ParamField>
+
+<ParamField query="max_points" type="number">
+  Filter rewards requiring at most this many points
+  ```
+  1000
+  ```
+</ParamField>
+
+<ParamField query="available_only" type="boolean">
+  Show only rewards currently available for redemption (default: true)
+  ```
+  true | false
+  ```
+</ParamField>
+
+<ParamField query="limit" type="number">
+  Maximum number of rewards to return (default: 50)
+  ```
+  20
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Rewards catalog information
+  
+  <Expandable title="Catalog Object">
+    <ResponseField name="program_id" type="string">
+      Loyalty program identifier
+    </ResponseField>
+    
+    <ResponseField name="total_rewards" type="number">
+      Total number of rewards in the catalog
+    </ResponseField>
+    
+    <ResponseField name="filtered_count" type="number">
+      Number of rewards matching the current filters
+    </ResponseField>
+    
+    <ResponseField name="rewards" type="array">
+      Array of reward objects
+      
+      <Expandable title="Reward Object">
+        <ResponseField name="reward_id" type="string">
+          Unique reward identifier
+        </ResponseField>
+        
+        <ResponseField name="name" type="string">
+          Reward display name
+        </ResponseField>
+        
+        <ResponseField name="description" type="string">
+          Detailed reward description
+        </ResponseField>
+        
+        <ResponseField name="points_required" type="number">
+          Points needed to redeem this reward
+        </ResponseField>
+        
+        <ResponseField name="category" type="string">
+          Reward category (food, drinks, discounts, experiences)
+        </ResponseField>
+        
+        <ResponseField name="image_url" type="string">
+          URL to reward image
+        </ResponseField>
+        
+        <ResponseField name="terms" type="string">
+          Terms and conditions for redemption
+        </ResponseField>
+        
+        <ResponseField name="availability" type="string">
+          Availability status (unlimited, limited, out_of_stock)
+        </ResponseField>
+        
+        <ResponseField name="stock_count" type="number">
+          Available stock (null for unlimited rewards)
+        </ResponseField>
+        
+        <ResponseField name="valid_until" type="string">
+          Expiration date for limited-time rewards (ISO 8601)
+        </ResponseField>
+        
+        <ResponseField name="redemption_locations" type="array">
+          Store locations where reward can be redeemed
+        </ResponseField>
+        
+        <ResponseField name="dietary_info" type="object">
+          Dietary information for food/drink rewards
+          
+          <Expandable title="Dietary Info">
+            <ResponseField name="vegetarian" type="boolean">
+              Suitable for vegetarians
+            </ResponseField>
+            
+            <ResponseField name="vegan" type="boolean">
+              Suitable for vegans
+            </ResponseField>
+            
+            <ResponseField name="gluten_free" type="boolean">
+              Gluten-free option
+            </ResponseField>
+            
+            <ResponseField name="allergens" type="array">
+              List of allergens present
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="categories" type="array">
+      Available categories in this program
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  Response timestamp in ISO 8601 format
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?category=food&limit=10" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?category=food&limit=10', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards"
+params = {
+    "category": "food",
+    "limit": 10
+}
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, params=params, headers=headers)
+data = response.json()
+print(data)
+```
+
+```php PHP
+<?php
+$program_id = "prog_bella_vista";
+$url = "https://api.zupy.com/v1/loyalty/programs/{$program_id}/rewards?" . http_build_query([
+    'category' => 'food',
+    'limit' => 10
+]);
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => implode("\r\n", $headers)
+    ]
+]));
+
+$data = json_decode($response, true);
+print_r($data);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Success
+{
+  "success": true,
+  "data": {
+    "program_id": "prog_bella_vista",
+    "total_rewards": 24,
+    "filtered_count": 8,
+    "rewards": [
+      {
+        "reward_id": "rw_pizza_margherita",
+        "name": "Pizza Margherita Grátis",
+        "description": "Pizza Margherita tradicional completa com molho de tomate, mussarela e manjericão fresco",
+        "points_required": 1000,
+        "category": "food",
+        "image_url": "https://cdn.zupy.com/rewards/pizza_margherita.jpg",
+        "terms": "Válido apenas para consumo no local. Não pode ser combinado com outras promoções.",
+        "availability": "unlimited",
+        "stock_count": null,
+        "valid_until": null,
+        "redemption_locations": ["loja_centro", "loja_shopping"],
+        "dietary_info": {
+          "vegetarian": true,
+          "vegan": false,
+          "gluten_free": false,
+          "allergens": ["gluten", "lactose"]
+        }
+      },
+      {
+        "reward_id": "rw_burger_special",
+        "name": "Burger Especial da Casa",
+        "description": "Hambúrguer artesanal 180g com queijo, bacon, alface e molho especial",
+        "points_required": 1200,
+        "category": "food",
+        "image_url": "https://cdn.zupy.com/rewards/burger_special.jpg",
+        "terms": "Disponível de terça a domingo. Acompanha batata rústica.",
+        "availability": "limited",
+        "stock_count": 50,
+        "valid_until": "2024-03-31T23:59:59Z",
+        "redemption_locations": ["loja_centro"],
+        "dietary_info": {
+          "vegetarian": false,
+          "vegan": false,
+          "gluten_free": false,
+          "allergens": ["gluten", "lactose"]
+        }
+      },
+      {
+        "reward_id": "rw_salad_caesar",
+        "name": "Salada Caesar Vegana",
+        "description": "Salada fresca com molho caesar vegano, croutons e queijo vegetal",
+        "points_required": 800,
+        "category": "food",
+        "image_url": "https://cdn.zupy.com/rewards/salad_caesar.jpg",
+        "terms": "Opção saudável disponível todos os dias",
+        "availability": "unlimited",
+        "stock_count": null,
+        "valid_until": null,
+        "redemption_locations": ["loja_centro", "loja_shopping", "loja_praia"],
+        "dietary_info": {
+          "vegetarian": true,
+          "vegan": true,
+          "gluten_free": true,
+          "allergens": []
+        }
+      }
+    ],
+    "categories": [
+      {
+        "category": "food",
+        "name": "Comidas",
+        "count": 8
+      },
+      {
+        "category": "drinks", 
+        "name": "Bebidas",
+        "count": 6
+      },
+      {
+        "category": "discounts",
+        "name": "Descontos",
+        "count": 4
+      },
+      {
+        "category": "experiences",
+        "name": "Experiências",
+        "count": 6
+      }
+    ]
+  },
+  "message": "Rewards catalog retrieved successfully",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+```json 404 - Program Not Found
+{
+  "success": false,
+  "error": {
+    "code": "PROGRAM_NOT_FOUND",
+    "message": "Loyalty program not found",
+    "details": {
+      "program_id": "prog_invalid"
+    }
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+```json 400 - Invalid Filter
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid filter parameters",
+    "details": {
+      "category": ["Invalid category. Must be one of: food, drinks, discounts, experiences"],
+      "min_points": ["Minimum points must be positive"]
+    }
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+</CodeGroup>
+
+## Filter Options
+
+### By Category
+<Tabs>
+  <Tab title="Food">
+    ```
+    ?category=food
+    ```
+    Meals, snacks, and food items
+  </Tab>
+  <Tab title="Drinks">
+    ```
+    ?category=drinks
+    ```
+    Beverages, juices, and specialty drinks
+  </Tab>
+  <Tab title="Discounts">
+    ```
+    ?category=discounts
+    ```
+    Percentage or fixed amount discounts
+  </Tab>
+  <Tab title="Experiences">
+    ```
+    ?category=experiences
+    ```
+    Special experiences and services
+  </Tab>
+</Tabs>
+
+### By Points Range
+<CodeGroup>
+```bash Low Point Rewards (up to 500)
+curl "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?max_points=500"
+```
+
+```bash Mid Range (500-1000)
+curl "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?min_points=500&max_points=1000"
+```
+
+```bash Premium Rewards (1000+)
+curl "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?min_points=1000"
+```
+</CodeGroup>
+
+## Reward Availability
+
+<Note>
+  **Stock Management**: Limited rewards show `stock_count` and are automatically hidden when out of stock unless `available_only=false` is specified.
+</Note>
+
+<Warning>
+  **Expiration**: Time-limited rewards include `valid_until` timestamp. Expired rewards are automatically filtered out unless explicitly requested.
+</Warning>
+
+## Dietary Information
+
+For food and drink rewards, detailed dietary information is provided:
+
+- **Vegetarian/Vegan**: Plant-based options clearly marked
+- **Gluten-Free**: Celiac-safe options identified  
+- **Allergens**: Complete allergen list for safety
+- **Nutritional Info**: Available in extended response (add `?include=nutrition`)
+
+## Integration Tips
+
+### Display Recommendations
+1. **Sort by Points**: Show achievable rewards first based on customer's current points
+2. **Visual Categories**: Use category icons and colors for better UX
+3. **Progress Indicators**: Show how close customers are to earning each reward
+4. **Stock Alerts**: Display limited availability prominently
+
+### Customer Experience
+1. **Personalization**: Filter based on customer preferences and dietary restrictions
+2. **Recommendations**: Use purchase history to suggest relevant rewards
+3. **Motivation**: Show "next achievable reward" to encourage engagement
+
+## Rate Limits
+
+- **Production**: 1000 requests per minute
+- **Staging**: 100 requests per minute
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `PROGRAM_NOT_FOUND` | Invalid program ID |
+| `VALIDATION_ERROR` | Invalid filter parameters |
+| `UNAUTHORIZED` | Missing or invalid API key |
+| `RATE_LIMIT_EXCEEDED` | Too many requests |
