@@ -1,68 +1,80 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Zupy Developer Platform",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#6366F1",
+    "light": "#8B5CF6",
+    "dark": "#4F46E5"
   },
   "favicon": "/favicon.svg",
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Getting Started",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Introduction",
             "pages": [
               "index",
               "quickstart",
-              "development"
+              "authentication"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Features",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "features/loyalty-programs",
+              "features/messaging",
+              "features/apple-wallet",
+              "features/webhooks"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Integration Guides",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "guides/getting-started",
+              "guides/authentication-setup",
+              "guides/webhooks-setup"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Loyalty Program APIs",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/loyalty/introduction",
+              "api-reference/loyalty/customers",
+              "api-reference/loyalty/transactions",
+              "api-reference/loyalty/rewards",
+              "api-reference/loyalty/coupons"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Messaging APIs",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/messaging/whatsapp",
+              "api-reference/messaging/push-notifications",
+              "api-reference/messaging/templates"
+            ]
+          },
+          {
+            "group": "Apple Wallet APIs",
+            "pages": [
+              "api-reference/wallet/passes",
+              "api-reference/wallet/templates",
+              "api-reference/wallet/updates"
+            ]
+          },
+          {
+            "group": "Webhooks",
+            "pages": [
+              "api-reference/webhooks/overview",
+              "api-reference/webhooks/events",
+              "api-reference/webhooks/security"
             ]
           }
         ]
@@ -71,19 +83,19 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "API Status",
+          "href": "https://status.zupy.com",
+          "icon": "signal"
         },
         {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
+          "anchor": "Support",
+          "href": "mailto:dev@zupy.com",
+          "icon": "envelope"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "GitHub",
+          "href": "https://github.com/zupy-fmartinelli",
+          "icon": "github"
         }
       ]
     }
@@ -95,14 +107,18 @@
   "navbar": {
     "links": [
       {
+        "label": "Dashboard",
+        "href": "https://app.zupy.com"
+      },
+      {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:dev@zupy.com"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Get API Key",
+      "href": "https://app.zupy.com/developers/api-keys"
     }
   },
   "contextual": {
@@ -112,16 +128,15 @@
      "chatgpt",
      "claude",
      "perplexity",
-     "mcp",
      "cursor",
      "vscode"
    ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/zupyplatform",
+      "github": "https://github.com/zupy-fmartinelli",
+      "linkedin": "https://linkedin.com/company/zupy"
     }
   }
 }

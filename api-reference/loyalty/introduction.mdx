@@ -1,0 +1,193 @@
+---
+title: "Loyalty Program API"
+description: "Complete loyalty program API for customer engagement and rewards management"
+---
+
+## Overview
+
+The Zupy Loyalty API enables you to build comprehensive customer loyalty programs with points management, rewards, customer segmentation, and transaction tracking.
+
+## Authentication
+
+All API requests require authentication using a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer {your_api_key}
+```
+
+## Base URLs
+
+<Tabs>
+  <Tab title="Production">
+    ```
+    https://api.zupy.com/v1/
+    ```
+  </Tab>
+  <Tab title="Staging">
+    ```
+    https://api-staging.zupy.com/v1/
+    ```
+  </Tab>
+</Tabs>
+
+## Quick Start
+
+Get started with the Loyalty API in minutes:
+
+### 1. Search for a Customer
+
+```bash
+curl -X GET "https://api.zupy.com/v1/loyalty/customers/search?whatsapp=+5511965958122" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+### 2. Create a New Customer
+
+```bash
+curl -X POST "https://api.zupy.com/v1/loyalty/customers" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "whatsapp": "+5511965958122",
+    "name": "João Silva",
+    "email": "joao@email.com",
+    "birth_date": "1990-05-15"
+  }'
+```
+
+### 3. Record a Transaction
+
+```bash
+curl -X POST "https://api.zupy.com/v1/loyalty/transactions" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_code": "ZP-12345678",
+    "amount": 150.00,
+    "transaction_id": "TXN-001",
+    "description": "Compra na loja física"
+  }'
+```
+
+## Core Features
+
+<Columns cols={2}>
+  <Card
+    title="Customer Management"
+    icon="users"
+    href="/api-reference/loyalty/customers"
+  >
+    Search, create, and manage customer profiles with comprehensive data tracking.
+  </Card>
+  <Card
+    title="Transaction Processing"
+    icon="credit-card"
+    href="/api-reference/loyalty/transactions"
+  >
+    Record purchases, calculate points, and track transaction history.
+  </Card>
+  <Card
+    title="Rewards System"
+    icon="gift"
+    href="/api-reference/loyalty/rewards"
+  >
+    Manage reward catalog, redemptions, and customer benefits.
+  </Card>
+  <Card
+    title="Coupon Management"
+    icon="ticket"
+    href="/api-reference/loyalty/coupons"
+  >
+    Create, validate, and track promotional coupons and discounts.
+  </Card>
+</Columns>
+
+## Points Configuration
+
+Each business can configure their own points system:
+
+<Tabs>
+  <Tab title="Standard (1:1)">
+    ```
+    Points per R$1: 1
+    R$ 13,45 → 13 points (rounded down)
+    ```
+  </Tab>
+  <Tab title="Enhanced (10:1)">
+    ```
+    Points per R$1: 10
+    R$ 13,45 → 134,5 → 135 points (rounded up)
+    ```
+  </Tab>
+  <Tab title="Threshold (1:10)">
+    ```
+    1 point per R$10: 0.1
+    R$ 13,45 → 1,345 → 1 point (rounded down)
+    ```
+  </Tab>
+</Tabs>
+
+## Customer Segmentation
+
+Zupy automatically segments customers using RFM analysis:
+
+- **Champions**: High value, frequent, recent customers
+- **Loyal Customers**: Regular, consistent purchasers
+- **Potential Loyalists**: Recent customers with good potential
+- **New Customers**: Recently acquired customers
+- **At Risk**: Previously active customers becoming inactive
+- **Can't Lose Them**: High value customers at risk of churning
+
+## Response Format
+
+All API responses follow a consistent format:
+
+```json
+{
+  "success": true,
+  "data": {
+    // Response data
+  },
+  "message": "Operation completed successfully",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+## Error Handling
+
+API errors return standardized error responses:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid customer data provided",
+    "details": {
+      "email": ["Invalid email format"]
+    }
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+## Rate Limits
+
+- **Production**: 1000 requests per minute
+- **Staging**: 100 requests per minute
+
+Headers returned with each request:
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
+X-RateLimit-Reset: 1647891234
+```
+
+## Support
+
+Need help integrating? Contact our developer support:
+
+- **Email**: dev@zupy.com
+- **WhatsApp**: +55 11 96595-8122
+- **API Status**: [status.zupy.com](https://status.zupy.com)
