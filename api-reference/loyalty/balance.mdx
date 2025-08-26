@@ -1,0 +1,425 @@
+---
+title: "Get Customer Balance"
+api: "GET /loyalty/customers/{member_id}/balance"
+description: "Retrieve customer's current points balance and RFM classification information"
+---
+
+## Overview
+
+This endpoint returns the customer's current loyalty points balance along with their RFM classification and tier information. It provides a quick view of the customer's loyalty program status without the full profile data.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="member_id" type="string" required>
+  Unique Zupy customer identifier
+  ```
+  ZP-4F95FB0A
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="member_id" type="string">
+  Unique Zupy customer identifier
+</ResponseField>
+
+<ResponseField name="current_points" type="integer">
+  Current available points balance
+</ResponseField>
+
+<ResponseField name="points_earned" type="integer">
+  Total points earned historically
+</ResponseField>
+
+<ResponseField name="points_spent" type="integer">
+  Total points redeemed historically
+</ResponseField>
+
+<ResponseField name="rfm_classification" type="string">
+  Current RFM-based customer segment
+  ```
+  New Customer | Loyal Customer | Champion | At Risk | Lost
+  ```
+</ResponseField>
+
+<ResponseField name="rfm_score" type="string">
+  RFM score in format "RFM" (e.g., "555" for Champion)
+</ResponseField>
+
+<ResponseField name="tier" type="string">
+  Current loyalty tier
+  ```
+  default | bronze | silver | gold | platinum | vip
+  ```
+</ResponseField>
+
+<ResponseField name="points_to_next_tier" type="integer">
+  Points needed to reach next tier (null if already at highest tier)
+</ResponseField>
+
+<ResponseField name="tier_benefits" type="array">
+  List of current tier benefits
+</ResponseField>
+
+<ResponseField name="next_reward" type="object">
+  Information about the next achievable reward
+  
+  <Expandable title="Next Reward Object">
+    <ResponseField name="reward_name" type="string">
+      Name of the next available reward
+    </ResponseField>
+    
+    <ResponseField name="points_required" type="integer">
+      Points needed to redeem this reward
+    </ResponseField>
+    
+    <ResponseField name="points_needed" type="integer">
+      Additional points needed from current balance
+    </ResponseField>
+    
+    <ResponseField name="progress_percentage" type="number">
+      Progress towards this reward (0-100)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="balance_updated_at" type="string">
+  Timestamp when balance was last updated (ISO 8601)
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/balance" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/balance', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const balance = await response.json();
+console.log(balance);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/balance"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+balance = response.json()
+print(balance)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/balance";
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => implode("\r\n", $headers)
+    ]
+]));
+
+$balance = json_decode($response, true);
+print_r($balance);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Active Customer
+{
+  "member_id": "ZP-4F95FB0A",
+  "current_points": 928,
+  "points_earned": 2150,
+  "points_spent": 1222,
+  "rfm_classification": "Champion",
+  "rfm_score": "555",
+  "tier": "gold",
+  "points_to_next_tier": 72,
+  "tier_benefits": [
+    "20% pontos extras em aniversário",
+    "Acesso prioritário a promoções",
+    "Cupons exclusivos mensais",
+    "Atendimento VIP"
+  ],
+  "next_reward": {
+    "reward_name": "Pizza Individual Grátis",
+    "points_required": 1000,
+    "points_needed": 72,
+    "progress_percentage": 92.8
+  },
+  "balance_updated_at": "2025-08-26T14:22:00Z"
+}
+```
+
+```json 200 - New Customer
+{
+  "member_id": "ZP-8B23CD41",
+  "current_points": 100,
+  "points_earned": 100,
+  "points_spent": 0,
+  "rfm_classification": "New Customer",
+  "rfm_score": "111",
+  "tier": "bronze",
+  "points_to_next_tier": 150,
+  "tier_benefits": [
+    "Pontos em todas as compras",
+    "Ofertas semanais",
+    "Programa de indicação"
+  ],
+  "next_reward": {
+    "reward_name": "Refrigerante Grátis",
+    "points_required": 200,
+    "points_needed": 100,
+    "progress_percentage": 50.0
+  },
+  "balance_updated_at": "2025-08-26T10:30:00Z"
+}
+```
+
+```json 200 - VIP Customer
+{
+  "member_id": "ZP-1A2B3C4D",
+  "current_points": 2547,
+  "points_earned": 8950,
+  "points_spent": 6403,
+  "rfm_classification": "Champion",
+  "rfm_score": "555",
+  "tier": "vip",
+  "points_to_next_tier": null,
+  "tier_benefits": [
+    "50% pontos extras em todas as compras",
+    "Acesso exclusivo a produtos limitados",
+    "Atendimento personalizado",
+    "Frete grátis ilimitado",
+    "Eventos exclusivos VIP"
+  ],
+  "next_reward": {
+    "reward_name": "Jantar VIP para 2 pessoas",
+    "points_required": 3000,
+    "points_needed": 453,
+    "progress_percentage": 84.9
+  },
+  "balance_updated_at": "2025-08-26T16:45:00Z"
+}
+```
+
+```json 404 - Customer Not Found
+{
+  "error": "customer_not_found",
+  "message": "Customer with member_id 'ZP-INVALID1' not found"
+}
+```
+</CodeGroup>
+
+## Balance Calculation
+
+The customer's balance is calculated as:
+```
+current_points = points_earned - points_spent
+```
+
+### Points Categories
+- **Points Earned**: All points credited from transactions, bonuses, referrals
+- **Points Spent**: All points debited from reward redemptions, adjustments
+- **Current Points**: Available balance for redemptions
+
+## RFM Classification System
+
+<ResponseField name="Champion">
+  **Champions (555)**: Recent buyers, frequent purchasers, high spenders
+  - Recency: 5/5 (very recent)
+  - Frequency: 5/5 (very frequent) 
+  - Monetary: 5/5 (high value)
+</ResponseField>
+
+<ResponseField name="Loyal Customer">
+  **Loyal Customers**: Regular buyers with consistent behavior
+  - Typical scores: 544, 454, 445, etc.
+  - Good recency and frequency, varying monetary values
+</ResponseField>
+
+<ResponseField name="New Customer">
+  **New Customers**: Recent first-time or low-frequency buyers
+  - Typical scores: 511, 512, 521, etc.
+  - High recency, low frequency/monetary
+</ResponseField>
+
+<ResponseField name="At Risk">
+  **At Risk**: Previously good customers becoming inactive
+  - Typical scores: 155, 254, 344, etc.
+  - Low recency, good historical frequency/monetary
+</ResponseField>
+
+<ResponseField name="Lost">
+  **Lost Customers**: Haven't purchased in a long time
+  - Typical scores: 111, 122, 133, etc.
+  - Low scores across all dimensions
+</ResponseField>
+
+## Loyalty Tiers
+
+### Tier Progression
+Tiers are typically based on total points earned or RFM classification:
+
+<ResponseField name="default">
+  **Default Tier**: New customers (0-99 points earned)
+</ResponseField>
+
+<ResponseField name="bronze">
+  **Bronze Tier**: Active customers (100-499 points earned)
+</ResponseField>
+
+<ResponseField name="silver">
+  **Silver Tier**: Regular customers (500-1499 points earned)
+</ResponseField>
+
+<ResponseField name="gold">
+  **Gold Tier**: Loyal customers (1500-4999 points earned)
+</ResponseField>
+
+<ResponseField name="platinum">
+  **Platinum Tier**: Premium customers (5000-9999 points earned)
+</ResponseField>
+
+<ResponseField name="vip">
+  **VIP Tier**: Elite customers (10000+ points earned)
+</ResponseField>
+
+### Tier Benefits Examples
+
+**Bronze Tier Benefits:**
+- Basic points earning (1x multiplier)
+- Weekly promotional emails
+- Birthday bonus points
+
+**Gold Tier Benefits:**
+- Enhanced points earning (1.2x multiplier)
+- Priority customer support
+- Exclusive monthly offers
+- Early access to sales
+
+**VIP Tier Benefits:**
+- Premium points earning (1.5x multiplier)
+- Personal account manager
+- Exclusive products access
+- VIP events invitations
+- Free premium shipping
+
+## Business Logic
+
+### Balance Updates
+- **Real-time**: Balance reflects all processed transactions
+- **Atomic**: Points are awarded/deducted atomically
+- **Audit Trail**: All changes are logged for transparency
+
+### RFM Recalculation
+- **Frequency**: Updated after each transaction
+- **Triggers**: May change tier and benefits automatically
+- **Segments**: Used for targeted marketing and personalized offers
+
+### Next Reward Logic
+- **Selection**: Shows the most achievable reward based on current balance
+- **Progress**: Calculated as `(current_points / required_points) × 100`
+- **Availability**: Only shows rewards currently available in catalog
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `customer_not_found` | Customer doesn't exist or is inactive |
+| `invalid_member_id` | Member ID format is invalid |
+| `unauthorized` | Missing or invalid API credentials |
+| `service_unavailable` | Balance service temporarily unavailable |
+
+## Rate Limits
+
+- **Production**: 500 requests per minute per customer
+- **Staging**: 200 requests per minute per customer
+
+## Integration Tips
+
+### Balance Display
+```javascript
+// Format points with thousands separator
+const formatPoints = (points) => {
+  return points.toLocaleString('pt-BR');
+};
+
+// Display balance with progress bar
+const displayBalance = (balance) => {
+  return `
+    <div>
+      <h3>${formatPoints(balance.current_points)} pontos</h3>
+      <p>Tier: ${balance.tier.toUpperCase()}</p>
+      <p>Próxima recompensa: ${balance.next_reward.reward_name}</p>
+      <progress value="${balance.next_reward.progress_percentage}" max="100">
+        ${balance.next_reward.progress_percentage}%
+      </progress>
+    </div>
+  `;
+};
+```
+
+### Cache Strategy
+```javascript
+// Cache balance for 5 minutes to reduce API calls
+const getCachedBalance = async (memberId) => {
+  const cacheKey = `balance_${memberId}`;
+  const cached = localStorage.getItem(cacheKey);
+  
+  if (cached) {
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp < 5 * 60 * 1000) { // 5 minutes
+      return data;
+    }
+  }
+  
+  const balance = await fetchBalance(memberId);
+  localStorage.setItem(cacheKey, JSON.stringify({
+    data: balance,
+    timestamp: Date.now()
+  }));
+  
+  return balance;
+};
+```
+
+<Tip>
+  **Performance**: This endpoint is optimized for frequent access. Use it for displaying customer balance in your app's main interface.
+</Tip>
+
+<Warning>
+  **Real-time**: Balance reflects all processed transactions but may have a small delay (typically < 1 second) for recently submitted transactions.
+</Warning>

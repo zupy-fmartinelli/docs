@@ -1,0 +1,371 @@
+---
+title: "List Customer Coupons"
+api: "GET /loyalty/customers/{member_id}/coupons"
+description: "Retrieve all active and unused coupons for a customer in the loyalty program"
+---
+
+## Overview
+
+This endpoint returns all active coupons that belong to a specific customer. Coupons are generated when customers redeem rewards using their loyalty points. Each coupon has an expiration date and specific terms of use. Only unused and non-expired coupons are returned by default.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="member_id" type="string" required>
+  Unique Zupy customer identifier
+  ```
+  ZP-4F95FB0A
+  ```
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="include_expired" type="boolean">
+  Include expired coupons in the response (default: false)
+  ```
+  true | false
+  ```
+</ParamField>
+
+<ParamField query="include_used" type="boolean">
+  Include already used coupons in the response (default: false)
+  ```
+  true | false
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="member_id" type="string">
+  Customer identifier
+</ResponseField>
+
+<ResponseField name="total_active" type="integer">
+  Number of active (unused, non-expired) coupons
+</ResponseField>
+
+<ResponseField name="active_coupons" type="array">
+  List of active coupons available for use
+  
+  <Expandable title="Coupon Object">
+    <ResponseField name="coupon_code" type="string">
+      Unique coupon identifier (format: CP-XXXXXXXX)
+    </ResponseField>
+    
+    <ResponseField name="reward_name" type="string">
+      Display name of the reward
+    </ResponseField>
+    
+    <ResponseField name="reward_description" type="string">
+      Detailed description of what the coupon provides
+    </ResponseField>
+    
+    <ResponseField name="discount_type" type="string">
+      Type of discount this coupon provides
+      ```
+      product_free | percentage | fixed_amount | buy_one_get_one
+      ```
+    </ResponseField>
+    
+    <ResponseField name="discount_value" type="number">
+      Discount amount or value (interpretation depends on discount_type)
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      When the coupon was generated (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="expires_at" type="string">
+      Coupon expiration date and time (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="terms" type="string">
+      Terms and conditions for coupon usage
+    </ResponseField>
+    
+    <ResponseField name="used" type="boolean">
+      Whether the coupon has been used (always false for active coupons)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/coupons" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/coupons', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const coupons = await response.json();
+console.log(coupons);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/coupons"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+coupons = response.json()
+print(coupons)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/coupons";
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => implode("\r\n", $headers)
+    ]
+]));
+
+$coupons = json_decode($response, true);
+print_r($coupons);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Active Coupons
+{
+  "member_id": "ZP-4F95FB0A",
+  "total_active": 3,
+  "active_coupons": [
+    {
+      "coupon_code": "CP-14A578D0",
+      "reward_name": "Pizza Margherita Grátis",
+      "reward_description": "Pizza Margherita tradicional completa com molho de tomate, mussarela e manjericão fresco",
+      "discount_type": "product_free",
+      "discount_value": 35.00,
+      "created_at": "2025-08-20T14:22:00Z",
+      "expires_at": "2025-09-20T23:59:59Z",
+      "terms": "Válido apenas para consumo no local. Não pode ser combinado com outras promoções.",
+      "used": false
+    },
+    {
+      "coupon_code": "CP-B47XY912",
+      "reward_name": "10% de Desconto",
+      "reward_description": "10% de desconto em qualquer pedido",
+      "discount_type": "percentage",
+      "discount_value": 10.0,
+      "created_at": "2025-08-22T09:15:00Z",
+      "expires_at": "2025-09-22T23:59:59Z",
+      "terms": "Válido para pedidos acima de R$ 20,00. Desconto máximo de R$ 50,00.",
+      "used": false
+    },
+    {
+      "coupon_code": "CP-Z9K3M4N7",
+      "reward_name": "Refrigerante 350ml Grátis",
+      "reward_description": "Refrigerante de qualquer sabor disponível, 350ml gelado",
+      "discount_type": "product_free",
+      "discount_value": 8.00,
+      "created_at": "2025-08-25T16:45:00Z",
+      "expires_at": "2025-09-25T23:59:59Z",
+      "terms": "Válido para qualquer sabor disponível no momento",
+      "used": false
+    }
+  ]
+}
+```
+
+```json 200 - No Active Coupons
+{
+  "member_id": "ZP-8B23CD41",
+  "total_active": 0,
+  "active_coupons": []
+}
+```
+
+```json 404 - Customer Not Found
+{
+  "error": "customer_not_found",
+  "message": "Customer with member_id 'ZP-INVALID1' not found"
+}
+```
+</CodeGroup>
+
+## Coupon Status Types
+
+<ResponseField name="Active Coupons">
+  **Active**: Unused and not expired
+  - Can be validated and redeemed
+  - Shown in customer wallet/app
+  - Default response content
+</ResponseField>
+
+<ResponseField name="Expired Coupons">
+  **Expired**: Past expiration date
+  - Cannot be used
+  - Only shown when `include_expired=true`
+  - Useful for customer history
+</ResponseField>
+
+<ResponseField name="Used Coupons">
+  **Used**: Already redeemed
+  - Cannot be used again
+  - Only shown when `include_used=true`
+  - Useful for customer transaction history
+</ResponseField>
+
+## Discount Types
+
+### Product Free
+- **discount_type**: "product_free"
+- **discount_value**: Full value of the free item
+- Customer receives specific product at no charge
+
+### Percentage Discount
+- **discount_type**: "percentage"
+- **discount_value**: Percentage amount (e.g., 10.0 for 10%)
+- Applied as percentage off total order
+
+### Fixed Amount Discount
+- **discount_type**: "fixed_amount"
+- **discount_value**: Fixed discount in BRL
+- Applied as monetary discount (e.g., R$ 5,00 off)
+
+### Buy One Get One
+- **discount_type**: "buy_one_get_one"
+- **discount_value**: Value of the free item
+- Purchase requirement for free item
+
+## Expiration Logic
+
+### Standard Expiration
+- **Duration**: 30 days from generation (configurable per company)
+- **Timezone**: Company's local timezone
+- **Grace Period**: No grace period - strict expiration
+
+### Seasonal Coupons
+- **Holiday Specials**: May have shorter expiration (7-14 days)
+- **Limited Time**: Tied to campaign duration
+- **Weekend Only**: Valid only Friday-Sunday
+
+## Integration Examples
+
+### Mobile App Wallet
+```javascript
+const displayCoupons = (coupons) => {
+  return coupons.active_coupons.map(coupon => `
+    <div class="coupon-card ${coupon.discount_type}">
+      <div class="coupon-header">
+        <h3>${coupon.reward_name}</h3>
+        <div class="coupon-code">${coupon.coupon_code}</div>
+      </div>
+      <p class="coupon-description">${coupon.reward_description}</p>
+      <div class="coupon-value">
+        ${formatCouponValue(coupon)}
+      </div>
+      <div class="coupon-expiry">
+        Válido até ${formatDate(coupon.expires_at)}
+      </div>
+      <div class="coupon-terms">${coupon.terms}</div>
+    </div>
+  `).join('');
+};
+
+const formatCouponValue = (coupon) => {
+  switch(coupon.discount_type) {
+    case 'percentage': return `${coupon.discount_value}% OFF`;
+    case 'fixed_amount': return `R$ ${coupon.discount_value.toFixed(2)} OFF`;
+    case 'product_free': return 'GRÁTIS';
+    case 'buy_one_get_one': return 'COMPRE 1 LEVE 2';
+    default: return 'DESCONTO';
+  }
+};
+```
+
+### POS System Integration
+```javascript
+const checkCustomerCoupons = async (memberId) => {
+  const response = await fetch(`/loyalty/customers/${memberId}/coupons`);
+  const data = await response.json();
+  
+  if (data.total_active === 0) {
+    return showMessage("Cliente não possui cupons ativos");
+  }
+  
+  return showCouponSelection(data.active_coupons);
+};
+
+const showCouponSelection = (coupons) => {
+  // Display available coupons for cashier selection
+  return coupons.map(coupon => ({
+    code: coupon.coupon_code,
+    display: `${coupon.reward_name} - ${formatCouponValue(coupon)}`,
+    expiry: formatDate(coupon.expires_at)
+  }));
+};
+```
+
+## Business Logic
+
+### Coupon Generation
+- Generated automatically when customer redeems rewards
+- Each coupon has unique 8-character code (CP-XXXXXXXX)
+- Expiration calculated based on company settings
+- Terms inherited from reward configuration
+
+### Usage Tracking
+- Each coupon can only be used once
+- Usage location and staff member recorded
+- Integration with POS systems for automatic application
+- Real-time inventory updates for product-free coupons
+
+### Customer Experience
+- Mobile app displays active coupons prominently
+- Push notifications sent 2 days before expiration
+- QR codes or manual entry supported at redemption
+- Clear terms and conditions displayed
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `customer_not_found` | Customer doesn't exist or is inactive |
+| `unauthorized` | Missing or invalid API credentials |
+
+## Rate Limits
+
+- **Production**: 100 requests per minute per customer
+- **Staging**: 50 requests per minute per customer
+
+<Tip>
+  **Caching Strategy**: Customer coupon lists change only when new coupons are generated or used. Cache results for 5-10 minutes for better performance.
+</Tip>
+
+<Warning>
+  **Expiration Accuracy**: Coupons are checked for expiration in real-time. However, expired coupons may still appear briefly due to timezone calculations and system synchronization.
+</Warning>

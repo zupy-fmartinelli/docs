@@ -1,0 +1,256 @@
+---
+title: "Get Loyalty Configuration"
+api: "GET /companies/{company_id}/loyalty-config"
+description: "Retrieve the loyalty program configuration for a specific company, including points conversion rules and program settings"
+---
+
+## Overview
+
+This endpoint returns the complete loyalty program configuration for a company. The configuration includes points calculation rules, rounding preferences, minimum transaction values, and program metadata. This information is essential for integrating with the loyalty system and ensuring proper points calculation.
+
+<Note>
+  **Read-Only**: This configuration is managed via the Zupy admin interface. This endpoint is for consultation purposes only.
+</Note>
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="company_id" type="string" required>
+  Unique identifier of the company
+  ```
+  comp_bella_vista
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="company_id" type="string">
+  Unique identifier of the company
+</ResponseField>
+
+<ResponseField name="company_info" type="object">
+  Basic company information
+  
+  <Expandable title="Company Info Object">
+    <ResponseField name="name" type="string">
+      Company business name
+    </ResponseField>
+    
+    <ResponseField name="cnpj" type="string">
+      CNPJ in format 00.000.000/0000-00
+    </ResponseField>
+    
+    <ResponseField name="active" type="boolean">
+      Whether the company account is active
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="loyalty_program" type="object">
+  Loyalty program configuration details
+  
+  <Expandable title="Loyalty Program Object">
+    <ResponseField name="program_id" type="string">
+      Unique loyalty program identifier
+    </ResponseField>
+    
+    <ResponseField name="points_per_currency_unit" type="number">
+      Points earned per R$ 1.00 spent (e.g., 1, 10, 100)
+    </ResponseField>
+    
+    <ResponseField name="currency" type="string">
+      Base currency for calculations (always "BRL")
+    </ResponseField>
+    
+    <ResponseField name="rounding_rule" type="string">
+      How to handle fractional points
+      ```
+      round_up | round_down | round_nearest
+      ```
+    </ResponseField>
+    
+    <ResponseField name="minimum_transaction" type="number">
+      Minimum transaction value to earn points (in BRL)
+    </ResponseField>
+    
+    <ResponseField name="rfm_tiers" type="object">
+      RFM-based point multipliers for different customer segments
+      
+      <Expandable title="RFM Tiers">
+        <ResponseField name="champion" type="number">
+          Point multiplier for Champion customers
+        </ResponseField>
+        
+        <ResponseField name="loyal_customer" type="number">
+          Point multiplier for Loyal Customers
+        </ResponseField>
+        
+        <ResponseField name="new_customer" type="number">
+          Point multiplier for New Customers
+        </ResponseField>
+        
+        <ResponseField name="at_risk" type="number">
+          Point multiplier for At Risk customers
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.zupy.com/v1/companies/comp_bella_vista/loyalty-config" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/companies/comp_bella_vista/loyalty-config', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const config = await response.json();
+console.log(config);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/companies/comp_bella_vista/loyalty-config"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+config = response.json()
+print(config)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/companies/comp_bella_vista/loyalty-config";
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => implode("\r\n", $headers)
+    ]
+]));
+
+$config = json_decode($response, true);
+print_r($config);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Success
+{
+  "company_id": "comp_bella_vista",
+  "company_info": {
+    "name": "Pizzaria Bella Vista",
+    "cnpj": "12.345.678/0001-90",
+    "active": true
+  },
+  "loyalty_program": {
+    "program_id": "prog_bella_vista",
+    "points_per_currency_unit": 10,
+    "currency": "BRL",
+    "rounding_rule": "round_down",
+    "minimum_transaction": 1.00,
+    "rfm_tiers": {
+      "champion": 1.2,
+      "loyal_customer": 1.1,
+      "new_customer": 1.0,
+      "at_risk": 2.0
+    }
+  }
+}
+```
+
+```json 404 - Company Not Found
+{
+  "error": "company_not_found",
+  "message": "Company with ID 'comp_invalid' not found or inactive"
+}
+```
+</CodeGroup>
+
+## Points Calculation Examples
+
+Based on the configuration returned, here's how points are calculated:
+
+### Example A: Simple Calculation
+```
+Configuration: 10 points/real, round_down
+Purchase: R$ 13.45
+Calculation: 13.45 × 10 = 134.5 → 134 points (rounded down)
+```
+
+### Example B: With RFM Multiplier
+```
+Configuration: 10 points/real, round_down
+Customer Segment: Champion (1.2x multiplier)
+Purchase: R$ 13.45
+Calculation: (13.45 × 10) × 1.2 = 134.5 × 1.2 = 161.4 → 161 points
+```
+
+### Example C: Minimum Transaction
+```
+Configuration: minimum_transaction = 5.00
+Purchase: R$ 3.50
+Result: 0 points (below minimum threshold)
+```
+
+## Business Rules
+
+### Points Conversion
+- **Base Points**: Calculated as `transaction_value × points_per_currency_unit`
+- **Rounding Applied**: According to company's `rounding_rule` setting
+- **RFM Multiplier**: Applied after base calculation and rounding
+- **Minimum Threshold**: Transactions below `minimum_transaction` earn 0 points
+
+### Configuration Management
+- Configuration changes are managed through Zupy admin interface
+- Changes take effect immediately for new transactions
+- Historical transactions are not recalculated
+- API access is read-only for security
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `company_not_found` | Company doesn't exist or is inactive |
+| `unauthorized` | Invalid or missing API credentials |
+| `forbidden` | Insufficient permissions for this company |
+
+## Rate Limits
+
+- **Production**: 100 requests per minute per company
+- **Staging**: 50 requests per minute per company
+
+<Tip>
+  **Integration Tip**: Cache this configuration data as it rarely changes, but implement a refresh mechanism for when you receive configuration update webhooks.
+</Tip>

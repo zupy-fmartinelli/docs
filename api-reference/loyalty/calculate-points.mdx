@@ -1,0 +1,719 @@
+---
+title: "Calculate Points Preview"
+api: "POST /loyalty/points/calculate"
+description: "Simulate points calculation for a transaction without actually processing it - useful for displaying points preview to customers"
+---
+
+## Overview
+
+This endpoint calculates how many points a customer would earn from a transaction without actually registering the transaction. It applies the same calculation logic as the transaction endpoint, including all modifiers, bonuses, and company configuration rules. This is ideal for showing customers a points preview before they complete their purchase.
+
+<Note>
+  **Preview Only**: This endpoint performs the same calculations as `/loyalty/transactions` but doesn't create any records or change customer balances.
+</Note>
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Request Body
+
+<ParamField body="member_id" type="string" required>
+  Zupy customer identifier for personalized calculation (RFM multipliers)
+  ```
+  ZP-4F95FB0A
+  ```
+</ParamField>
+
+<ParamField body="company_id" type="string" required>
+  Company identifier to use correct loyalty configuration
+  ```
+  comp_bella_vista
+  ```
+</ParamField>
+
+<ParamField body="order" type="object" required>
+  Order details for points calculation
+  
+  <Expandable title="Order Object">
+    <ParamField body="total_value" type="number" required>
+      Total order value in BRL for points calculation
+    </ParamField>
+    
+    <ParamField body="currency" type="string" required>
+      Currency code (always "BRL")
+    </ParamField>
+    
+    <ParamField body="items" type="array">
+      Array of order items for category-based bonuses
+      
+      <Expandable title="Item Object">
+        <ParamField body="name" type="string" required>
+          Item name
+        </ParamField>
+        
+        <ParamField body="price" type="number" required>
+          Item price in BRL
+        </ParamField>
+        
+        <ParamField body="category" type="string">
+          Item category for bonus calculation
+        </ParamField>
+        
+        <ParamField body="quantity" type="integer" required>
+          Item quantity
+        </ParamField>
+      </Expandable>
+    </ParamField>
+    
+    <ParamField body="payment_method" type="string">
+      Payment method for payment-based bonuses
+      ```
+      credit_card | debit_card | pix | cash | voucher
+      ```
+    </ParamField>
+    
+    <ParamField body="platform" type="string">
+      Platform for platform-based bonuses
+      ```
+      goomer | repediu | ifood | manual | pos
+      ```
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="context" type="object">
+  Transaction context for modifier calculation
+  
+  <Expandable title="Context Object">
+    <ParamField body="timestamp" type="string">
+      Transaction timestamp for time-based bonuses (ISO 8601)
+    </ParamField>
+    
+    <ParamField body="day_of_week" type="string">
+      Day of the week for time-based bonuses
+      ```
+      monday | tuesday | wednesday | thursday | friday | saturday | sunday
+      ```
+    </ParamField>
+    
+    <ParamField body="hour" type="integer">
+      Hour of day (0-23) for time-based bonuses
+    </ParamField>
+    
+    <ParamField body="active_campaigns" type="array">
+      List of active campaign identifiers
+    </ParamField>
+    
+    <ParamField body="location" type="string">
+      Transaction location for location-based bonuses
+      ```
+      store | online | delivery
+      ```
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Response
+
+<ResponseField name="base_points" type="integer">
+  Points calculated from transaction value before modifiers
+</ResponseField>
+
+<ResponseField name="final_points" type="integer">
+  Final points that would be awarded after all modifiers and rounding
+</ResponseField>
+
+<ResponseField name="modifiers_applied" type="array">
+  List of bonuses and modifiers that would be applied
+  
+  <Expandable title="Modifier Object">
+    <ResponseField name="type" type="string">
+      Type of modifier applied
+    </ResponseField>
+    
+    <ResponseField name="multiplier" type="number">
+      Multiplier value applied
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Human-readable description of the modifier
+    </ResponseField>
+    
+    <ResponseField name="category" type="string">
+      Category or item the modifier applies to (if applicable)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="calculation_breakdown" type="object">
+  Detailed breakdown of the calculation process
+  
+  <Expandable title="Calculation Breakdown">
+    <ResponseField name="company_config" type="object">
+      Company's loyalty configuration used
+      
+      <Expandable title="Company Config">
+        <ResponseField name="points_per_currency_unit" type="number">
+          Points per R$ 1.00 configured for this company
+        </ResponseField>
+        
+        <ResponseField name="rounding_rule" type="string">
+          Rounding rule applied (round_up, round_down, round_nearest)
+        </ResponseField>
+        
+        <ResponseField name="minimum_transaction" type="number">
+          Minimum transaction value to earn points
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="customer_rfm_multiplier" type="number">
+      RFM-based multiplier for this customer
+    </ResponseField>
+    
+    <ResponseField name="steps" type="array">
+      Step-by-step calculation process
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="will_generate_coupons" type="array">
+  List of coupons that would be generated from this transaction
+</ResponseField>
+
+<ResponseField name="estimated_new_balance" type="integer">
+  Customer's estimated balance after this transaction
+</ResponseField>
+
+<ResponseField name="tier_progression" type="object">
+  Information about potential tier changes
+  
+  <Expandable title="Tier Progression">
+    <ResponseField name="current_tier" type="string">
+      Customer's current tier
+    </ResponseField>
+    
+    <ResponseField name="will_upgrade" type="boolean">
+      Whether this transaction would trigger a tier upgrade
+    </ResponseField>
+    
+    <ResponseField name="new_tier" type="string">
+      New tier if upgrade occurs (null if no upgrade)
+    </ResponseField>
+    
+    <ResponseField name="points_to_next_tier" type="integer">
+      Points needed for next tier after this transaction
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/v1/loyalty/points/calculate" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "member_id": "ZP-4F95FB0A",
+    "company_id": "comp_bella_vista",
+    "order": {
+      "total_value": 42.50,
+      "currency": "BRL",
+      "items": [
+        {
+          "name": "Pizza Margherita",
+          "price": 35.00,
+          "category": "pizza",
+          "quantity": 1
+        },
+        {
+          "name": "Coca-Cola 350ml",
+          "price": 7.50,
+          "category": "beverage",
+          "quantity": 1
+        }
+      ],
+      "payment_method": "pix",
+      "platform": "goomer"
+    },
+    "context": {
+      "timestamp": "2025-08-26T19:30:00Z",
+      "day_of_week": "monday",
+      "hour": 19,
+      "active_campaigns": ["happy_hour"],
+      "location": "delivery"
+    }
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/points/calculate', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    member_id: 'ZP-4F95FB0A',
+    company_id: 'comp_bella_vista',
+    order: {
+      total_value: 42.50,
+      currency: 'BRL',
+      items: [
+        {
+          name: 'Pizza Margherita',
+          price: 35.00,
+          category: 'pizza',
+          quantity: 1
+        },
+        {
+          name: 'Coca-Cola 350ml',
+          price: 7.50,
+          category: 'beverage',
+          quantity: 1
+        }
+      ],
+      payment_method: 'pix',
+      platform: 'goomer'
+    },
+    context: {
+      timestamp: '2025-08-26T19:30:00Z',
+      day_of_week: 'monday',
+      hour: 19,
+      active_campaigns: ['happy_hour'],
+      location: 'delivery'
+    }
+  })
+});
+
+const calculation = await response.json();
+console.log(calculation);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/points/calculate"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "member_id": "ZP-4F95FB0A",
+    "company_id": "comp_bella_vista",
+    "order": {
+        "total_value": 42.50,
+        "currency": "BRL",
+        "items": [
+            {
+                "name": "Pizza Margherita",
+                "price": 35.00,
+                "category": "pizza",
+                "quantity": 1
+            },
+            {
+                "name": "Coca-Cola 350ml",
+                "price": 7.50,
+                "category": "beverage",
+                "quantity": 1
+            }
+        ],
+        "payment_method": "pix",
+        "platform": "goomer"
+    },
+    "context": {
+        "timestamp": "2025-08-26T19:30:00Z",
+        "day_of_week": "monday",
+        "hour": 19,
+        "active_campaigns": ["happy_hour"],
+        "location": "delivery"
+    }
+}
+
+response = requests.post(url, json=payload, headers=headers)
+calculation = response.json()
+print(calculation)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/points/calculate";
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$payload = [
+    "member_id" => "ZP-4F95FB0A",
+    "company_id" => "comp_bella_vista",
+    "order" => [
+        "total_value" => 42.50,
+        "currency" => "BRL",
+        "items" => [
+            [
+                "name" => "Pizza Margherita",
+                "price" => 35.00,
+                "category" => "pizza",
+                "quantity" => 1
+            ],
+            [
+                "name" => "Coca-Cola 350ml",
+                "price" => 7.50,
+                "category" => "beverage",
+                "quantity" => 1
+            ]
+        ],
+        "payment_method" => "pix",
+        "platform" => "goomer"
+    ],
+    "context" => [
+        "timestamp" => "2025-08-26T19:30:00Z",
+        "day_of_week" => "monday",
+        "hour" => 19,
+        "active_campaigns" => ["happy_hour"],
+        "location" => "delivery"
+    ]
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'POST',
+        'header' => implode("\r\n", $headers),
+        'content' => json_encode($payload)
+    ]
+]));
+
+$calculation = json_decode($response, true);
+print_r($calculation);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Standard Calculation
+{
+  "base_points": 42,
+  "final_points": 42,
+  "modifiers_applied": [],
+  "calculation_breakdown": {
+    "company_config": {
+      "points_per_currency_unit": 1.0,
+      "rounding_rule": "round_down",
+      "minimum_transaction": 5.00
+    },
+    "customer_rfm_multiplier": 1.0,
+    "steps": [
+      "Transaction value: R$ 42.50",
+      "Base points: 42.50 × 1.0 = 42.5",
+      "Rounding (round_down): 42.5 → 42 points",
+      "No modifiers applied",
+      "Final points: 42"
+    ]
+  },
+  "will_generate_coupons": [],
+  "estimated_new_balance": 930,
+  "tier_progression": {
+    "current_tier": "gold",
+    "will_upgrade": false,
+    "new_tier": null,
+    "points_to_next_tier": 1028
+  }
+}
+```
+
+```json 200 - With Bonuses and Upgrades
+{
+  "base_points": 42,
+  "final_points": 81,
+  "modifiers_applied": [
+    {
+      "type": "category_bonus",
+      "multiplier": 1.5,
+      "description": "Bônus pizza - 50% extra",
+      "category": "pizza"
+    },
+    {
+      "type": "payment_bonus",
+      "multiplier": 1.1,
+      "description": "Bônus PIX - 10% extra",
+      "category": null
+    },
+    {
+      "type": "campaign_bonus",
+      "multiplier": 1.2,
+      "description": "Happy Hour - 20% extra",
+      "category": null
+    }
+  ],
+  "calculation_breakdown": {
+    "company_config": {
+      "points_per_currency_unit": 1.0,
+      "rounding_rule": "round_down",
+      "minimum_transaction": 5.00
+    },
+    "customer_rfm_multiplier": 1.0,
+    "steps": [
+      "Transaction value: R$ 42.50",
+      "Base points: 42.50 × 1.0 = 42.5",
+      "Rounding (round_down): 42.5 → 42 points",
+      "Pizza bonus: 42 × 1.5 = 63 points",
+      "PIX bonus: 63 × 1.1 = 69.3 → 69 points",
+      "Happy Hour bonus: 69 × 1.2 = 82.8 → 82 points",
+      "Final points: 82"
+    ]
+  },
+  "will_generate_coupons": [
+    {
+      "trigger": "happy_hour_purchase",
+      "reward_name": "Desconto 15% próxima pizza",
+      "points_cost": 0,
+      "expires_in_days": 7
+    }
+  ],
+  "estimated_new_balance": 970,
+  "tier_progression": {
+    "current_tier": "gold",
+    "will_upgrade": false,
+    "new_tier": null,
+    "points_to_next_tier": 988
+  }
+}
+```
+
+```json 200 - Champion Customer with RFM Multiplier
+{
+  "base_points": 42,
+  "final_points": 50,
+  "modifiers_applied": [
+    {
+      "type": "rfm_multiplier",
+      "multiplier": 1.2,
+      "description": "Bônus Champion - 20% extra",
+      "category": null
+    }
+  ],
+  "calculation_breakdown": {
+    "company_config": {
+      "points_per_currency_unit": 1.0,
+      "rounding_rule": "round_down", 
+      "minimum_transaction": 5.00
+    },
+    "customer_rfm_multiplier": 1.2,
+    "steps": [
+      "Transaction value: R$ 42.50",
+      "Base points: 42.50 × 1.0 = 42.5",
+      "Rounding (round_down): 42.5 → 42 points",
+      "RFM multiplier (Champion): 42 × 1.2 = 50.4 → 50 points",
+      "Final points: 50"
+    ]
+  },
+  "will_generate_coupons": [],
+  "estimated_new_balance": 2597,
+  "tier_progression": {
+    "current_tier": "vip",
+    "will_upgrade": false,
+    "new_tier": null,
+    "points_to_next_tier": null
+  }
+}
+```
+
+```json 400 - Below Minimum Transaction
+{
+  "base_points": 0,
+  "final_points": 0,
+  "modifiers_applied": [],
+  "calculation_breakdown": {
+    "company_config": {
+      "points_per_currency_unit": 1.0,
+      "rounding_rule": "round_down",
+      "minimum_transaction": 5.00
+    },
+    "customer_rfm_multiplier": 1.0,
+    "steps": [
+      "Transaction value: R$ 3.50",
+      "Below minimum transaction (R$ 5.00)",
+      "Points awarded: 0"
+    ]
+  },
+  "error": "below_minimum_transaction",
+  "message": "Transação abaixo do valor mínimo para ganhar pontos"
+}
+```
+</CodeGroup>
+
+## Calculation Process
+
+The system follows this calculation process:
+
+### Step 1: Base Points Calculation
+```
+base_points = transaction_value × points_per_currency_unit
+```
+
+### Step 2: Rounding Application
+```
+rounded_points = apply_rounding_rule(base_points, company.rounding_rule)
+```
+
+### Step 3: Modifier Application (Sequential)
+```
+final_points = rounded_points
+for each modifier in applicable_modifiers:
+    final_points = final_points × modifier.multiplier
+    final_points = apply_rounding_rule(final_points, company.rounding_rule)
+```
+
+### Step 4: Final Validation
+```
+if transaction_value < company.minimum_transaction:
+    final_points = 0
+```
+
+## Use Cases
+
+### 1. Shopping Cart Preview
+Display points customers will earn before checkout:
+```javascript
+const showPointsPreview = async (cartData) => {
+  const preview = await calculatePoints({
+    member_id: customer.member_id,
+    company_id: company.id,
+    order: {
+      total_value: cartData.total,
+      items: cartData.items,
+      payment_method: selectedPaymentMethod
+    },
+    context: {
+      timestamp: new Date().toISOString(),
+      location: 'online'
+    }
+  });
+  
+  displayMessage(`Você ganhará ${preview.final_points} pontos nesta compra!`);
+};
+```
+
+### 2. Promotional Campaigns
+Show bonus points during campaigns:
+```javascript
+const showCampaignBonus = async (order) => {
+  const preview = await calculatePoints({
+    ...order,
+    context: {
+      active_campaigns: ['black_friday'],
+      timestamp: new Date().toISOString()
+    }
+  });
+  
+  const bonusPoints = preview.final_points - preview.base_points;
+  if (bonusPoints > 0) {
+    showBanner(`Bônus especial: +${bonusPoints} pontos extras!`);
+  }
+};
+```
+
+### 3. Payment Method Incentives
+Encourage specific payment methods:
+```javascript
+const comparePaymentMethods = async (order) => {
+  const methods = ['credit_card', 'pix', 'cash'];
+  const comparisons = {};
+  
+  for (const method of methods) {
+    const preview = await calculatePoints({
+      ...order,
+      order: { ...order.order, payment_method: method }
+    });
+    comparisons[method] = preview.final_points;
+  }
+  
+  // Show user which payment method gives most points
+  displayPaymentComparison(comparisons);
+};
+```
+
+## Integration Examples
+
+### Real-time Cart Updates
+```javascript
+// Update points preview when cart changes
+const updateCartPreview = debounce(async (cartItems) => {
+  const preview = await calculatePoints({
+    member_id: customer.id,
+    order: {
+      total_value: calculateTotal(cartItems),
+      items: cartItems,
+      currency: 'BRL'
+    }
+  });
+  
+  document.getElementById('points-preview').textContent = 
+    `+${preview.final_points} pontos`;
+    
+  // Show modifiers if any
+  if (preview.modifiers_applied.length > 0) {
+    showModifiers(preview.modifiers_applied);
+  }
+}, 300);
+```
+
+### Tier Upgrade Notifications
+```javascript
+const checkTierUpgrade = (preview) => {
+  if (preview.tier_progression.will_upgrade) {
+    showUpgradeNotification({
+      currentTier: preview.tier_progression.current_tier,
+      newTier: preview.tier_progression.new_tier,
+      pointsEarned: preview.final_points
+    });
+  }
+};
+```
+
+## Performance Considerations
+
+### Caching Strategy
+- **Company Config**: Cache for 1 hour (rarely changes)
+- **Customer RFM**: Cache for 15 minutes (updated after transactions)
+- **Campaign Data**: Cache for 5 minutes (may change frequently)
+
+### Rate Limiting
+- Use debouncing for real-time cart updates
+- Batch multiple calculations when possible
+- Cache results for identical requests
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `customer_not_found` | Customer doesn't exist or is inactive |
+| `company_not_found` | Invalid company_id provided |
+| `below_minimum_transaction` | Transaction value below minimum threshold |
+| `invalid_currency` | Currency other than BRL provided |
+| `calculation_error` | Error in points calculation engine |
+| `invalid_modifiers` | Error applying modifiers or bonuses |
+
+## Rate Limits
+
+- **Production**: 2000 calculations per minute per company
+- **Staging**: 500 calculations per minute per company
+
+<Tip>
+  **Performance**: This endpoint is optimized for high-frequency use. Use it liberally to enhance the customer experience with real-time points previews.
+</Tip>
+
+<Warning>
+  **Accuracy**: While this endpoint uses the same calculation logic as the transaction endpoint, final points may differ slightly if company configuration or customer RFM data changes between preview and actual transaction.
+</Warning>

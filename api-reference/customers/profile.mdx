@@ -1,0 +1,354 @@
+---
+title: "Get Customer Profile"
+api: "GET /loyalty/customers/{member_id}/profile"
+description: "Retrieve complete customer profile including loyalty data, RFM segmentation, and transaction history"
+---
+
+## Overview
+
+This endpoint returns comprehensive customer data including personal information, loyalty program status, RFM classification, and transaction metrics. It provides a complete view of the customer's engagement with the loyalty program.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="member_id" type="string" required>
+  Unique Zupy customer identifier
+  ```
+  ZP-4F95FB0A
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="member_id" type="string">
+  Unique Zupy customer identifier (format: ZP-XXXXXXXX)
+</ResponseField>
+
+<ResponseField name="whatsapp" type="string">
+  WhatsApp number in international format
+</ResponseField>
+
+<ResponseField name="whatsapp_verified" type="boolean">
+  Whether WhatsApp number has been verified
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Customer's email address
+</ResponseField>
+
+<ResponseField name="email_verified" type="boolean">
+  Whether email address has been verified
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Customer's full name
+</ResponseField>
+
+<ResponseField name="cpf" type="string">
+  CPF in formatted display (000.000.000-00)
+</ResponseField>
+
+<ResponseField name="cpf_verified" type="boolean">
+  Whether CPF has been verified
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Profile completion status
+  ```
+  basic_profile | partial_profile | complete_profile
+  ```
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Customer registration timestamp (ISO 8601)
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  Last profile update timestamp (ISO 8601)
+</ResponseField>
+
+<ResponseField name="tier" type="string">
+  Current loyalty tier
+  ```
+  default | bronze | silver | gold | platinum | vip
+  ```
+</ResponseField>
+
+<ResponseField name="current_points" type="integer">
+  Current available points balance
+</ResponseField>
+
+<ResponseField name="points_earned" type="integer">
+  Total points earned historically
+</ResponseField>
+
+<ResponseField name="points_spent" type="integer">
+  Total points redeemed historically
+</ResponseField>
+
+<ResponseField name="rfm_classification" type="string">
+  RFM-based customer segment
+  ```
+  New Customer | Loyal Customer | Champion | At Risk | Lost
+  ```
+</ResponseField>
+
+<ResponseField name="rfm_segment" type="string">
+  Detailed RFM segment description
+</ResponseField>
+
+<ResponseField name="rfm_cluster" type="integer">
+  Machine learning cluster ID (0-10)
+</ResponseField>
+
+<ResponseField name="rfm_score" type="object">
+  Detailed RFM scoring breakdown
+  
+  <Expandable title="RFM Score Object">
+    <ResponseField name="recency" type="integer">
+      Recency score (1-5, higher = more recent)
+    </ResponseField>
+    
+    <ResponseField name="frequency" type="integer">
+      Frequency score (1-5, higher = more frequent)
+    </ResponseField>
+    
+    <ResponseField name="monetary" type="integer">
+      Monetary score (1-5, higher = higher value)
+    </ResponseField>
+    
+    <ResponseField name="total" type="integer">
+      Combined RFM score (3-15)
+    </ResponseField>
+    
+    <ResponseField name="segment" type="string">
+      Calculated customer segment
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="last_activity_date" type="string">
+  Date of most recent activity (ISO 8601)
+</ResponseField>
+
+<ResponseField name="last_transaction_date" type="string">
+  Date of most recent points transaction (ISO 8601)
+</ResponseField>
+
+<ResponseField name="transaction_count" type="integer">
+  Total number of loyalty transactions
+</ResponseField>
+
+<ResponseField name="total_spent" type="number">
+  Total amount spent across all transactions (BRL)
+</ResponseField>
+
+<ResponseField name="days_since_signup" type="integer">
+  Days since customer first joined loyalty program
+</ResponseField>
+
+<ResponseField name="lifetime_value" type="number">
+  Calculated customer lifetime value (BRL)
+</ResponseField>
+
+<ResponseField name="average_order_value" type="number">
+  Average transaction value (BRL)
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/profile" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/profile', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const profile = await response.json();
+console.log(profile);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/profile"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+profile = response.json()
+print(profile)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/profile";
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => implode("\r\n", $headers)
+    ]
+]));
+
+$profile = json_decode($response, true);
+print_r($profile);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Complete Profile
+{
+  "member_id": "ZP-4F95FB0A",
+  "whatsapp": "+5511965958122",
+  "whatsapp_verified": true,
+  "email": "joao@email.com",
+  "email_verified": true,
+  "name": "João Silva",
+  "cpf": "123.456.789-01",
+  "cpf_verified": false,
+  "status": "complete_profile",
+  "created_at": "2025-08-15T10:30:00Z",
+  "updated_at": "2025-08-20T14:22:00Z",
+  "tier": "gold",
+  "current_points": 1247,
+  "points_earned": 3150,
+  "points_spent": 1903,
+  "rfm_classification": "Champion",
+  "rfm_segment": "Champions",
+  "rfm_cluster": 5,
+  "rfm_score": {
+    "recency": 5,
+    "frequency": 5,
+    "monetary": 5,
+    "total": 15,
+    "segment": "Champion"
+  },
+  "last_activity_date": "2025-08-26T09:15:00Z",
+  "last_transaction_date": "2025-08-26T09:15:00Z",
+  "transaction_count": 18,
+  "total_spent": 724.50,
+  "days_since_signup": 42,
+  "lifetime_value": 724.50,
+  "average_order_value": 40.25
+}
+```
+
+```json 404 - Customer Not Found
+{
+  "error": "customer_not_found",
+  "message": "Customer with member_id 'ZP-INVALID1' not found"
+}
+```
+
+```json 400 - Invalid Member ID
+{
+  "error": "invalid_member_id",
+  "message": "Member ID must follow format ZP-XXXXXXXX",
+  "details": {
+    "provided": "invalid-format",
+    "expected_pattern": "ZP-[A-Z0-9]{8}"
+  }
+}
+```
+</CodeGroup>
+
+## Profile Status Levels
+
+<ResponseField name="basic_profile">
+  **Basic Profile**: Only WhatsApp verified, minimal information collected
+</ResponseField>
+
+<ResponseField name="partial_profile">
+  **Partial Profile**: Some information provided but verification incomplete
+</ResponseField>
+
+<ResponseField name="complete_profile">
+  **Complete Profile**: All required information provided and verified
+</ResponseField>
+
+## RFM Classification Details
+
+<ResponseField name="Champion">
+  **Champions**: Recent buyers, frequent purchasers, high spenders (RFM: 555)
+</ResponseField>
+
+<ResponseField name="Loyal Customer">
+  **Loyal Customers**: Regular buyers with consistent purchase behavior
+</ResponseField>
+
+<ResponseField name="New Customer">
+  **New Customers**: Recent first-time buyers with high potential
+</ResponseField>
+
+<ResponseField name="At Risk">
+  **At Risk**: Previously good customers who haven't purchased recently
+</ResponseField>
+
+<ResponseField name="Lost">
+  **Lost Customers**: Haven't purchased in a long time, need reactivation
+</ResponseField>
+
+## Loyalty Metrics
+
+### Points Balance
+- **Current Points**: Available for redemption
+- **Points Earned**: Historical total earned
+- **Points Spent**: Historical total redeemed
+- **Balance**: current_points = points_earned - points_spent
+
+### Customer Value Metrics
+- **Lifetime Value**: Total monetary value of all transactions
+- **Average Order Value**: Total spent ÷ transaction count
+- **Transaction Frequency**: Transactions per day since signup
+
+### Engagement Indicators
+- **Days Since Signup**: Program engagement duration
+- **Last Activity**: Most recent interaction (transaction, login, etc.)
+- **Last Transaction**: Most recent points-earning purchase
+- **RFM Cluster**: Machine learning-based customer grouping (0-10)
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `customer_not_found` | No customer found with the provided member_id |
+| `invalid_member_id` | Member ID format is invalid |
+| `unauthorized` | Missing or invalid API credentials |
+| `forbidden` | Insufficient permissions to access this customer |
+
+## Rate Limits
+
+- **Production**: 300 requests per minute per customer
+- **Staging**: 100 requests per minute per customer
+
+<Tip>
+  **Performance Tip**: This endpoint returns comprehensive data and should be used when you need complete customer information. For simple balance checks, use the `/loyalty/customers/{member_id}/balance` endpoint instead.
+</Tip>

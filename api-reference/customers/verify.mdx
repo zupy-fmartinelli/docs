@@ -1,0 +1,302 @@
+---
+title: "Verify Customer Data"
+api: "POST /loyalty/customers/{member_id}/verify"
+description: "Initiate verification process for customer WhatsApp or email by sending verification code"
+---
+
+## Overview
+
+This endpoint initiates the verification process for customer contact information. It sends a verification code via WhatsApp or email that the customer can use to confirm ownership of their contact details. Verification improves customer profile completeness and enables reliable communication.
+
+<Note>
+  **Verification Types**: WhatsApp verification uses SMS/WhatsApp Business API, while email verification sends a code to the customer's registered email address.
+</Note>
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="member_id" type="string" required>
+  Unique Zupy customer identifier
+  ```
+  ZP-4F95FB0A
+  ```
+</ParamField>
+
+## Request Body
+
+<ParamField body="verification_type" type="string" required>
+  Type of verification to initiate
+  ```
+  whatsapp | email
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Whether the verification code was sent successfully
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable message about the verification process
+</ResponseField>
+
+<ResponseField name="expires_in" type="integer">
+  Number of seconds until the verification code expires
+</ResponseField>
+
+<ResponseField name="retry_after" type="integer">
+  Seconds to wait before requesting another code (rate limiting)
+</ResponseField>
+
+<ResponseField name="verification_method" type="string">
+  Method used to deliver the verification code
+  ```
+  sms | whatsapp_business | email
+  ```
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/verify" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "verification_type": "email"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/verify', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    verification_type: 'email'
+  })
+});
+
+const result = await response.json();
+console.log(result);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/verify"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "verification_type": "email"
+}
+
+response = requests.post(url, json=payload, headers=headers)
+result = response.json()
+print(result)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/verify";
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$payload = [
+    "verification_type" => "email"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'POST',
+        'header' => implode("\r\n", $headers),
+        'content' => json_encode($payload)
+    ]
+]));
+
+$result = json_decode($response, true);
+print_r($result);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Email Verification Sent
+{
+  "success": true,
+  "message": "Código de verificação enviado para j***@email.com",
+  "expires_in": 900,
+  "retry_after": 60,
+  "verification_method": "email"
+}
+```
+
+```json 200 - WhatsApp Verification Sent
+{
+  "success": true,
+  "message": "Código de verificação enviado via WhatsApp para +5511***8122",
+  "expires_in": 600,
+  "retry_after": 120,
+  "verification_method": "whatsapp_business"
+}
+```
+
+```json 429 - Rate Limit Exceeded
+{
+  "success": false,
+  "message": "Muitas tentativas de verificação. Tente novamente em 5 minutos.",
+  "retry_after": 300,
+  "error": "rate_limit_exceeded"
+}
+```
+
+```json 400 - Invalid Verification Type
+{
+  "success": false,
+  "message": "Tipo de verificação inválido",
+  "error": "invalid_verification_type",
+  "details": {
+    "provided": "invalid_type",
+    "supported_types": ["whatsapp", "email"]
+  }
+}
+```
+
+```json 404 - Customer Not Found
+{
+  "success": false,
+  "message": "Cliente não encontrado",
+  "error": "customer_not_found"
+}
+```
+
+```json 400 - Missing Contact Information
+{
+  "success": false,
+  "message": "Cliente não possui email cadastrado para verificação",
+  "error": "missing_contact_info",
+  "details": {
+    "verification_type": "email",
+    "required_field": "email",
+    "current_value": null
+  }
+}
+```
+</CodeGroup>
+
+## Verification Process Flow
+
+### Email Verification
+1. **Request**: POST with `verification_type: "email"`
+2. **Delivery**: 6-digit code sent to registered email
+3. **Expiration**: Code valid for 15 minutes (900 seconds)
+4. **Confirmation**: Customer enters code in your application
+5. **Validation**: Send code to verification confirmation endpoint
+
+### WhatsApp Verification
+1. **Request**: POST with `verification_type: "whatsapp"`
+2. **Delivery**: 6-digit code sent via WhatsApp Business API or SMS
+3. **Expiration**: Code valid for 10 minutes (600 seconds)
+4. **Confirmation**: Customer receives and enters code
+5. **Validation**: Confirm via verification endpoint
+
+## Business Rules
+
+### Rate Limiting
+- **Email**: Maximum 3 codes per hour per customer
+- **WhatsApp**: Maximum 2 codes per hour per customer
+- **Global**: Maximum 10 verification attempts per day per customer
+
+### Code Expiration
+- **Email Codes**: 15 minutes (900 seconds)
+- **WhatsApp Codes**: 10 minutes (600 seconds)
+- **Retry Delay**: 1-2 minutes between requests
+
+### Prerequisites
+- Customer must exist in the system
+- Contact information (email/WhatsApp) must be registered
+- Customer account must be active
+- Previous verification attempts must not exceed limits
+
+## Security Features
+
+### Code Generation
+- **Format**: 6-digit numeric code
+- **Entropy**: Cryptographically secure random generation
+- **Uniqueness**: Each code is single-use only
+- **Expiration**: Automatic invalidation after timeout
+
+### Delivery Security
+- **Email**: Masked email address in response (j***@email.com)
+- **WhatsApp**: Masked phone number in response (+5511***8122)
+- **Rate Limiting**: Prevents abuse and spam
+- **IP Tracking**: Monitor for suspicious patterns
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `customer_not_found` | Customer with provided member_id doesn't exist |
+| `invalid_verification_type` | Verification type not supported |
+| `missing_contact_info` | Required contact information not registered |
+| `rate_limit_exceeded` | Too many verification requests |
+| `service_unavailable` | Verification service temporarily unavailable |
+| `unauthorized` | Missing or invalid API credentials |
+
+## Rate Limits
+
+- **Production**: 100 verification requests per minute per company
+- **Staging**: 50 verification requests per minute per company
+
+## Integration Examples
+
+### Complete Verification Flow
+
+```javascript
+// 1. Initiate verification
+const verifyResponse = await fetch('/loyalty/customers/ZP-4F95FB0A/verify', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_API_KEY' },
+  body: JSON.stringify({ verification_type: 'email' })
+});
+
+// 2. Handle user input (implement in your UI)
+const userCode = await getUserVerificationCode();
+
+// 3. Confirm verification (separate endpoint - not documented here)
+const confirmResponse = await fetch('/loyalty/customers/ZP-4F95FB0A/verify/confirm', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_API_KEY' },
+  body: JSON.stringify({ 
+    verification_type: 'email',
+    code: userCode 
+  })
+});
+```
+
+<Warning>
+  **Important**: This endpoint only initiates verification by sending the code. You'll need to implement the confirmation step in your application to complete the verification process.
+</Warning>
+
+<Tip>
+  **Best Practice**: Implement retry logic with exponential backoff when handling rate limits, and always validate customer contact information before initiating verification.
+</Tip>

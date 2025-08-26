@@ -1,0 +1,363 @@
+---
+title: "Create or Update Customer"
+api: "POST /loyalty/customers"
+description: "Create new customer or update existing customer data using upsert logic based on unique identifiers"
+---
+
+## Overview
+
+This endpoint creates a new customer profile or updates an existing one using upsert logic. The system automatically detects existing customers by WhatsApp, email, or CPF and either creates a new record or updates the existing one with the provided data.
+
+<Note>
+  **Upsert Behavior**: If a customer exists (matched by WhatsApp, email, or CPF), their data will be updated with the new information. If no customer exists, a new profile will be created.
+</Note>
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Request Body
+
+<ParamField body="whatsapp" type="string" required>
+  Customer's WhatsApp number (primary identifier)
+  ```
+  +5511965958122
+  ```
+</ParamField>
+
+<ParamField body="email" type="string">
+  Customer's email address
+  ```
+  joao@email.com
+  ```
+</ParamField>
+
+<ParamField body="name" type="string">
+  Customer's full name
+  ```
+  João Silva
+  ```
+</ParamField>
+
+<ParamField body="cpf" type="string">
+  Customer's CPF (with or without formatting)
+  ```
+  12345678901 or 123.456.789-01
+  ```
+</ParamField>
+
+<ParamField body="preferences" type="object">
+  Communication and notification preferences
+  
+  <Expandable title="Preferences Object">
+    <ParamField body="communication" type="array">
+      Preferred communication channels
+      ```
+      ["whatsapp", "email", "push", "sms"]
+      ```
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="integration_source" type="string" required>
+  Source system identifier for tracking
+  ```
+  goomer | repediu | ifood | manual
+  ```
+</ParamField>
+
+<ParamField body="company_id" type="string" required>
+  Company identifier for the loyalty program
+  ```
+  comp_bella_vista
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="member_id" type="string">
+  Unique Zupy customer identifier (format: ZP-XXXXXXXX)
+</ResponseField>
+
+<ResponseField name="created" type="boolean">
+  Whether this was a new customer creation (true) or update (false)
+</ResponseField>
+
+<ResponseField name="updated_fields" type="array">
+  List of fields that were updated (only present if created=false)
+</ResponseField>
+
+<ResponseField name="whatsapp_verification_required" type="boolean">
+  Whether WhatsApp verification is needed
+</ResponseField>
+
+<ResponseField name="email_verification_required" type="boolean">
+  Whether email verification is needed
+</ResponseField>
+
+<ResponseField name="welcome_reward" type="object">
+  Welcome bonus information for new customers
+  
+  <Expandable title="Welcome Reward Object">
+    <ResponseField name="enabled" type="boolean">
+      Whether welcome reward is configured
+    </ResponseField>
+    
+    <ResponseField name="points_awarded" type="integer">
+      Points given as welcome bonus
+    </ResponseField>
+    
+    <ResponseField name="reward_description" type="string">
+      Description of the welcome reward
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/v1/loyalty/customers" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "whatsapp": "+5511965958122",
+    "email": "joao@email.com",
+    "name": "João Silva",
+    "cpf": "12345678901",
+    "preferences": {
+      "communication": ["whatsapp", "push"]
+    },
+    "integration_source": "goomer",
+    "company_id": "comp_bella_vista"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/customers', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    whatsapp: '+5511965958122',
+    email: 'joao@email.com',
+    name: 'João Silva',
+    cpf: '12345678901',
+    preferences: {
+      communication: ['whatsapp', 'push']
+    },
+    integration_source: 'goomer',
+    company_id: 'comp_bella_vista'
+  })
+});
+
+const result = await response.json();
+console.log(result);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/customers"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "whatsapp": "+5511965958122",
+    "email": "joao@email.com",
+    "name": "João Silva",
+    "cpf": "12345678901",
+    "preferences": {
+        "communication": ["whatsapp", "push"]
+    },
+    "integration_source": "goomer",
+    "company_id": "comp_bella_vista"
+}
+
+response = requests.post(url, json=payload, headers=headers)
+result = response.json()
+print(result)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/customers";
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$payload = [
+    "whatsapp" => "+5511965958122",
+    "email" => "joao@email.com",
+    "name" => "João Silva",
+    "cpf" => "12345678901",
+    "preferences" => [
+        "communication" => ["whatsapp", "push"]
+    ],
+    "integration_source" => "goomer",
+    "company_id" => "comp_bella_vista"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'POST',
+        'header' => implode("\r\n", $headers),
+        'content' => json_encode($payload)
+    ]
+]));
+
+$result = json_decode($response, true);
+print_r($result);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 201 - New Customer Created
+{
+  "member_id": "ZP-8B23CD41",
+  "created": true,
+  "whatsapp_verification_required": false,
+  "email_verification_required": true,
+  "welcome_reward": {
+    "enabled": true,
+    "points_awarded": 100,
+    "reward_description": "100 pontos de boas-vindas"
+  }
+}
+```
+
+```json 200 - Customer Updated
+{
+  "member_id": "ZP-4F95FB0A",
+  "created": false,
+  "updated_fields": ["email", "name", "preferences"],
+  "email_verification_required": true
+}
+```
+
+```json 400 - Validation Error
+{
+  "error": "validation_error",
+  "message": "Invalid customer data provided",
+  "details": {
+    "whatsapp": ["WhatsApp number is required"],
+    "company_id": ["Company ID is required"],
+    "cpf": ["Invalid CPF format"]
+  }
+}
+```
+</CodeGroup>
+
+## Data Validation Rules
+
+### WhatsApp Format
+- Must be in international format: `+5511999999999`
+- Alternative format accepted: `11999999999` (will be normalized)
+- WhatsApp from trusted integrations is automatically verified
+
+### Email Validation
+- Must be a valid email format
+- Will trigger email verification flow if not previously verified
+- Optional field but recommended for notifications
+
+### CPF Validation
+- Accepts both formatted (`123.456.789-01`) and unformatted (`12345678901`)
+- Must pass Brazilian CPF algorithm validation
+- Optional field, used for compliance and verification
+
+### Communication Preferences
+- **whatsapp**: WhatsApp Business API messages
+- **email**: Email notifications and campaigns  
+- **push**: Mobile app push notifications
+- **sms**: SMS messages (requires additional configuration)
+
+## Integration Sources
+
+Track customer origin for analytics and segmentation:
+
+<ResponseField name="goomer">
+  **Goomer**: Customers from Goomer delivery platform integration
+</ResponseField>
+
+<ResponseField name="repediu">
+  **Repediu**: Customers from Repediu ordering system
+</ResponseField>
+
+<ResponseField name="ifood">
+  **iFood**: Customers from iFood delivery platform  
+</ResponseField>
+
+<ResponseField name="manual">
+  **Manual**: Customers added directly through admin interface
+</ResponseField>
+
+## Welcome Rewards
+
+New customers automatically receive welcome bonuses if configured:
+
+- **Points Award**: Immediate points credit to jumpstart engagement
+- **Welcome Message**: Automated notification explaining the program
+- **Tier Assignment**: Initial placement in appropriate loyalty tier
+
+## Verification Process
+
+### WhatsApp Verification
+- **Trusted Integrations**: Automatically marked as verified
+- **Manual Entries**: May require SMS verification code
+- **Business API**: Verified through official WhatsApp Business integration
+
+### Email Verification
+- **Email Code**: Verification code sent to provided email
+- **Link Verification**: Alternative verification via email link
+- **Required for**: Email communications and promotions
+
+## Business Rules
+
+### Duplicate Detection
+- Primary matching by WhatsApp number
+- Secondary matching by email address
+- Tertiary matching by CPF document
+- If any field matches existing customer, update is performed
+
+### Data Updates
+- Only provided fields are updated (partial updates supported)
+- Empty/null values are ignored (won't overwrite existing data)
+- Verification status is preserved unless explicitly changed
+
+### Welcome Rewards
+- Only triggered for newly created customers (`created: true`)
+- Based on company loyalty program configuration
+- Awarded on first transaction, not during registration
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `validation_error` | Invalid data format or missing required fields |
+| `company_not_found` | Invalid company_id provided |
+| `duplicate_cpf` | CPF already exists for different customer |
+| `invalid_whatsapp` | WhatsApp number format is invalid |
+| `unauthorized` | Missing or invalid API credentials |
+
+## Rate Limits
+
+- **Production**: 200 requests per minute
+- **Staging**: 50 requests per minute
+
+<Warning>
+  **Data Privacy**: All customer data is processed in compliance with LGPD (Brazilian GDPR). Customers have the right to data portability and deletion upon request.
+</Warning>

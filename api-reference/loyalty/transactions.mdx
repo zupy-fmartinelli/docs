@@ -1,12 +1,16 @@
 ---
-title: "Record Transaction"
+title: "Record Loyalty Transaction"
 api: "POST /loyalty/transactions"
-description: "Record a purchase transaction and automatically calculate loyalty points with bonus modifiers"
+description: "Register a customer transaction and award loyalty points based on company configuration and automatic modifiers"
 ---
 
 ## Overview
 
-This endpoint records customer transactions and automatically calculates loyalty points based on your business configuration. The system applies conversion rates, rounding rules, and bonus modifiers (item-based, time-based, customer segment) to determine the final points awarded.
+This endpoint processes customer transactions and awards loyalty points based on the company's configured conversion rules. The system automatically calculates points using the base conversion rate, applies rounding rules, and includes any active modifiers (item bonuses, time-based multipliers, RFM segments, campaigns).
+
+<Note>
+  **Automatic Calculation**: Points are calculated using: `base_points = transaction_value × points_per_currency_unit`, then rounding is applied according to company configuration, followed by modifier multipliers.
+</Note>
 
 ## Authentication
 
@@ -20,64 +24,60 @@ This endpoint records customer transactions and automatically calculates loyalty
 ## Request Body
 
 <ParamField body="member_id" type="string" required>
-  Customer's Zupy member code
+  Zupy customer identifier
   ```
   ZP-4F95FB0A
   ```
 </ParamField>
 
 <ParamField body="company_id" type="string" required>
-  Your company identifier (provided during onboarding)
+  Company identifier for points calculation
   ```
   comp_bella_vista
   ```
 </ParamField>
 
 <ParamField body="transaction_type" type="string" required>
-  Type of transaction
+  Type of transaction being recorded
   ```
   purchase | return | adjustment | bonus
   ```
 </ParamField>
 
 <ParamField body="order" type="object" required>
-  Order information
+  Order details for points calculation
   
   <Expandable title="Order Object">
     <ParamField body="order_id" type="string" required>
-      Unique order identifier from your system
+      Unique order identifier
     </ParamField>
     
     <ParamField body="total_value" type="number" required>
-      Total order value in BRL
+      Total order value in BRL for points calculation
     </ParamField>
     
-    <ParamField body="currency" type="string">
-      Currency code (default: BRL)
+    <ParamField body="currency" type="string" required>
+      Currency code (always "BRL")
     </ParamField>
     
-    <ParamField body="items" type="array">
+    <ParamField body="items" type="array" required>
       Array of order items
       
       <Expandable title="Item Object">
-        <ParamField body="name" type="string">
-          Product/service name
+        <ParamField body="name" type="string" required>
+          Item name
         </ParamField>
         
-        <ParamField body="price" type="number">
-          Item unit price
-        </ParamField>
-        
-        <ParamField body="quantity" type="number">
-          Quantity ordered
+        <ParamField body="price" type="number" required>
+          Item price in BRL
         </ParamField>
         
         <ParamField body="category" type="string">
-          Product category (for bonus modifiers)
+          Item category for bonus calculation
         </ParamField>
         
-        <ParamField body="sku" type="string">
-          Product SKU/code
+        <ParamField body="quantity" type="integer" required>
+          Item quantity
         </ParamField>
       </Expandable>
     </ParamField>
@@ -89,21 +89,17 @@ This endpoint records customer transactions and automatically calculates loyalty
       ```
     </ParamField>
     
-    <ParamField body="platform" type="string">
-      Integration platform (for tracking)
+    <ParamField body="platform" type="string" required>
+      Platform where transaction occurred
       ```
-      goomer | ifood | website | app | pos
+      goomer | repediu | ifood | manual | pos
       ```
-    </ParamField>
-    
-    <ParamField body="store_location" type="string">
-      Store/branch identifier
     </ParamField>
   </Expandable>
 </ParamField>
 
 <ParamField body="context" type="object">
-  Additional context for bonus calculations
+  Transaction context for modifier calculation
   
   <Expandable title="Context Object">
     <ParamField body="timestamp" type="string">
@@ -111,120 +107,107 @@ This endpoint records customer transactions and automatically calculates loyalty
     </ParamField>
     
     <ParamField body="day_of_week" type="string">
-      Day of week (for time-based bonuses)
+      Day of the week for time-based bonuses
       ```
       monday | tuesday | wednesday | thursday | friday | saturday | sunday
       ```
     </ParamField>
     
-    <ParamField body="hour" type="number">
-      Hour of day (0-23, for time-based bonuses)
+    <ParamField body="hour" type="integer">
+      Hour of day (0-23) for time-based bonuses
     </ParamField>
     
     <ParamField body="active_campaigns" type="array">
-      Array of active campaign IDs
+      List of active campaign identifiers
     </ParamField>
     
-    <ParamField body="custom_metadata" type="object">
-      Custom fields for your business logic
+    <ParamField body="location" type="string">
+      Transaction location
+      ```
+      store | online | delivery
+      ```
     </ParamField>
   </Expandable>
 </ParamField>
 
 ## Response
 
-<ResponseField name="success" type="boolean">
-  Indicates if the transaction was processed successfully
+<ResponseField name="transaction_id" type="string">
+  Unique transaction identifier
 </ResponseField>
 
-<ResponseField name="data" type="object">
-  Transaction result information
+<ResponseField name="member_id" type="string">
+  Customer identifier
+</ResponseField>
+
+<ResponseField name="points" type="object">
+  Points calculation details
   
-  <Expandable title="Transaction Response">
-    <ResponseField name="transaction_id" type="string">
-      Unique Zupy transaction identifier
+  <Expandable title="Points Object">
+    <ResponseField name="base_points" type="integer">
+      Points calculated from transaction value before modifiers
     </ResponseField>
     
-    <ResponseField name="member_id" type="string">
-      Customer's Zupy member code
+    <ResponseField name="final_points" type="integer">
+      Final points awarded after all modifiers and rounding
     </ResponseField>
     
-    <ResponseField name="order_id" type="string">
-      Original order ID from your system
+    <ResponseField name="modifiers_applied" type="array">
+      List of modifiers that were applied
     </ResponseField>
     
-    <ResponseField name="points_calculation" type="object">
-      Detailed points calculation breakdown
-      
-      <Expandable title="Points Calculation">
-        <ResponseField name="base_amount" type="number">
-          Transaction amount used for calculation
-        </ResponseField>
-        
-        <ResponseField name="conversion_rate" type="number">
-          Points per currency unit
-        </ResponseField>
-        
-        <ResponseField name="base_points" type="number">
-          Points before rounding and bonuses
-        </ResponseField>
-        
-        <ResponseField name="rounded_points" type="number">
-          Points after rounding rule applied
-        </ResponseField>
-        
-        <ResponseField name="bonus_modifiers" type="array">
-          Applied bonus multipliers
-        </ResponseField>
-        
-        <ResponseField name="final_points" type="number">
-          Final points awarded to customer
-        </ResponseField>
-        
-        <ResponseField name="rounding_rule" type="string">
-          Applied rounding rule (round_up, round_down, round_nearest)
-        </ResponseField>
-      </Expandable>
+    <ResponseField name="previous_balance" type="integer">
+      Customer's points balance before this transaction
     </ResponseField>
     
-    <ResponseField name="customer_summary" type="object">
-      Updated customer information
-      
-      <Expandable title="Customer Summary">
-        <ResponseField name="points_balance" type="number">
-          Customer's total points after transaction
-        </ResponseField>
-        
-        <ResponseField name="total_spent" type="number">
-          Customer's lifetime spending
-        </ResponseField>
-        
-        <ResponseField name="transaction_count" type="number">
-          Total number of transactions
-        </ResponseField>
-        
-        <ResponseField name="customer_segment" type="string">
-          Updated RFM segment
-        </ResponseField>
-        
-        <ResponseField name="tier" type="string">
-          Customer loyalty tier
-        </ResponseField>
-      </Expandable>
-    </ResponseField>
-    
-    <ResponseField name="processed_at" type="string">
-      Transaction processing timestamp
+    <ResponseField name="new_balance" type="integer">
+      Customer's points balance after this transaction
     </ResponseField>
   </Expandable>
 </ResponseField>
 
-<ResponseField name="message" type="string">
-  Human-readable response message
+<ResponseField name="new_tier_achieved" type="string">
+  New loyalty tier if customer was promoted (null if no change)
 </ResponseField>
 
-<ResponseField name="timestamp" type="string">
-  Response timestamp in ISO 8601 format
+<ResponseField name="next_reward_progress" type="object">
+  Progress towards next available reward
+  
+  <Expandable title="Next Reward Progress">
+    <ResponseField name="reward_name" type="string">
+      Name of the next achievable reward
+    </ResponseField>
+    
+    <ResponseField name="points_needed" type="integer">
+      Points needed to reach this reward
+    </ResponseField>
+    
+    <ResponseField name="progress_percentage" type="number">
+      Progress percentage towards this reward (0-100)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="rfm_update" type="object">
+  RFM classification changes
+  
+  <Expandable title="RFM Update">
+    <ResponseField name="previous" type="string">
+      Previous RFM classification
+    </ResponseField>
+    
+    <ResponseField name="current" type="string">
+      Current RFM classification after this transaction
+    </ResponseField>
+    
+    <ResponseField name="upgrade" type="boolean">
+      Whether this was an RFM upgrade
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="coupons_generated" type="array">
+  List of coupons automatically generated from this transaction
 </ResponseField>
 
 ## Example Request
@@ -246,24 +229,19 @@ curl -X POST "https://api.zupy.com/v1/loyalty/transactions" \
         {
           "name": "Pizza Margherita",
           "price": 35.00,
-          "quantity": 1,
           "category": "pizza",
-          "sku": "PIZZA_MARG_001"
+          "quantity": 1
         }
       ],
       "payment_method": "credit_card",
-      "platform": "goomer",
-      "store_location": "loja_centro"
+      "platform": "goomer"
     },
     "context": {
-      "timestamp": "2024-01-15T15:30:00Z",
-      "day_of_week": "tuesday",
+      "timestamp": "2025-08-26T15:30:00Z",
+      "day_of_week": "monday",
       "hour": 15,
       "active_campaigns": ["semana_italiana"],
-      "custom_metadata": {
-        "delivery_type": "pickup",
-        "customer_notes": "Extra cheese"
-      }
+      "location": "delivery"
     }
   }'
 ```
@@ -287,31 +265,29 @@ const response = await fetch('https://api.zupy.com/v1/loyalty/transactions', {
         {
           name: 'Pizza Margherita',
           price: 35.00,
-          quantity: 1,
           category: 'pizza',
-          sku: 'PIZZA_MARG_001'
+          quantity: 1
         }
       ],
       payment_method: 'credit_card',
-      platform: 'goomer',
-      store_location: 'loja_centro'
+      platform: 'goomer'
     },
     context: {
-      timestamp: '2024-01-15T15:30:00Z',
-      day_of_week: 'tuesday',
+      timestamp: '2025-08-26T15:30:00Z',
+      day_of_week: 'monday',
       hour: 15,
-      active_campaigns: ['semana_italiana']
+      active_campaigns: ['semana_italiana'],
+      location: 'delivery'
     }
   })
 });
 
-const data = await response.json();
-console.log(data);
+const result = await response.json();
+console.log(result);
 ```
 
 ```python Python
 import requests
-from datetime import datetime
 
 url = "https://api.zupy.com/v1/loyalty/transactions"
 headers = {
@@ -321,7 +297,7 @@ headers = {
 
 payload = {
     "member_id": "ZP-4F95FB0A",
-    "company_id": "comp_bella_vista", 
+    "company_id": "comp_bella_vista",
     "transaction_type": "purchase",
     "order": {
         "order_id": "ord_12345",
@@ -331,26 +307,25 @@ payload = {
             {
                 "name": "Pizza Margherita",
                 "price": 35.00,
-                "quantity": 1,
                 "category": "pizza",
-                "sku": "PIZZA_MARG_001"
+                "quantity": 1
             }
         ],
         "payment_method": "credit_card",
-        "platform": "goomer",
-        "store_location": "loja_centro"
+        "platform": "goomer"
     },
     "context": {
-        "timestamp": datetime.now().isoformat(),
-        "day_of_week": "tuesday",
+        "timestamp": "2025-08-26T15:30:00Z",
+        "day_of_week": "monday",
         "hour": 15,
-        "active_campaigns": ["semana_italiana"]
+        "active_campaigns": ["semana_italiana"],
+        "location": "delivery"
     }
 }
 
 response = requests.post(url, json=payload, headers=headers)
-data = response.json()
-print(data)
+result = response.json()
+print(result)
 ```
 
 ```php PHP
@@ -374,20 +349,19 @@ $payload = [
             [
                 "name" => "Pizza Margherita",
                 "price" => 35.00,
-                "quantity" => 1,
                 "category" => "pizza",
-                "sku" => "PIZZA_MARG_001"
+                "quantity" => 1
             ]
         ],
         "payment_method" => "credit_card",
-        "platform" => "goomer",
-        "store_location" => "loja_centro"
+        "platform" => "goomer"
     ],
     "context" => [
-        "timestamp" => date('c'),
-        "day_of_week" => "tuesday",
+        "timestamp" => "2025-08-26T15:30:00Z",
+        "day_of_week" => "monday",
         "hour" => 15,
-        "active_campaigns" => ["semana_italiana"]
+        "active_campaigns" => ["semana_italiana"],
+        "location" => "delivery"
     ]
 ];
 
@@ -399,8 +373,8 @@ $response = file_get_contents($url, false, stream_context_create([
     ]
 ]));
 
-$data = json_decode($response, true);
-print_r($data);
+$result = json_decode($response, true);
+print_r($result);
 ?>
 ```
 </CodeGroup>
@@ -408,149 +382,207 @@ print_r($data);
 ## Example Response
 
 <CodeGroup>
-```json 201 - Transaction Processed
+```json 201 - Transaction Successful
 {
-  "success": true,
-  "data": {
-    "transaction_id": "txn_abc123def456",
-    "member_id": "ZP-4F95FB0A",
-    "order_id": "ord_12345",
-    "points_calculation": {
-      "base_amount": 35.00,
-      "conversion_rate": 10,
-      "base_points": 350,
-      "rounded_points": 350,
-      "bonus_modifiers": [
-        {
-          "type": "category_bonus",
-          "name": "Pizza Tuesday",
-          "multiplier": 1.5,
-          "applied_points": 175
-        },
-        {
-          "type": "customer_segment",
-          "name": "Loyal Customer Bonus",
-          "multiplier": 1.1,
-          "applied_points": 35
-        }
-      ],
-      "final_points": 560,
-      "rounding_rule": "round_nearest"
-    },
-    "customer_summary": {
-      "points_balance": 1810,
-      "total_spent": 2535.00,
-      "transaction_count": 16,
-      "customer_segment": "Loyal Customers",
-      "tier": "gold"
-    },
-    "processed_at": "2024-01-15T15:30:05Z"
+  "transaction_id": "tx_789ABC123",
+  "member_id": "ZP-4F95FB0A",
+  "points": {
+    "base_points": 35,
+    "final_points": 35,
+    "modifiers_applied": [],
+    "previous_balance": 847,
+    "new_balance": 882
   },
-  "message": "Transaction processed successfully. 560 points awarded.",
-  "timestamp": "2024-01-15T15:30:05Z"
+  "new_tier_achieved": null,
+  "next_reward_progress": {
+    "reward_name": "Refrigerante Grátis",
+    "points_needed": 118,
+    "progress_percentage": 79.3
+  },
+  "rfm_update": {
+    "previous": "Loyal Customer",
+    "current": "Champion",
+    "upgrade": true
+  },
+  "coupons_generated": []
+}
+```
+
+```json 201 - Transaction with Modifiers
+{
+  "transaction_id": "tx_890DEF456",
+  "member_id": "ZP-8B23CD41",
+  "points": {
+    "base_points": 35,
+    "final_points": 68,
+    "modifiers_applied": [
+      {
+        "type": "category_bonus",
+        "category": "pizza",
+        "multiplier": 1.5,
+        "description": "Bônus categoria pizza"
+      },
+      {
+        "type": "campaign_bonus", 
+        "campaign": "semana_italiana",
+        "multiplier": 1.3,
+        "description": "Semana Italiana - 30% extra"
+      }
+    ],
+    "previous_balance": 150,
+    "new_balance": 218
+  },
+  "new_tier_achieved": "silver",
+  "next_reward_progress": {
+    "reward_name": "Pizza Individual Grátis",
+    "points_needed": 82,
+    "progress_percentage": 62.7
+  },
+  "rfm_update": {
+    "previous": "New Customer",
+    "current": "New Customer",
+    "upgrade": false
+  },
+  "coupons_generated": [
+    {
+      "coupon_code": "CP-A1B2C3D4",
+      "reward_name": "Desconto 10% próxima compra",
+      "trigger": "tier_upgrade",
+      "expires_at": "2025-09-26T15:30:00Z"
+    }
+  ]
+}
+```
+
+```json 400 - Below Minimum Transaction
+{
+  "error": "transaction_below_minimum",
+  "message": "Valor da transação abaixo do mínimo configurado",
+  "details": {
+    "transaction_value": 2.50,
+    "minimum_required": 5.00,
+    "points_awarded": 0
+  }
 }
 ```
 
 ```json 404 - Customer Not Found
 {
-  "success": false,
-  "error": {
-    "code": "CUSTOMER_NOT_FOUND",
-    "message": "Customer with member_id ZP-4F95FB0A not found",
-    "details": {
-      "member_id": "ZP-4F95FB0A"
-    }
-  },
-  "timestamp": "2024-01-15T15:30:05Z"
-}
-```
-
-```json 400 - Invalid Transaction
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Transaction validation failed",
-    "details": {
-      "order.total_value": ["Total value must be positive"],
-      "order.order_id": ["Order ID already exists"],
-      "member_id": ["Invalid member code format"]
-    }
-  },
-  "timestamp": "2024-01-15T15:30:05Z"
+  "error": "customer_not_found",
+  "message": "Cliente não encontrado",
+  "details": {
+    "member_id": "ZP-INVALID1"
+  }
 }
 ```
 </CodeGroup>
 
-## Points Calculation Logic
+## Points Calculation Examples
 
-The system calculates points using this formula:
+Based on company configuration, here's how points are calculated:
 
-### Base Calculation
-1. **Base Points** = `transaction_amount × points_per_currency_unit`
-2. **Rounding** = Apply your configured rounding rule
-3. **Bonuses** = Multiply by applicable bonus modifiers
-4. **Final Points** = Award to customer
+### Example A: Simple Calculation
+```
+Company Config: 10 points/real, round_down, minimum R$ 1.00
+Transaction: R$ 35.00
+Calculation: 35.00 × 10 = 350.0 → 350 points (round_down)
+Final: 350 points awarded
+```
 
-### Rounding Rules
-<Tabs>
-  <Tab title="Round Down">
-    ```
-    R$ 13.45 × 10 points = 134.5 → 134 points
-    ```
-  </Tab>
-  <Tab title="Round Up">
-    ```
-    R$ 13.45 × 10 points = 134.5 → 135 points
-    ```
-  </Tab>
-  <Tab title="Round Nearest">
-    ```
-    R$ 13.45 × 10 points = 134.5 → 135 points
-    R$ 13.42 × 10 points = 134.2 → 134 points
-    ```
-  </Tab>
-</Tabs>
+### Example B: With Category Bonus
+```
+Company Config: 10 points/real, round_down
+Transaction: R$ 35.00 pizza
+Category Bonus: pizza = 1.5× multiplier
+Calculation: (35.00 × 10) × 1.5 = 350 × 1.5 = 525 points
+Final: 525 points awarded
+```
 
-### Bonus Modifiers
+### Example C: Multiple Modifiers
+```
+Company Config: 10 points/real, round_down
+Transaction: R$ 35.00 pizza on Monday during "semana_italiana"
+Modifiers: pizza (1.5×) + campaign (1.3×)
+Calculation: (35.00 × 10) × 1.5 × 1.3 = 682.5 → 682 points
+Final: 682 points awarded
+```
 
-<Note>
-  **Automatic Bonuses**: The system automatically applies eligible bonuses based on:
-  - **Item Category**: Special multipliers for product categories (e.g., 1.5× for pizza)
-  - **Time-based**: Day of week, hour, seasonal campaigns
-  - **Customer Segment**: RFM-based bonuses for loyal customers
-  - **Payment Method**: Bonus for specific payment types
-  - **Active Campaigns**: Promotional multipliers
-</Note>
+### Example D: RFM Multiplier
+```
+Company Config: 10 points/real + RFM tiers
+Customer: Champion tier (1.2× RFM multiplier)
+Transaction: R$ 35.00
+Calculation: (35.00 × 10) × 1.2 = 420 points
+Final: 420 points awarded
+```
+
+## Available Modifiers
+
+<ResponseField name="category_bonus">
+  **Category Bonus**: Multiplier based on item category (pizza, beverage, dessert)
+</ResponseField>
+
+<ResponseField name="campaign_bonus">
+  **Campaign Bonus**: Active promotional campaign multipliers
+</ResponseField>
+
+<ResponseField name="time_bonus">
+  **Time Bonus**: Day of week or hour-based bonuses (happy hour, weekend)
+</ResponseField>
+
+<ResponseField name="rfm_multiplier">
+  **RFM Multiplier**: Customer segment-based bonus (Champion, Loyal, etc.)
+</ResponseField>
+
+<ResponseField name="payment_bonus">
+  **Payment Bonus**: Payment method incentives (PIX, digital wallet)
+</ResponseField>
+
+<ResponseField name="platform_bonus">
+  **Platform Bonus**: Channel-specific bonuses (online, app, delivery)
+</ResponseField>
 
 ## Business Rules
 
-### Transaction Validation
-- **Minimum Amount**: Configurable minimum transaction value to earn points
-- **Duplicate Prevention**: Same `order_id` cannot be processed twice
-- **Customer Status**: Only active customers can earn points
+### Transaction Processing
+- **Minimum Value**: Transactions below company's `minimum_transaction` earn 0 points
+- **Rounding**: Applied after base calculation but before modifiers
+- **Modifiers**: Applied sequentially (multiplicative, not additive)
+- **Currency**: Only BRL supported currently
 
-### Points Expiration
-- Points expire according to your program configuration
-- Default: No expiration for most programs
-- Configurable: 12-month expiration window
+### Automatic Actions
+- **Tier Upgrades**: Calculated based on total points or RFM changes
+- **RFM Updates**: Recalculated after each transaction
+- **Coupon Generation**: Triggered by tier changes, milestones, or campaigns
+- **Reward Progress**: Updated to show next achievable reward
 
-<Warning>
-  **Idempotency**: Always use unique `order_id` values. Duplicate order IDs will be rejected to prevent double-spending.
-</Warning>
-
-## Rate Limits
-
-- **Production**: 2000 requests per minute
-- **Staging**: 200 requests per minute
+### Data Validation
+- **Member ID**: Must exist and be active
+- **Company ID**: Must match customer's associated company
+- **Order Total**: Must match sum of item prices × quantities
+- **Currency**: Must be "BRL"
 
 ## Error Codes
 
 | Code | Description |
 |------|-------------|
-| `CUSTOMER_NOT_FOUND` | Member ID does not exist |
-| `DUPLICATE_ORDER_ID` | Order ID already processed |
-| `INVALID_AMOUNT` | Transaction amount below minimum or invalid |
-| `VALIDATION_ERROR` | Request body validation failed |
-| `UNAUTHORIZED` | Missing or invalid API key |
-| `RATE_LIMIT_EXCEEDED` | Too many requests |
+| `customer_not_found` | Customer doesn't exist or is inactive |
+| `company_not_found` | Invalid company_id provided |
+| `company_mismatch` | Customer not associated with this company |
+| `transaction_below_minimum` | Transaction value below minimum threshold |
+| `invalid_currency` | Currency other than BRL provided |
+| `duplicate_transaction` | Transaction with same order_id already processed |
+| `calculation_error` | Error in points calculation engine |
+
+## Rate Limits
+
+- **Production**: 1000 transactions per minute per company
+- **Staging**: 200 transactions per minute per company
+
+<Warning>
+  **Idempotency**: Use unique `order_id` values to prevent duplicate transactions. The system will reject transactions with duplicate order IDs within the same company.
+</Warning>
+
+<Tip>
+  **Performance Tip**: Include all available context data for more accurate modifier calculations and better customer segmentation.
+</Tip>

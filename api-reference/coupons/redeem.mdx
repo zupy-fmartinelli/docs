@@ -1,0 +1,559 @@
+---
+title: "Redeem Coupon"
+api: "POST /loyalty/coupons/redeem"
+description: "Apply a coupon to an order, mark it as used, and return discount details and order adjustments"
+---
+
+## Overview
+
+This endpoint processes coupon redemption by applying the discount to an order and marking the coupon as used. It validates the coupon, calculates the appropriate discount based on the coupon type, and returns the final order adjustments. This is a one-time operation - once redeemed, the coupon cannot be used again.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Request Body
+
+<ParamField body="coupon_code" type="string" required>
+  Unique coupon code to redeem (format: CP-XXXXXXXX)
+  ```
+  CP-14A578D0
+  ```
+</ParamField>
+
+<ParamField body="restaurant_id" type="string" required>
+  Company identifier for redemption context
+  ```
+  comp_bella_vista
+  ```
+</ParamField>
+
+<ParamField body="order" type="object" required>
+  Order details for discount calculation
+  
+  <Expandable title="Order Object">
+    <ParamField body="total_value" type="number" required>
+      Order total value before discounts (BRL)
+      ```
+      42.50
+      ```
+    </ParamField>
+    
+    <ParamField body="items" type="array">
+      Order items for product-specific discounts
+      ```
+      [{"name": "Pizza Margherita", "price": 35.00, "quantity": 1}]
+      ```
+    </ParamField>
+    
+    <ParamField body="order_id" type="string">
+      Optional order identifier for tracking
+      ```
+      ord_12345
+      ```
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Whether the coupon was successfully redeemed
+</ResponseField>
+
+<ResponseField name="coupon_code" type="string">
+  The redeemed coupon code
+</ResponseField>
+
+<ResponseField name="member_id" type="string">
+  Customer identifier who owned this coupon
+</ResponseField>
+
+<ResponseField name="redemption_id" type="string">
+  Unique identifier for this redemption transaction
+</ResponseField>
+
+<ResponseField name="reward_applied" type="object">
+  Details about the discount applied
+  
+  <Expandable title="Reward Applied">
+    <ResponseField name="discount_type" type="string">
+      Type of discount that was applied
+      ```
+      product_free | percentage | fixed_amount | buy_one_get_one
+      ```
+    </ResponseField>
+    
+    <ResponseField name="discount_value" type="number">
+      Original discount value from coupon
+    </ResponseField>
+    
+    <ResponseField name="discount_percentage" type="number">
+      Actual percentage applied (for percentage discounts)
+    </ResponseField>
+    
+    <ResponseField name="discount_amount" type="number">
+      Final discount amount applied to order (BRL)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="redeemed_at" type="string">
+  Timestamp when coupon was redeemed (ISO 8601)
+</ResponseField>
+
+<ResponseField name="customer_balance" type="object">
+  Customer's points balance information (if applicable)
+  
+  <Expandable title="Customer Balance">
+    <ResponseField name="previous_points" type="integer">
+      Points balance before any adjustments
+    </ResponseField>
+    
+    <ResponseField name="points_debited" type="integer">
+      Points that were originally spent to get this coupon
+    </ResponseField>
+    
+    <ResponseField name="current_points" type="integer">
+      Current points balance after redemption
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/v1/loyalty/coupons/redeem" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "coupon_code": "CP-14A578D0",
+    "restaurant_id": "comp_bella_vista",
+    "order": {
+      "total_value": 42.50,
+      "items": [
+        {
+          "name": "Pizza Margherita",
+          "price": 35.00,
+          "quantity": 1
+        },
+        {
+          "name": "Refrigerante",
+          "price": 7.50,
+          "quantity": 1
+        }
+      ],
+      "order_id": "ord_12345"
+    }
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/coupons/redeem', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    coupon_code: 'CP-14A578D0',
+    restaurant_id: 'comp_bella_vista',
+    order: {
+      total_value: 42.50,
+      items: [
+        { name: 'Pizza Margherita', price: 35.00, quantity: 1 },
+        { name: 'Refrigerante', price: 7.50, quantity: 1 }
+      ],
+      order_id: 'ord_12345'
+    }
+  })
+});
+
+const redemption = await response.json();
+console.log(redemption);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/coupons/redeem"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+data = {
+    "coupon_code": "CP-14A578D0",
+    "restaurant_id": "comp_bella_vista",
+    "order": {
+        "total_value": 42.50,
+        "items": [
+            {"name": "Pizza Margherita", "price": 35.00, "quantity": 1},
+            {"name": "Refrigerante", "price": 7.50, "quantity": 1}
+        ],
+        "order_id": "ord_12345"
+    }
+}
+
+response = requests.post(url, headers=headers, json=data)
+redemption = response.json()
+print(redemption)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/coupons/redeem";
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$data = [
+    "coupon_code" => "CP-14A578D0",
+    "restaurant_id" => "comp_bella_vista",
+    "order" => [
+        "total_value" => 42.50,
+        "items" => [
+            ["name" => "Pizza Margherita", "price" => 35.00, "quantity" => 1],
+            ["name" => "Refrigerante", "price" => 7.50, "quantity" => 1]
+        ],
+        "order_id" => "ord_12345"
+    ]
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'POST',
+        'header' => implode("\r\n", $headers),
+        'content' => json_encode($data)
+    ]
+]));
+
+$redemption = json_decode($response, true);
+print_r($redemption);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Product Free Redemption
+{
+  "success": true,
+  "coupon_code": "CP-14A578D0",
+  "member_id": "ZP-4F95FB0A",
+  "redemption_id": "red_456DEF789",
+  "reward_applied": {
+    "discount_type": "product_free",
+    "discount_value": 35.00,
+    "discount_amount": 35.00
+  },
+  "redeemed_at": "2025-08-26T17:15:00Z",
+  "customer_balance": {
+    "previous_points": 1000,
+    "points_debited": 1000,
+    "current_points": 0
+  }
+}
+```
+
+```json 200 - Percentage Discount Redemption
+{
+  "success": true,
+  "coupon_code": "CP-B47XY912",
+  "member_id": "ZP-4F95FB0A",
+  "redemption_id": "red_789GHI012",
+  "reward_applied": {
+    "discount_type": "percentage",
+    "discount_value": 10.0,
+    "discount_percentage": 10.0,
+    "discount_amount": 4.25
+  },
+  "redeemed_at": "2025-08-26T17:20:00Z",
+  "customer_balance": {
+    "previous_points": 1200,
+    "points_debited": 500,
+    "current_points": 700
+  }
+}
+```
+
+```json 200 - Fixed Amount Redemption
+{
+  "success": true,
+  "coupon_code": "CP-Z9K3M4N7",
+  "member_id": "ZP-4F95FB0A",
+  "redemption_id": "red_345ABC678",
+  "reward_applied": {
+    "discount_type": "fixed_amount",
+    "discount_value": 15.00,
+    "discount_amount": 15.00
+  },
+  "redeemed_at": "2025-08-26T17:25:00Z",
+  "customer_balance": {
+    "previous_points": 800,
+    "points_debited": 600,
+    "current_points": 200
+  }
+}
+```
+
+```json 400 - Invalid Coupon
+{
+  "success": false,
+  "error": "coupon_expired",
+  "message": "Cupom expirou em 20/08/2025"
+}
+```
+
+```json 400 - Insufficient Order Value
+{
+  "success": false,
+  "error": "minimum_order_not_met",
+  "message": "Pedido deve ser de pelo menos R$ 20,00 para usar este cupom"
+}
+```
+</CodeGroup>
+
+## Discount Calculation Logic
+
+### Product Free Discounts
+For `discount_type: "product_free"`:
+```javascript
+// Customer gets specific product free
+const discount = Math.min(coupon.discount_value, order.total_value);
+const finalTotal = order.total_value - discount;
+```
+
+### Percentage Discounts
+For `discount_type: "percentage"`:
+```javascript
+// Apply percentage with maximum discount cap
+const discountAmount = (order.total_value * coupon.discount_value) / 100;
+const maxDiscount = coupon.maximum_discount || Infinity;
+const finalDiscount = Math.min(discountAmount, maxDiscount);
+const finalTotal = order.total_value - finalDiscount;
+```
+
+### Fixed Amount Discounts
+For `discount_type: "fixed_amount"`:
+```javascript
+// Apply fixed discount up to order value
+const discount = Math.min(coupon.discount_value, order.total_value);
+const finalTotal = order.total_value - discount;
+```
+
+### Buy One Get One
+For `discount_type: "buy_one_get_one"`:
+```javascript
+// Validate purchase requirement met, then apply free item value
+const qualifyingItems = order.items.filter(matchesBOGOCriteria);
+const discount = qualifyingItems.length >= 1 ? coupon.discount_value : 0;
+const finalTotal = order.total_value - discount;
+```
+
+## Redemption Rules
+
+### Pre-Redemption Validation
+- **Coupon Exists**: Code must exist in database
+- **Not Expired**: Current time before expiration
+- **Not Used**: Coupon hasn't been redeemed
+- **Company Match**: Coupon belongs to requesting company
+- **Minimum Order**: Order meets minimum value requirements
+
+### Discount Application
+- **Maximum Discount**: Cannot exceed order total
+- **Percentage Caps**: Percentage discounts respect maximum limits
+- **Item Matching**: Product-free coupons match against order items
+- **Rounding**: All monetary values rounded to 2 decimal places
+
+### Post-Redemption Actions
+- **Mark as Used**: Coupon status updated to used
+- **Audit Trail**: Redemption logged with timestamp and details
+- **Customer Notification**: Optional notification sent to customer
+- **Inventory Update**: Product-free items updated in inventory
+
+## POS Integration Examples
+
+### Complete Redemption Flow
+```javascript
+const redeemCoupon = async (couponCode, order) => {
+  try {
+    // Step 1: Validate coupon first
+    const validation = await validateCoupon(couponCode);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+    
+    // Step 2: Check minimum order requirements
+    if (!meetsMinimumRequirements(validation, order)) {
+      return { 
+        success: false, 
+        error: 'minimum_order_not_met',
+        message: 'Pedido não atende aos requisitos mínimos'
+      };
+    }
+    
+    // Step 3: Redeem the coupon
+    const response = await fetch('/loyalty/coupons/redeem', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer API_KEY',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        coupon_code: couponCode,
+        restaurant_id: 'comp_bella_vista',
+        order: order
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Update order totals
+      updateOrderWithDiscount(order, result.reward_applied);
+      
+      // Show success message
+      showSuccessMessage(`Cupom aplicado! Desconto: R$ ${result.reward_applied.discount_amount.toFixed(2)}`);
+      
+      // Print redemption receipt
+      printRedemptionReceipt(result);
+      
+      return { success: true, redemption: result };
+    } else {
+      return { success: false, error: result.error, message: result.message };
+    }
+    
+  } catch (error) {
+    return {
+      success: false,
+      error: 'network_error',
+      message: 'Erro de conexão. Tente novamente.'
+    };
+  }
+};
+
+const updateOrderWithDiscount = (order, reward) => {
+  const discountAmount = reward.discount_amount;
+  order.original_total = order.total_value;
+  order.discount_amount = discountAmount;
+  order.final_total = order.total_value - discountAmount;
+  order.discount_type = reward.discount_type;
+  
+  // Update UI display
+  updateOrderSummary(order);
+};
+```
+
+### Minimum Order Validation
+```javascript
+const meetsMinimumRequirements = (couponValidation, order) => {
+  // Extract minimum order from terms (simplified example)
+  const terms = couponValidation.terms;
+  const minOrderMatch = terms.match(/acima de R\$ ([\d,]+\.?\d*)/);
+  
+  if (minOrderMatch) {
+    const minimumOrder = parseFloat(minOrderMatch[1].replace(',', '.'));
+    return order.total_value >= minimumOrder;
+  }
+  
+  return true; // No minimum requirement found
+};
+```
+
+### Discount Display
+```javascript
+const formatRedemptionSummary = (redemption) => {
+  const { reward_applied, coupon_code } = redemption;
+  
+  let discountText;
+  switch (reward_applied.discount_type) {
+    case 'product_free':
+      discountText = `Produto grátis - R$ ${reward_applied.discount_amount.toFixed(2)}`;
+      break;
+    case 'percentage':
+      discountText = `${reward_applied.discount_percentage}% desconto - R$ ${reward_applied.discount_amount.toFixed(2)}`;
+      break;
+    case 'fixed_amount':
+      discountText = `Desconto fixo - R$ ${reward_applied.discount_amount.toFixed(2)}`;
+      break;
+    default:
+      discountText = `Desconto - R$ ${reward_applied.discount_amount.toFixed(2)}`;
+  }
+  
+  return `
+    <div class="redemption-summary">
+      <h3>Cupom Aplicado ✓</h3>
+      <div>Código: ${coupon_code}</div>
+      <div>Desconto: ${discountText}</div>
+      <div>Aplicado em: ${formatDate(redemption.redeemed_at)}</div>
+    </div>
+  `;
+};
+```
+
+## Business Logic
+
+### Redemption Process
+1. **Validation**: Verify coupon is valid and usable
+2. **Calculation**: Calculate appropriate discount based on type
+3. **Application**: Apply discount to order total
+4. **Update**: Mark coupon as used with redemption details
+5. **Notification**: Send confirmation to customer (optional)
+
+### Inventory Integration
+- **Product-Free Coupons**: Automatic inventory deduction
+- **Stock Validation**: Ensure free products are available
+- **Reporting**: Track redemption impact on inventory
+
+### Customer Experience
+- **Immediate Confirmation**: Clear feedback on successful redemption
+- **Receipt Integration**: Discount details on order receipt
+- **Balance Updates**: Real-time points balance display
+
+## Error Handling
+
+### Common Error Scenarios
+- **Expired Coupons**: Clear expiration date messaging
+- **Insufficient Order Value**: Minimum order requirement alerts
+- **Already Used**: Prevention of duplicate redemption attempts
+- **Network Issues**: Offline mode considerations
+
+### Recovery Strategies
+- **Retry Logic**: Automatic retry for network timeouts
+- **Fallback Methods**: Manual coupon entry when scanning fails
+- **Support Escalation**: Easy access to customer support
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `coupon_not_found` | Coupon code doesn't exist |
+| `coupon_expired` | Coupon has passed expiration date |
+| `coupon_already_used` | Coupon has been redeemed already |
+| `minimum_order_not_met` | Order doesn't meet minimum value requirements |
+| `invalid_company` | Coupon doesn't belong to requesting company |
+| `insufficient_stock` | Free product not available in inventory |
+| `calculation_error` | Error in discount calculation |
+| `unauthorized` | Missing or invalid API credentials |
+
+## Rate Limits
+
+- **Production**: 100 requests per minute per company
+- **Staging**: 50 requests per minute per company
+
+<Tip>
+  **Idempotency**: Redemption requests are idempotent - the same coupon cannot be redeemed multiple times even if the request is repeated.
+</Tip>
+
+<Warning>
+  **Irreversible Action**: Coupon redemption cannot be undone through the API. Contact support if a redemption needs to be reversed.
+</Warning>

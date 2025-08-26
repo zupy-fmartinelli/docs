@@ -1,0 +1,495 @@
+---
+title: "Get Rewards Catalog"
+api: "GET /loyalty/programs/{program_id}/rewards"
+description: "Retrieve the complete rewards catalog for a loyalty program with filtering options by category"
+---
+
+## Overview
+
+This endpoint returns all available rewards in the loyalty program catalog. Rewards can be filtered by category to help customers find specific types of benefits. Each reward includes points requirements, descriptions, terms of use, and availability information.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="program_id" type="string" required>
+  Loyalty program identifier
+  ```
+  prog_bella_vista
+  ```
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="category" type="string">
+  Filter rewards by category
+  ```
+  food | drinks | discounts | experiences
+  ```
+</ParamField>
+
+<ParamField query="max_points" type="integer">
+  Filter rewards requiring less than or equal to this points amount
+  ```
+  1000
+  ```
+</ParamField>
+
+<ParamField query="available_only" type="boolean">
+  Show only currently available rewards (default: true)
+  ```
+  true | false
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="program_id" type="string">
+  Loyalty program identifier
+</ResponseField>
+
+<ResponseField name="total_rewards" type="integer">
+  Total number of rewards in the catalog (after filtering)
+</ResponseField>
+
+<ResponseField name="categories" type="array">
+  List of all available reward categories
+</ResponseField>
+
+<ResponseField name="rewards" type="array">
+  List of rewards matching the filter criteria
+  
+  <Expandable title="Reward Object">
+    <ResponseField name="reward_id" type="string">
+      Unique reward identifier
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Display name of the reward
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Detailed description of what the customer receives
+    </ResponseField>
+    
+    <ResponseField name="points_required" type="integer">
+      Points needed to redeem this reward
+    </ResponseField>
+    
+    <ResponseField name="category" type="string">
+      Reward category classification
+    </ResponseField>
+    
+    <ResponseField name="image_url" type="string">
+      URL to reward promotional image
+    </ResponseField>
+    
+    <ResponseField name="terms" type="string">
+      Terms and conditions for reward usage
+    </ResponseField>
+    
+    <ResponseField name="availability" type="string">
+      Availability status
+      ```
+      unlimited | limited | seasonal | out_of_stock
+      ```
+    </ResponseField>
+    
+    <ResponseField name="stock_remaining" type="integer">
+      Remaining stock (only for limited availability rewards)
+    </ResponseField>
+    
+    <ResponseField name="valid_until" type="string">
+      Expiration date for seasonal rewards (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="discount_details" type="object">
+      Discount information (for discount-type rewards)
+      
+      <Expandable title="Discount Details">
+        <ResponseField name="discount_type" type="string">
+          Type of discount offered
+          ```
+          percentage | fixed_amount | product_free | buy_one_get_one
+          ```
+        </ResponseField>
+        
+        <ResponseField name="discount_value" type="number">
+          Discount amount or percentage value
+        </ResponseField>
+        
+        <ResponseField name="maximum_discount" type="number">
+          Maximum discount amount (for percentage discounts)
+        </ResponseField>
+        
+        <ResponseField name="minimum_purchase" type="number">
+          Minimum purchase required to use discount
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="popularity_rank" type="integer">
+      Popularity ranking among all rewards (1 = most popular)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?category=food" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?category=food', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const catalog = await response.json();
+console.log(catalog);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards"
+params = {"category": "food"}
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, params=params, headers=headers)
+catalog = response.json()
+print(catalog)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?" . http_build_query([
+    'category' => 'food'
+]);
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => implode("\r\n", $headers)
+    ]
+]));
+
+$catalog = json_decode($response, true);
+print_r($catalog);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Full Catalog
+{
+  "program_id": "prog_bella_vista",
+  "total_rewards": 12,
+  "categories": ["food", "drinks", "discounts", "experiences"],
+  "rewards": [
+    {
+      "reward_id": "rw_pizza_margherita",
+      "name": "Pizza Margherita Grátis",
+      "description": "Pizza Margherita tradicional completa com molho de tomate, mussarela e manjericão fresco",
+      "points_required": 1000,
+      "category": "food",
+      "image_url": "https://cdn.zupy.com/rewards/pizza_margherita.jpg",
+      "terms": "Válido apenas para consumo no local. Não pode ser combinado com outras promoções.",
+      "availability": "unlimited",
+      "popularity_rank": 1
+    },
+    {
+      "reward_id": "rw_drink_soda",
+      "name": "Refrigerante 350ml Grátis",
+      "description": "Refrigerante de qualquer sabor disponível, 350ml gelado",
+      "points_required": 300,
+      "category": "drinks",
+      "image_url": "https://cdn.zupy.com/rewards/soda.jpg",
+      "terms": "Válido para qualquer sabor disponível no momento",
+      "availability": "unlimited",
+      "popularity_rank": 2
+    },
+    {
+      "reward_id": "rw_discount_10percent",
+      "name": "10% de Desconto",
+      "description": "10% de desconto em qualquer pedido",
+      "points_required": 500,
+      "category": "discounts",
+      "terms": "Válido para pedidos acima de R$ 20,00. Não cumulativo.",
+      "availability": "unlimited",
+      "discount_details": {
+        "discount_type": "percentage",
+        "discount_value": 10.0,
+        "maximum_discount": 50.0,
+        "minimum_purchase": 20.0
+      },
+      "popularity_rank": 3
+    },
+    {
+      "reward_id": "rw_cooking_class",
+      "name": "Aula de Culinária Italiana",
+      "description": "Aula exclusiva com o chef para aprender receitas tradicionais italianas",
+      "points_required": 5000,
+      "category": "experiences",
+      "image_url": "https://cdn.zupy.com/rewards/cooking_class.jpg",
+      "terms": "Agendamento com 48h de antecedência. Máximo 8 pessoas por aula.",
+      "availability": "limited",
+      "stock_remaining": 3,
+      "popularity_rank": 8
+    }
+  ]
+}
+```
+
+```json 200 - Drinks Category Filter
+{
+  "program_id": "prog_bella_vista",
+  "total_rewards": 4,
+  "categories": ["drinks"],
+  "rewards": [
+    {
+      "reward_id": "rw_drink_soda",
+      "name": "Refrigerante 350ml Grátis",
+      "description": "Refrigerante de qualquer sabor disponível, 350ml gelado",
+      "points_required": 300,
+      "category": "drinks",
+      "availability": "unlimited",
+      "popularity_rank": 1
+    },
+    {
+      "reward_id": "rw_drink_juice",
+      "name": "Suco Natural 400ml",
+      "description": "Suco natural de frutas da temporada, 400ml",
+      "points_required": 400,
+      "category": "drinks",
+      "availability": "seasonal",
+      "valid_until": "2025-12-31T23:59:59Z",
+      "popularity_rank": 2
+    },
+    {
+      "reward_id": "rw_drink_beer",
+      "name": "Cerveja Artesanal 355ml",
+      "description": "Cerveja artesanal da casa, 355ml gelada",
+      "points_required": 600,
+      "category": "drinks",
+      "availability": "limited",
+      "stock_remaining": 12,
+      "terms": "Válido apenas para maiores de 18 anos. Apresentar documento.",
+      "popularity_rank": 4
+    }
+  ]
+}
+```
+
+```json 404 - Program Not Found
+{
+  "error": "program_not_found",
+  "message": "Loyalty program 'prog_invalid' not found or inactive"
+}
+```
+</CodeGroup>
+
+## Reward Categories
+
+<ResponseField name="food">
+  **Food Items**: Free meals, appetizers, desserts, and food products
+  - Examples: Pizza, Hambúrguer, Sobremesa, Entrada
+  - Typically higher point values (800-2000 points)
+</ResponseField>
+
+<ResponseField name="drinks">
+  **Beverages**: Free or discounted drinks including soft drinks, juices, coffee
+  - Examples: Refrigerante, Suco, Café, Cerveja
+  - Lower point values (200-600 points)
+</ResponseField>
+
+<ResponseField name="discounts">
+  **Discounts**: Percentage or fixed amount discounts on orders
+  - Examples: 10% off, R$ 5 off, Free delivery
+  - Variable point values (300-1000 points)
+</ResponseField>
+
+<ResponseField name="experiences">
+  **Experiences**: Special experiences and premium services
+  - Examples: Cooking classes, VIP seating, Chef's table
+  - Highest point values (3000-10000 points)
+</ResponseField>
+
+## Availability Types
+
+<ResponseField name="unlimited">
+  **Unlimited**: Always available for redemption
+  - No stock limitations
+  - Most common for digital rewards and standard items
+</ResponseField>
+
+<ResponseField name="limited">
+  **Limited Stock**: Limited quantity available
+  - Shows `stock_remaining` field
+  - Popular for premium items or experiences
+</ResponseField>
+
+<ResponseField name="seasonal">
+  **Seasonal**: Available only during specific periods
+  - Shows `valid_until` field
+  - Examples: Holiday specials, seasonal ingredients
+</ResponseField>
+
+<ResponseField name="out_of_stock">
+  **Out of Stock**: Temporarily unavailable
+  - Not shown when `available_only=true`
+  - Will return when restocked
+</ResponseField>
+
+## Discount Types
+
+### Percentage Discounts
+- **discount_type**: "percentage"
+- **discount_value**: Percentage amount (e.g., 10.0 for 10%)
+- **maximum_discount**: Cap on total discount amount
+- **minimum_purchase**: Minimum order value required
+
+### Fixed Amount Discounts
+- **discount_type**: "fixed_amount"
+- **discount_value**: Fixed discount in BRL
+- **minimum_purchase**: Minimum order value required
+
+### Product Free
+- **discount_type**: "product_free"
+- **discount_value**: Value of free item
+- Specific product given at no charge
+
+### Buy One Get One
+- **discount_type**: "buy_one_get_one"
+- **discount_value**: Value of free item
+- Purchase requirement for free item
+
+## Filtering Examples
+
+### Filter by Points Budget
+```bash
+# Show rewards a customer with 800 points can afford
+curl "/loyalty/programs/prog_123/rewards?max_points=800"
+```
+
+### Filter by Category and Availability
+```bash
+# Show only available food rewards
+curl "/loyalty/programs/prog_123/rewards?category=food&available_only=true"
+```
+
+### Show All Rewards (Including Out of Stock)
+```bash
+# Include unavailable rewards in results
+curl "/loyalty/programs/prog_123/rewards?available_only=false"
+```
+
+## Integration Examples
+
+### Display Rewards Grid
+```javascript
+const displayRewardsGrid = (rewards) => {
+  return rewards.map(reward => `
+    <div class="reward-card">
+      <img src="${reward.image_url}" alt="${reward.name}">
+      <h3>${reward.name}</h3>
+      <p>${reward.description}</p>
+      <div class="points">${reward.points_required} pontos</div>
+      <div class="availability ${reward.availability}">
+        ${getAvailabilityText(reward)}
+      </div>
+      ${reward.discount_details ? formatDiscount(reward.discount_details) : ''}
+    </div>
+  `).join('');
+};
+
+const getAvailabilityText = (reward) => {
+  switch(reward.availability) {
+    case 'limited': return `Apenas ${reward.stock_remaining} disponíveis`;
+    case 'seasonal': return `Disponível até ${formatDate(reward.valid_until)}`;
+    case 'out_of_stock': return 'Temporariamente indisponível';
+    default: return 'Sempre disponível';
+  }
+};
+```
+
+### Filter Implementation
+```javascript
+const filterRewards = async (programId, filters) => {
+  const params = new URLSearchParams();
+  
+  if (filters.category) params.append('category', filters.category);
+  if (filters.maxPoints) params.append('max_points', filters.maxPoints);
+  if (filters.availableOnly !== undefined) params.append('available_only', filters.availableOnly);
+  
+  const response = await fetch(`/loyalty/programs/${programId}/rewards?${params}`);
+  return response.json();
+};
+
+// Usage examples
+const foodRewards = await filterRewards('prog_123', { category: 'food' });
+const affordableRewards = await filterRewards('prog_123', { maxPoints: customerBalance });
+const allRewards = await filterRewards('prog_123', { availableOnly: false });
+```
+
+## Business Logic
+
+### Popularity Ranking
+- Based on redemption frequency and customer preferences
+- Updated weekly based on actual redemption data
+- Lower numbers indicate higher popularity (1 = most popular)
+
+### Dynamic Availability
+- Stock levels updated in real-time
+- Seasonal rewards automatically become unavailable after expiration
+- Out of stock items are automatically hidden unless explicitly requested
+
+### Points Strategy
+- Lower point values for customer acquisition (drinks, small discounts)
+- Higher point values for retention (food items, experiences)
+- Premium experiences create aspirational goals
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `program_not_found` | Loyalty program doesn't exist or is inactive |
+| `invalid_category` | Category filter value not supported |
+| `unauthorized` | Missing or invalid API credentials |
+
+## Rate Limits
+
+- **Production**: 500 requests per minute per company
+- **Staging**: 200 requests per minute per company
+
+<Tip>
+  **Caching Strategy**: Reward catalogs change infrequently. Cache results for 15-30 minutes to improve performance, but implement cache invalidation for stock updates.
+</Tip>
+
+<Warning>
+  **Stock Accuracy**: Limited availability rewards show real-time stock. However, there may be a brief delay (1-2 seconds) between redemption and stock update.
+</Warning>

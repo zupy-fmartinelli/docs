@@ -1,0 +1,453 @@
+---
+title: "Validate Coupon"
+api: "POST /loyalty/coupons/validate"
+description: "Verify if a coupon code is valid and retrieve its details without marking it as used"
+---
+
+## Overview
+
+This endpoint validates a coupon code without consuming it, allowing staff to verify coupon details before applying discounts. It checks expiration dates, usage status, and returns complete coupon information including customer details and discount values. This is typically used by POS systems to preview coupon details before redemption.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Request Body
+
+<ParamField body="coupon_code" type="string" required>
+  Unique coupon code to validate (format: CP-XXXXXXXX)
+  ```
+  CP-14A578D0
+  ```
+</ParamField>
+
+<ParamField body="restaurant_id" type="string" required>
+  Company identifier for validation context
+  ```
+  comp_bella_vista
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="valid" type="boolean">
+  Whether the coupon is valid and can be used
+</ResponseField>
+
+<ResponseField name="coupon_code" type="string">
+  The validated coupon code
+</ResponseField>
+
+<ResponseField name="member_id" type="string">
+  Customer identifier who owns this coupon
+</ResponseField>
+
+<ResponseField name="customer_name" type="string">
+  Customer's display name
+</ResponseField>
+
+<ResponseField name="reward" type="object">
+  Details about the reward this coupon provides
+  
+  <Expandable title="Reward Details">
+    <ResponseField name="name" type="string">
+      Display name of the reward
+    </ResponseField>
+    
+    <ResponseField name="discount_type" type="string">
+      Type of discount this coupon provides
+      ```
+      product_free | percentage | fixed_amount | buy_one_get_one
+      ```
+    </ResponseField>
+    
+    <ResponseField name="discount_value" type="number">
+      Discount amount or value (interpretation depends on discount_type)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="expires_at" type="string">
+  Coupon expiration date and time (ISO 8601)
+</ResponseField>
+
+<ResponseField name="terms" type="string">
+  Terms and conditions for coupon usage
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/v1/loyalty/coupons/validate" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "coupon_code": "CP-14A578D0",
+    "restaurant_id": "comp_bella_vista"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/coupons/validate', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    coupon_code: 'CP-14A578D0',
+    restaurant_id: 'comp_bella_vista'
+  })
+});
+
+const validation = await response.json();
+console.log(validation);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/coupons/validate"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+data = {
+    "coupon_code": "CP-14A578D0",
+    "restaurant_id": "comp_bella_vista"
+}
+
+response = requests.post(url, headers=headers, json=data)
+validation = response.json()
+print(validation)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/coupons/validate";
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$data = [
+    "coupon_code" => "CP-14A578D0",
+    "restaurant_id" => "comp_bella_vista"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'POST',
+        'header' => implode("\r\n", $headers),
+        'content' => json_encode($data)
+    ]
+]));
+
+$validation = json_decode($response, true);
+print_r($validation);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Valid Coupon
+{
+  "valid": true,
+  "coupon_code": "CP-14A578D0",
+  "member_id": "ZP-4F95FB0A",
+  "customer_name": "João Silva",
+  "reward": {
+    "name": "Pizza Margherita Grátis",
+    "discount_type": "product_free",
+    "discount_value": 35.00
+  },
+  "expires_at": "2025-09-20T23:59:59Z",
+  "terms": "Válido apenas para consumo no local. Não pode ser combinado com outras promoções."
+}
+```
+
+```json 200 - Valid Percentage Discount
+{
+  "valid": true,
+  "coupon_code": "CP-B47XY912",
+  "member_id": "ZP-4F95FB0A",
+  "customer_name": "João Silva",
+  "reward": {
+    "name": "10% de Desconto",
+    "discount_type": "percentage",
+    "discount_value": 10.0
+  },
+  "expires_at": "2025-09-22T23:59:59Z",
+  "terms": "Válido para pedidos acima de R$ 20,00. Desconto máximo de R$ 50,00."
+}
+```
+
+```json 400 - Invalid Coupon
+{
+  "valid": false,
+  "error": "coupon_not_found",
+  "message": "Cupom 'CP-INVALID1' não encontrado"
+}
+```
+
+```json 400 - Expired Coupon
+{
+  "valid": false,
+  "error": "coupon_expired",
+  "message": "Cupom expirou em 20/09/2025"
+}
+```
+
+```json 400 - Already Used
+{
+  "valid": false,
+  "error": "coupon_already_used",
+  "message": "Cupom já foi utilizado em 18/09/2025 às 14:32"
+}
+```
+</CodeGroup>
+
+## Validation Rules
+
+### Format Validation
+- **Code Format**: Must match pattern `CP-[A-Z0-9]{8}`
+- **Case Insensitive**: Codes are normalized to uppercase
+- **Length**: Exactly 11 characters including prefix
+
+### Status Validation
+- **Not Used**: Coupon hasn't been redeemed yet
+- **Not Expired**: Current time before expiration date
+- **Active Customer**: Customer account is active
+- **Correct Company**: Coupon belongs to requesting company
+
+### Business Rules
+- **Single Use**: Each coupon can only be validated/used once
+- **Company Scope**: Coupons are only valid for their issuing company
+- **Timezone**: Expiration checked against company timezone
+- **Customer Status**: Inactive customers have invalid coupons
+
+## Discount Value Interpretation
+
+### Product Free (product_free)
+```json
+{
+  "discount_type": "product_free",
+  "discount_value": 35.00  // Value of the free product
+}
+```
+- Customer receives specific item at no charge
+- `discount_value` represents the monetary value saved
+
+### Percentage Discount (percentage)
+```json
+{
+  "discount_type": "percentage", 
+  "discount_value": 10.0  // 10% discount
+}
+```
+- Applied as percentage off total order
+- May have maximum discount limit (check terms)
+
+### Fixed Amount Discount (fixed_amount)
+```json
+{
+  "discount_type": "fixed_amount",
+  "discount_value": 15.00  // R$ 15,00 off
+}
+```
+- Fixed monetary discount in BRL
+- Applied directly to order total
+
+### Buy One Get One (buy_one_get_one)
+```json
+{
+  "discount_type": "buy_one_get_one",
+  "discount_value": 25.00  // Value of free item
+}
+```
+- Purchase requirement for free item
+- `discount_value` represents value of free item
+
+## POS Integration Examples
+
+### Basic Validation Flow
+```javascript
+const validateCoupon = async (couponCode) => {
+  try {
+    const response = await fetch('/loyalty/coupons/validate', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer API_KEY',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        coupon_code: couponCode,
+        restaurant_id: 'comp_bella_vista'
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.valid) {
+      return {
+        success: true,
+        customerName: result.customer_name,
+        rewardName: result.reward.name,
+        discountType: result.reward.discount_type,
+        discountValue: result.reward.discount_value,
+        expiresAt: result.expires_at,
+        terms: result.terms
+      };
+    } else {
+      return {
+        success: false,
+        error: result.error,
+        message: result.message
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: 'network_error',
+      message: 'Erro de conexão. Tente novamente.'
+    };
+  }
+};
+```
+
+### Display Validation Result
+```javascript
+const displayCouponValidation = (validation) => {
+  if (!validation.success) {
+    return showErrorMessage(validation.message);
+  }
+  
+  const discountText = formatDiscount(
+    validation.discountType, 
+    validation.discountValue
+  );
+  
+  return `
+    <div class="coupon-validation-success">
+      <h3>Cupom Válido ✓</h3>
+      <div class="customer-info">
+        <strong>Cliente:</strong> ${validation.customerName}
+      </div>
+      <div class="reward-info">
+        <strong>Recompensa:</strong> ${validation.rewardName}
+      </div>
+      <div class="discount-info">
+        <strong>Desconto:</strong> ${discountText}
+      </div>
+      <div class="expiry-info">
+        <strong>Válido até:</strong> ${formatDate(validation.expiresAt)}
+      </div>
+      <div class="terms-info">
+        <small>${validation.terms}</small>
+      </div>
+      <button onclick="applyCoupon()">Aplicar Cupom</button>
+    </div>
+  `;
+};
+
+const formatDiscount = (type, value) => {
+  switch(type) {
+    case 'percentage': return `${value}% de desconto`;
+    case 'fixed_amount': return `R$ ${value.toFixed(2)} de desconto`;
+    case 'product_free': return 'Produto grátis';
+    case 'buy_one_get_one': return 'Compre 1 Leve 2';
+    default: return 'Desconto especial';
+  }
+};
+```
+
+### Error Handling
+```javascript
+const handleCouponValidationError = (error, message) => {
+  const errorMessages = {
+    'coupon_not_found': 'Cupom não encontrado. Verifique o código digitado.',
+    'coupon_expired': 'Este cupom já expirou.',
+    'coupon_already_used': 'Este cupom já foi utilizado.',
+    'invalid_company': 'Cupom não válido para este estabelecimento.',
+    'customer_inactive': 'Cliente inativo. Entre em contato com o suporte.',
+    'network_error': 'Erro de conexão. Verifique sua internet.'
+  };
+  
+  const userMessage = errorMessages[error] || message || 'Erro desconhecido';
+  
+  return showErrorDialog({
+    title: 'Cupom Inválido',
+    message: userMessage,
+    actions: ['Tentar Novamente', 'Cancelar']
+  });
+};
+```
+
+## Business Logic
+
+### Validation Process
+1. **Format Check**: Verify coupon code format
+2. **Database Lookup**: Find coupon in system
+3. **Status Check**: Verify not used and not expired
+4. **Company Match**: Ensure coupon belongs to requesting company
+5. **Customer Status**: Check if customer account is active
+
+### Security Considerations
+- **Rate Limiting**: Prevent brute force coupon guessing
+- **Audit Logging**: Log all validation attempts
+- **Company Isolation**: Strict company boundary enforcement
+- **Time-based Checks**: Server-side expiration validation
+
+## Common Use Cases
+
+### Restaurant POS
+- Staff scans/enters coupon code
+- System validates before applying discount
+- Clear display of customer info and discount details
+- Terms and conditions shown to staff
+
+### Mobile App
+- Customer shows coupon in app
+- Staff validates code manually
+- Real-time validation feedback
+- Expiration warnings
+
+### Self-Service Kiosks
+- Customer enters coupon code
+- Automatic validation and discount application
+- Clear success/error messaging
+- Fallback to staff assistance
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `coupon_not_found` | Coupon code doesn't exist |
+| `coupon_expired` | Coupon has passed expiration date |
+| `coupon_already_used` | Coupon has been redeemed already |
+| `invalid_company` | Coupon doesn't belong to requesting company |
+| `customer_inactive` | Customer account is deactivated |
+| `invalid_format` | Coupon code format is incorrect |
+| `unauthorized` | Missing or invalid API credentials |
+
+## Rate Limits
+
+- **Production**: 300 requests per minute per company
+- **Staging**: 100 requests per minute per company
+
+<Tip>
+  **Validation Flow**: Always validate coupons before redemption to provide better user experience and prevent errors during actual redemption process.
+</Tip>
+
+<Warning>
+  **Security**: Validation requests are logged for security purposes. Excessive failed validations may trigger rate limiting or security alerts.
+</Warning>

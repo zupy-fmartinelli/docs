@@ -1,0 +1,555 @@
+---
+title: "Get Transaction History"
+api: "GET /loyalty/customers/{member_id}/history"
+description: "Retrieve paginated transaction history for a customer including points earned, spent, and transaction details"
+---
+
+## Overview
+
+This endpoint returns the complete transaction history for a customer, including points earned from purchases, points spent on redemptions, bonuses, and adjustments. Results are paginated and can be filtered by transaction type for better performance.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="member_id" type="string" required>
+  Unique Zupy customer identifier
+  ```
+  ZP-4F95FB0A
+  ```
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="limit" type="integer">
+  Number of transactions to return per page
+  ```
+  Default: 50, Maximum: 100
+  ```
+</ParamField>
+
+<ParamField query="offset" type="integer">
+  Number of transactions to skip (for pagination)
+  ```
+  Default: 0
+  ```
+</ParamField>
+
+<ParamField query="transaction_type" type="string">
+  Filter by transaction type
+  ```
+  purchase | redemption | bonus | penalty | adjustment | refund
+  ```
+</ParamField>
+
+<ParamField query="date_from" type="string">
+  Filter transactions from this date (ISO 8601)
+  ```
+  2025-08-01T00:00:00Z
+  ```
+</ParamField>
+
+<ParamField query="date_to" type="string">
+  Filter transactions until this date (ISO 8601)
+  ```
+  2025-08-31T23:59:59Z
+  ```
+</ParamField>
+
+<ParamField query="platform" type="string">
+  Filter by transaction platform
+  ```
+  goomer | repediu | ifood | manual | pos
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="member_id" type="string">
+  Customer identifier
+</ResponseField>
+
+<ResponseField name="total_transactions" type="integer">
+  Total number of transactions (for pagination)
+</ResponseField>
+
+<ResponseField name="showing" type="object">
+  Pagination information
+  
+  <Expandable title="Showing Object">
+    <ResponseField name="from" type="integer">
+      First transaction index in current page
+    </ResponseField>
+    
+    <ResponseField name="to" type="integer">
+      Last transaction index in current page
+    </ResponseField>
+    
+    <ResponseField name="total" type="integer">
+      Total transactions available
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="summary" type="object">
+  Transaction summary for the filtered period
+  
+  <Expandable title="Summary Object">
+    <ResponseField name="total_points_earned" type="integer">
+      Total points earned in filtered period
+    </ResponseField>
+    
+    <ResponseField name="total_points_spent" type="integer">
+      Total points spent in filtered period
+    </ResponseField>
+    
+    <ResponseField name="net_points" type="integer">
+      Net points change (earned - spent)
+    </ResponseField>
+    
+    <ResponseField name="transaction_count" type="integer">
+      Number of transactions in filtered period
+    </ResponseField>
+    
+    <ResponseField name="average_transaction_value" type="number">
+      Average transaction value (for purchase transactions)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="transactions" type="array">
+  List of transactions
+  
+  <Expandable title="Transaction Object">
+    <ResponseField name="transaction_id" type="string">
+      Unique transaction identifier
+    </ResponseField>
+    
+    <ResponseField name="transaction_type" type="string">
+      Type of transaction
+    </ResponseField>
+    
+    <ResponseField name="points_change" type="integer">
+      Points change (positive for earned, negative for spent)
+    </ResponseField>
+    
+    <ResponseField name="balance_after" type="integer">
+      Customer's points balance after this transaction
+    </ResponseField>
+    
+    <ResponseField name="timestamp" type="string">
+      Transaction timestamp (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Human-readable description of the transaction
+    </ResponseField>
+    
+    <ResponseField name="order_details" type="object">
+      Order information (for purchase transactions)
+      
+      <Expandable title="Order Details">
+        <ResponseField name="order_id" type="string">
+          Original order identifier
+        </ResponseField>
+        
+        <ResponseField name="total_value" type="number">
+          Order total value (BRL)
+        </ResponseField>
+        
+        <ResponseField name="platform" type="string">
+          Platform where order was placed
+        </ResponseField>
+        
+        <ResponseField name="items_count" type="integer">
+          Number of items in order
+        </ResponseField>
+        
+        <ResponseField name="payment_method" type="string">
+          Payment method used
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="redemption_details" type="object">
+      Redemption information (for redemption transactions)
+      
+      <Expandable title="Redemption Details">
+        <ResponseField name="coupon_code" type="string">
+          Generated coupon code
+        </ResponseField>
+        
+        <ResponseField name="reward_name" type="string">
+          Name of redeemed reward
+        </ResponseField>
+        
+        <ResponseField name="expires_at" type="string">
+          Coupon expiration date (ISO 8601)
+        </ResponseField>
+        
+        <ResponseField name="redemption_method" type="string">
+          How the reward was redeemed
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="modifiers_applied" type="array">
+      List of bonuses/modifiers applied to this transaction
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/history?limit=20&offset=0&transaction_type=purchase" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/history?limit=20&offset=0&transaction_type=purchase', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const history = await response.json();
+console.log(history);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/history"
+params = {
+    "limit": 20,
+    "offset": 0,
+    "transaction_type": "purchase"
+}
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, params=params, headers=headers)
+history = response.json()
+print(history)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/history?" . http_build_query([
+    'limit' => 20,
+    'offset' => 0,
+    'transaction_type' => 'purchase'
+]);
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => implode("\r\n", $headers)
+    ]
+]));
+
+$history = json_decode($response, true);
+print_r($history);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Purchase History
+{
+  "member_id": "ZP-4F95FB0A",
+  "total_transactions": 18,
+  "showing": {
+    "from": 1,
+    "to": 10,
+    "total": 18
+  },
+  "summary": {
+    "total_points_earned": 1850,
+    "total_points_spent": 600,
+    "net_points": 1250,
+    "transaction_count": 18,
+    "average_transaction_value": 42.30
+  },
+  "transactions": [
+    {
+      "transaction_id": "tx_789ABC123",
+      "transaction_type": "purchase",
+      "points_change": 35,
+      "balance_after": 882,
+      "timestamp": "2025-08-26T15:30:00Z",
+      "description": "Compra - Pizza Margherita",
+      "order_details": {
+        "order_id": "ord_12345",
+        "total_value": 35.00,
+        "platform": "goomer",
+        "items_count": 1,
+        "payment_method": "credit_card"
+      },
+      "modifiers_applied": []
+    },
+    {
+      "transaction_id": "tx_890DEF456", 
+      "transaction_type": "purchase",
+      "points_change": 68,
+      "balance_after": 847,
+      "timestamp": "2025-08-25T19:45:00Z",
+      "description": "Compra com bônus - 2x Pizzas + Refrigerante",
+      "order_details": {
+        "order_id": "ord_67890",
+        "total_value": 52.00,
+        "platform": "ifood",
+        "items_count": 3,
+        "payment_method": "pix"
+      },
+      "modifiers_applied": [
+        {
+          "type": "category_bonus",
+          "multiplier": 1.3,
+          "description": "Bônus pizza - 30% extra"
+        }
+      ]
+    },
+    {
+      "transaction_id": "tx_123GHI789",
+      "transaction_type": "redemption",
+      "points_change": -200,
+      "balance_after": 779,
+      "timestamp": "2025-08-24T14:20:00Z", 
+      "description": "Resgate - Refrigerante Grátis",
+      "redemption_details": {
+        "coupon_code": "CP-A1B2C3D4",
+        "reward_name": "Refrigerante Grátis",
+        "expires_at": "2025-09-24T14:20:00Z",
+        "redemption_method": "automatic"
+      }
+    }
+  ]
+}
+```
+
+```json 200 - All Transactions
+{
+  "member_id": "ZP-8B23CD41",
+  "total_transactions": 5,
+  "showing": {
+    "from": 1,
+    "to": 5,
+    "total": 5
+  },
+  "summary": {
+    "total_points_earned": 350,
+    "total_points_spent": 0,
+    "net_points": 350,
+    "transaction_count": 5,
+    "average_transaction_value": 28.50
+  },
+  "transactions": [
+    {
+      "transaction_id": "tx_NEW123",
+      "transaction_type": "bonus",
+      "points_change": 100,
+      "balance_after": 350,
+      "timestamp": "2025-08-26T10:00:00Z",
+      "description": "Bônus de boas-vindas",
+      "modifiers_applied": [
+        {
+          "type": "welcome_bonus",
+          "multiplier": 1.0,
+          "description": "Bônus de cadastro"
+        }
+      ]
+    },
+    {
+      "transaction_id": "tx_NEW456",
+      "transaction_type": "purchase",
+      "points_change": 25,
+      "balance_after": 250,
+      "timestamp": "2025-08-25T18:30:00Z",
+      "description": "Primeira compra - Combo Lanche",
+      "order_details": {
+        "order_id": "ord_FIRST1",
+        "total_value": 25.00,
+        "platform": "manual",
+        "items_count": 1,
+        "payment_method": "cash"
+      }
+    }
+  ]
+}
+```
+
+```json 404 - Customer Not Found
+{
+  "error": "customer_not_found",
+  "message": "Customer with member_id 'ZP-INVALID1' not found"
+}
+```
+</CodeGroup>
+
+## Transaction Types
+
+<ResponseField name="purchase">
+  **Purchase**: Points earned from customer transactions
+  - Always positive points_change
+  - Includes order_details object
+  - May include modifiers_applied
+</ResponseField>
+
+<ResponseField name="redemption">
+  **Redemption**: Points spent on rewards/coupons
+  - Always negative points_change
+  - Includes redemption_details object
+  - Shows generated coupon information
+</ResponseField>
+
+<ResponseField name="bonus">
+  **Bonus**: Additional points awarded (welcome, referral, campaigns)
+  - Always positive points_change
+  - Special promotional points
+  - May include modifier information
+</ResponseField>
+
+<ResponseField name="penalty">
+  **Penalty**: Points deducted (fraud, violations, adjustments)
+  - Always negative points_change
+  - Administrative point deductions
+  - Includes reason in description
+</ResponseField>
+
+<ResponseField name="adjustment">
+  **Adjustment**: Manual points correction by admin
+  - Can be positive or negative
+  - Administrative corrections
+  - Includes admin notes in description
+</ResponseField>
+
+<ResponseField name="refund">
+  **Refund**: Points returned from cancelled orders/redemptions
+  - Always positive points_change
+  - References original transaction
+  - Includes refund reason
+</ResponseField>
+
+## Pagination
+
+### Standard Pagination
+```javascript
+// Get first page
+const page1 = await fetch('/loyalty/customers/ZP-123/history?limit=20&offset=0');
+
+// Get second page  
+const page2 = await fetch('/loyalty/customers/ZP-123/history?limit=20&offset=20');
+
+// Calculate total pages
+const totalPages = Math.ceil(response.total_transactions / limit);
+```
+
+### Cursor-based Pagination (Alternative)
+```javascript
+// For better performance with large histories, use timestamp cursor
+const latestTransactions = await fetch(
+  '/loyalty/customers/ZP-123/history?limit=20&date_from=2025-08-01T00:00:00Z'
+);
+```
+
+## Filtering Examples
+
+### Date Range Filter
+```bash
+# Get transactions from August 2025
+curl "/loyalty/customers/ZP-123/history?date_from=2025-08-01T00:00:00Z&date_to=2025-08-31T23:59:59Z"
+```
+
+### Transaction Type Filter
+```bash
+# Get only redemptions
+curl "/loyalty/customers/ZP-123/history?transaction_type=redemption"
+```
+
+### Platform Filter
+```bash
+# Get only Goomer transactions
+curl "/loyalty/customers/ZP-123/history?platform=goomer"
+```
+
+### Combined Filters
+```bash
+# Get recent purchases from iFood
+curl "/loyalty/customers/ZP-123/history?transaction_type=purchase&platform=ifood&date_from=2025-08-20T00:00:00Z"
+```
+
+## Performance Optimization
+
+### Recommended Practices
+- **Pagination**: Use reasonable limit values (10-50 for UI, 100 for exports)
+- **Date Filtering**: Always use date ranges for large histories
+- **Type Filtering**: Filter by transaction_type when displaying specific views
+- **Caching**: Cache recent history for 1-2 minutes in your application
+
+### Large Datasets
+For customers with extensive history (1000+ transactions):
+- Use smaller page sizes (limit=20)
+- Implement date-based filtering
+- Consider separate endpoints for summaries
+- Use background jobs for exports
+
+## Business Intelligence
+
+### Summary Metrics
+The `summary` object provides aggregated data for the filtered period:
+- **Total Points Earned**: Sum of all positive point changes
+- **Total Points Spent**: Sum of all negative point changes (absolute value)
+- **Net Points**: Net change in customer balance
+- **Average Transaction Value**: Mean order value for purchase transactions
+
+### Customer Insights
+Transaction history reveals:
+- **Purchase Patterns**: Frequency, timing, platform preferences
+- **Redemption Behavior**: What rewards customers prefer
+- **Engagement Level**: How actively they use the loyalty program
+- **Value Segments**: High-value vs. frequent vs. occasional customers
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `customer_not_found` | Customer doesn't exist or is inactive |
+| `invalid_date_range` | Invalid date_from or date_to format |
+| `invalid_transaction_type` | Unsupported transaction_type filter |
+| `limit_exceeded` | Limit parameter exceeds maximum (100) |
+| `unauthorized` | Missing or invalid API credentials |
+
+## Rate Limits
+
+- **Production**: 200 requests per minute per customer
+- **Staging**: 100 requests per minute per customer
+
+<Tip>
+  **Export Feature**: For full transaction exports, use the date range filters to break large datasets into manageable chunks and avoid timeouts.
+</Tip>
+
+<Warning>
+  **Performance**: Large histories with no filters may be slow. Always use appropriate pagination and filtering for production applications.
+</Warning>

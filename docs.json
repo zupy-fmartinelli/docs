@@ -44,15 +44,43 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "Loyalty Program APIs",
+            "group": "Company Configuration",
             "pages": [
-              "api-reference/loyalty/introduction",
-              "api-reference/loyalty/customers",
-              "api-reference/loyalty/create-customer",
+              "api-reference/company/loyalty-config"
+            ]
+          },
+          {
+            "group": "Customer Management",
+            "pages": [
+              "api-reference/customers/search",
+              "api-reference/customers/create",
+              "api-reference/customers/profile",
+              "api-reference/customers/verify"
+            ]
+          },
+          {
+            "group": "Loyalty Program",
+            "pages": [
               "api-reference/loyalty/transactions",
-              "api-reference/loyalty/rewards",
-              "api-reference/loyalty/redeem-reward",
-              "api-reference/loyalty/coupons"
+              "api-reference/loyalty/balance",
+              "api-reference/loyalty/history",
+              "api-reference/loyalty/calculate-points"
+            ]
+          },
+          {
+            "group": "Rewards Catalog",
+            "pages": [
+              "api-reference/rewards/catalog",
+              "api-reference/rewards/next-rewards"
+            ]
+          },
+          {
+            "group": "Coupon Management",
+            "pages": [
+              "api-reference/coupons/list",
+              "api-reference/coupons/validate",
+              "api-reference/coupons/redeem",
+              "api-reference/coupons/generate"
             ]
           },
           {
