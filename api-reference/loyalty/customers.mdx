@@ -1,0 +1,266 @@
+---
+title: "Search Customer"
+api: "GET /loyalty/customers/search"
+description: "Locate existing customer using WhatsApp, email, CPF, or Zupy member code"
+---
+
+## Overview
+
+This endpoint allows you to search for existing customers using multiple identification criteria. The search follows priority order: Zupy member code (most specific), WhatsApp (primary identifier), email, and CPF.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="whatsapp" type="string">
+  Customer's WhatsApp number in international format
+  ```
+  +5511965958122 or 11965958122
+  ```
+</ParamField>
+
+<ParamField query="email" type="string">
+  Customer's email address
+  ```
+  joao@email.com
+  ```
+</ParamField>
+
+<ParamField query="cpf" type="string">
+  Customer's CPF (with or without formatting)
+  ```
+  12345678901 or 123.456.789-01
+  ```
+</ParamField>
+
+<ParamField query="member_code" type="string">
+  Zupy member code (highest priority)
+  ```
+  ZP-12345678
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Customer information object
+  
+  <Expandable title="Customer Object">
+    <ResponseField name="member_code" type="string">
+      Unique Zupy customer identifier (format: ZP-XXXXXXXX)
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Customer's full name
+    </ResponseField>
+    
+    <ResponseField name="email" type="string">
+      Customer's email address
+    </ResponseField>
+    
+    <ResponseField name="whatsapp" type="string">
+      Customer's WhatsApp number in international format
+    </ResponseField>
+    
+    <ResponseField name="cpf" type="string">
+      Customer's CPF number
+    </ResponseField>
+    
+    <ResponseField name="birth_date" type="string">
+      Customer's birth date (YYYY-MM-DD format)
+    </ResponseField>
+    
+    <ResponseField name="points_balance" type="number">
+      Current loyalty points balance
+    </ResponseField>
+    
+    <ResponseField name="customer_segment" type="string">
+      RFM-based customer segmentation
+      ```
+      Champions | Loyal Customers | Potential Loyalists | 
+      New Customers | At Risk | Can't Lose Them
+      ```
+    </ResponseField>
+    
+    <ResponseField name="total_spent" type="number">
+      Total amount spent by customer (in BRL)
+    </ResponseField>
+    
+    <ResponseField name="transaction_count" type="number">
+      Total number of transactions
+    </ResponseField>
+    
+    <ResponseField name="last_purchase_date" type="string">
+      Date of last purchase (YYYY-MM-DD format)
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      Customer registration timestamp (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="updated_at" type="string">
+      Last update timestamp (ISO 8601)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable response message
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  Response timestamp in ISO 8601 format
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.zupy.com/v1/loyalty/customers/search?whatsapp=+5511965958122" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.zupy.com/v1/loyalty/customers/search?whatsapp=+5511965958122', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+
+url = "https://api.zupy.com/v1/loyalty/customers/search"
+params = {"whatsapp": "+5511965958122"}
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, params=params, headers=headers)
+data = response.json()
+print(data)
+```
+
+```php PHP
+<?php
+$url = "https://api.zupy.com/v1/loyalty/customers/search?whatsapp=" . urlencode("+5511965958122");
+
+$headers = [
+    "Authorization: Bearer YOUR_API_KEY",
+    "Content-Type: application/json"
+];
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'method' => 'GET',
+        'header' => implode("\r\n", $headers)
+    ]
+]));
+
+$data = json_decode($response, true);
+print_r($data);
+?>
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Success
+{
+  "success": true,
+  "data": {
+    "member_code": "ZP-12345678",
+    "name": "João Silva",
+    "email": "joao@email.com",
+    "whatsapp": "+5511965958122",
+    "cpf": "12345678901",
+    "birth_date": "1990-05-15",
+    "points_balance": 1250,
+    "customer_segment": "Loyal Customers",
+    "total_spent": 2500.00,
+    "transaction_count": 15,
+    "last_purchase_date": "2024-01-10",
+    "created_at": "2023-06-15T10:30:00Z",
+    "updated_at": "2024-01-10T14:22:00Z"
+  },
+  "message": "Customer found successfully",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+```json 404 - Customer Not Found
+{
+  "success": false,
+  "error": {
+    "code": "CUSTOMER_NOT_FOUND",
+    "message": "No customer found with the provided criteria",
+    "details": {
+      "searched_fields": ["whatsapp"],
+      "values": ["+5511965958122"]
+    }
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+```json 400 - Validation Error
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid search parameters provided",
+    "details": {
+      "whatsapp": ["Invalid WhatsApp format. Use +5511999999999 or 11999999999"]
+    }
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+</CodeGroup>
+
+## Search Priority
+
+The search follows this priority order:
+
+1. **Member Code** (ZP-XXXXXXXX) - Most specific identifier
+2. **WhatsApp** - Primary contact identifier  
+3. **Email** - Secondary identifier
+4. **CPF** - Document-based identifier
+
+<Note>
+  If multiple parameters are provided, only the highest priority match will be returned. For example, if both `member_code` and `whatsapp` are provided, the search will use `member_code` only.
+</Note>
+
+## Rate Limits
+
+- **Production**: 1000 requests per minute
+- **Staging**: 100 requests per minute
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `CUSTOMER_NOT_FOUND` | No customer matches the search criteria |
+| `VALIDATION_ERROR` | Invalid format in search parameters |
+| `UNAUTHORIZED` | Missing or invalid API key |
+| `RATE_LIMIT_EXCEEDED` | Too many requests |
