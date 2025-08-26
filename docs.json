@@ -48,8 +48,10 @@
             "pages": [
               "api-reference/loyalty/introduction",
               "api-reference/loyalty/customers",
+              "api-reference/loyalty/create-customer",
               "api-reference/loyalty/transactions",
               "api-reference/loyalty/rewards",
+              "api-reference/loyalty/redeem-reward",
               "api-reference/loyalty/coupons"
             ]
           },
