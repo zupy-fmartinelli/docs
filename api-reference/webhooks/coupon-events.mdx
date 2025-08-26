@@ -1,0 +1,1048 @@
+---
+title: "Coupon Events"
+description: "Coupon webhooks for redemptions and usage tracking in the loyalty program"
+---
+
+## Overview
+
+Coupon webhooks notify your system when customers redeem points for rewards or when they actually use the generated coupons. These events are crucial for inventory management, reward fulfillment, customer behavior tracking, and ensuring seamless coupon validation across all channels.
+
+## Available Coupon Events
+
+### coupon.redeemed
+
+<Card title="coupon.redeemed" icon="ticket">
+  Triggered when a customer converts points into a coupon
+  - **Use cases**: Coupon delivery, inventory management, redemption analytics, email automation
+  - **Payload includes**: Coupon code, reward details, points spent, expiration date
+</Card>
+
+### coupon.used
+
+<Card title="coupon.used" icon="check">
+  Triggered when a customer actually uses a coupon at your business
+  - **Use cases**: Inventory updates, sales analytics, customer behavior tracking, fraud prevention
+  - **Payload includes**: Usage location, staff member, order details, discount applied
+</Card>
+
+## Event Payload Structures
+
+### coupon.redeemed Webhook
+
+<ParamField body="event" type="string" required>
+  Event type identifier
+  ```
+  coupon.redeemed
+  ```
+</ParamField>
+
+<ParamField body="timestamp" type="string" required>
+  Event timestamp (ISO 8601)
+  ```
+  2025-08-26T14:20:00Z
+  ```
+</ParamField>
+
+<ParamField body="company_id" type="string" required>
+  Company identifier that triggered the event
+  ```
+  comp_bella_vista
+  ```
+</ParamField>
+
+<ParamField body="customer" type="object" required>
+  Customer information
+  
+  <Expandable title="Customer Object">
+    <ParamField body="member_id" type="string">
+      Unique Zupy customer identifier
+    </ParamField>
+    
+    <ParamField body="whatsapp" type="string">
+      Customer WhatsApp number
+    </ParamField>
+    
+    <ParamField body="email" type="string">
+      Customer email address
+    </ParamField>
+    
+    <ParamField body="name" type="string">
+      Customer full name
+    </ParamField>
+    
+    <ParamField body="tier" type="string">
+      Current loyalty tier
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="coupon" type="object" required>
+  Generated coupon details
+  
+  <Expandable title="Coupon Object">
+    <ParamField body="coupon_code" type="string">
+      Unique coupon code generated
+    </ParamField>
+    
+    <ParamField body="reward_id" type="string">
+      Original reward identifier
+    </ParamField>
+    
+    <ParamField body="reward_name" type="string">
+      Display name of the redeemed reward
+    </ParamField>
+    
+    <ParamField body="reward_description" type="string">
+      Detailed description of the reward
+    </ParamField>
+    
+    <ParamField body="points_spent" type="integer">
+      Points deducted from customer balance
+    </ParamField>
+    
+    <ParamField body="new_balance" type="integer">
+      Customer's remaining points after redemption
+    </ParamField>
+    
+    <ParamField body="expires_at" type="string">
+      Coupon expiration date (ISO 8601)
+    </ParamField>
+    
+    <ParamField body="terms" type="string">
+      Terms and conditions for coupon usage
+    </ParamField>
+    
+    <ParamField body="redemption_method" type="string">
+      How the coupon was redeemed
+      ```
+      automatic | manual | app | website
+      ```
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="discount_details" type="object">
+  Discount information (for discount-type rewards)
+  
+  <Expandable title="Discount Details">
+    <ParamField body="discount_type" type="string">
+      Type of discount offered
+      ```
+      percentage | fixed_amount | product_free | buy_one_get_one
+      ```
+    </ParamField>
+    
+    <ParamField body="discount_value" type="number">
+      Discount amount or percentage value
+    </ParamField>
+    
+    <ParamField body="maximum_discount" type="number">
+      Maximum discount amount (for percentage discounts)
+    </ParamField>
+    
+    <ParamField body="minimum_purchase" type="number">
+      Minimum purchase required to use coupon
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### coupon.used Webhook
+
+<ParamField body="event" type="string" required>
+  Event type identifier
+  ```
+  coupon.used
+  ```
+</ParamField>
+
+<ParamField body="timestamp" type="string" required>
+  Event timestamp (ISO 8601)
+  ```
+  2025-08-26T18:45:00Z
+  ```
+</ParamField>
+
+<ParamField body="company_id" type="string" required>
+  Company identifier
+  ```
+  comp_bella_vista
+  ```
+</ParamField>
+
+<ParamField body="customer" type="object" required>
+  Customer who used the coupon
+  
+  <Expandable title="Customer Object">
+    <ParamField body="member_id" type="string">
+      Unique Zupy customer identifier
+    </ParamField>
+    
+    <ParamField body="whatsapp" type="string">
+      Customer WhatsApp number
+    </ParamField>
+    
+    <ParamField body="email" type="string">
+      Customer email address
+    </ParamField>
+    
+    <ParamField body="name" type="string">
+      Customer full name
+    </ParamField>
+    
+    <ParamField body="tier" type="string">
+      Current loyalty tier
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="usage" type="object" required>
+  Coupon usage details
+  
+  <Expandable title="Usage Object">
+    <ParamField body="coupon_code" type="string">
+      Coupon code that was used
+    </ParamField>
+    
+    <ParamField body="reward_name" type="string">
+      Name of the reward that was redeemed
+    </ParamField>
+    
+    <ParamField body="discount_type" type="string">
+      Type of discount applied
+    </ParamField>
+    
+    <ParamField body="discount_applied" type="number">
+      Actual discount amount applied (BRL)
+    </ParamField>
+    
+    <ParamField body="order_value" type="number">
+      Total order value before discount
+    </ParamField>
+    
+    <ParamField body="final_value" type="number">
+      Final order value after discount
+    </ParamField>
+    
+    <ParamField body="location" type="string">
+      Location where coupon was used
+    </ParamField>
+    
+    <ParamField body="staff_member" type="string">
+      Staff member who processed the coupon
+    </ParamField>
+    
+    <ParamField body="platform" type="string">
+      Platform where coupon was used
+      ```
+      pos | manual | goomer | ifood | repediu
+      ```
+    </ParamField>
+    
+    <ParamField body="order_id" type="string">
+      Order identifier where coupon was applied
+    </ParamField>
+    
+    <ParamField body="items_affected" type="array">
+      Items that received the discount
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Example Payloads
+
+<CodeGroup>
+```json coupon.redeemed - Free Product
+{
+  "event": "coupon.redeemed",
+  "timestamp": "2025-08-26T14:20:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-4F95FB0A",
+    "whatsapp": "+5511965958122",
+    "email": "maria@email.com",
+    "name": "Maria Silva",
+    "tier": "silver"
+  },
+  "coupon": {
+    "coupon_code": "CP-A1B2C3D4",
+    "reward_id": "rw_pizza_margherita",
+    "reward_name": "Pizza Margherita Grátis",
+    "reward_description": "Pizza Margherita tradicional completa com molho de tomate, mussarela e manjericão fresco",
+    "points_spent": 1000,
+    "new_balance": 350,
+    "expires_at": "2025-09-26T14:20:00Z",
+    "terms": "Válido apenas para consumo no local. Não pode ser combinado com outras promoções.",
+    "redemption_method": "app"
+  },
+  "discount_details": {
+    "discount_type": "product_free",
+    "discount_value": 35.00,
+    "maximum_discount": null,
+    "minimum_purchase": 0
+  }
+}
+```
+
+```json coupon.redeemed - Percentage Discount
+{
+  "event": "coupon.redeemed",
+  "timestamp": "2025-08-26T16:10:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-8B23CD41",
+    "whatsapp": "+5511987654321",
+    "email": "joao@email.com",
+    "name": "João Santos",
+    "tier": "gold"
+  },
+  "coupon": {
+    "coupon_code": "CP-X9Y8Z7W6",
+    "reward_id": "rw_discount_15percent",
+    "reward_name": "15% de Desconto",
+    "reward_description": "15% de desconto em qualquer pedido",
+    "points_spent": 800,
+    "new_balance": 1247,
+    "expires_at": "2025-08-31T23:59:59Z",
+    "terms": "Válido para pedidos acima de R$ 30,00. Não cumulativo com outras promoções.",
+    "redemption_method": "website"
+  },
+  "discount_details": {
+    "discount_type": "percentage",
+    "discount_value": 15.0,
+    "maximum_discount": 75.0,
+    "minimum_purchase": 30.0
+  }
+}
+```
+
+```json coupon.used - Product Free
+{
+  "event": "coupon.used",
+  "timestamp": "2025-08-26T18:45:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-4F95FB0A",
+    "whatsapp": "+5511965958122",
+    "email": "maria@email.com",
+    "name": "Maria Silva",
+    "tier": "silver"
+  },
+  "usage": {
+    "coupon_code": "CP-A1B2C3D4",
+    "reward_name": "Pizza Margherita Grátis",
+    "discount_type": "product_free",
+    "discount_applied": 35.00,
+    "order_value": 67.50,
+    "final_value": 32.50,
+    "location": "Loja Centro",
+    "staff_member": "Ana Costa",
+    "platform": "pos",
+    "order_id": "ord_POS_789",
+    "items_affected": [
+      {
+        "name": "Pizza Margherita",
+        "quantity": 1,
+        "unit_price": 35.00,
+        "discount_applied": 35.00
+      }
+    ]
+  }
+}
+```
+
+```json coupon.used - Percentage Discount
+{
+  "event": "coupon.used",
+  "timestamp": "2025-08-26T20:30:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-8B23CD41",
+    "whatsapp": "+5511987654321",
+    "email": "joao@email.com",
+    "name": "João Santos",
+    "tier": "gold"
+  },
+  "usage": {
+    "coupon_code": "CP-X9Y8Z7W6",
+    "reward_name": "15% de Desconto",
+    "discount_type": "percentage",
+    "discount_applied": 12.75,
+    "order_value": 85.00,
+    "final_value": 72.25,
+    "location": "Delivery",
+    "staff_member": "Sistema Automático",
+    "platform": "goomer",
+    "order_id": "ord_GOOMER_456",
+    "items_affected": [
+      {
+        "name": "Pizza Calabresa",
+        "quantity": 1,
+        "unit_price": 42.00,
+        "discount_applied": 6.30
+      },
+      {
+        "name": "Pizza Portuguesa",
+        "quantity": 1,
+        "unit_price": 43.00,
+        "discount_applied": 6.45
+      }
+    ]
+  }
+}
+```
+</CodeGroup>
+
+## Integration Patterns
+
+### Coupon Delivery System
+
+```javascript
+const handleCouponRedeemed = async (webhook) => {
+  const { customer, coupon, discount_details } = webhook;
+  
+  // Generate coupon delivery method based on customer preference
+  const deliveryMethods = [];
+  
+  // Always store in customer's app/account
+  await storeCouponInAccount(customer.member_id, coupon);
+  
+  // Email delivery with coupon details
+  if (customer.email) {
+    deliveryMethods.push({
+      method: 'email',
+      template: 'coupon_delivery',
+      recipient: customer.email,
+      data: {
+        customerName: customer.name,
+        couponCode: coupon.coupon_code,
+        rewardName: coupon.reward_name,
+        rewardDescription: coupon.reward_description,
+        expiresAt: formatDate(coupon.expires_at),
+        terms: coupon.terms,
+        discountDetails: discount_details
+      }
+    });
+  }
+  
+  // WhatsApp delivery for immediate notification
+  if (customer.whatsapp) {
+    deliveryMethods.push({
+      method: 'whatsapp',
+      template: 'coupon_whatsapp',
+      recipient: customer.whatsapp,
+      data: {
+        name: customer.name,
+        rewardName: coupon.reward_name,
+        couponCode: coupon.coupon_code,
+        expiresAt: formatDate(coupon.expires_at, 'short')
+      }
+    });
+  }
+  
+  // SMS fallback for high-value rewards
+  if (discount_details?.discount_value >= 50) {
+    deliveryMethods.push({
+      method: 'sms',
+      recipient: extractPhoneNumber(customer.whatsapp),
+      message: `${customer.name}, seu cupom ${coupon.coupon_code} está pronto! ${coupon.reward_name}. Válido até ${formatDate(coupon.expires_at, 'short')}.`
+    });
+  }
+  
+  // Execute all delivery methods
+  await Promise.allSettled(
+    deliveryMethods.map(method => deliverCoupon(method))
+  );
+  
+  // Log redemption for analytics
+  await logCouponRedemption({
+    customerId: customer.member_id,
+    couponCode: coupon.coupon_code,
+    rewardId: coupon.reward_id,
+    pointsSpent: coupon.points_spent,
+    deliveryMethods: deliveryMethods.map(m => m.method)
+  });
+};
+```
+
+### Inventory Management
+
+```javascript
+const handleInventoryUpdate = async (webhook) => {
+  const { coupon, usage } = webhook;
+  
+  // Handle different discount types
+  switch (usage ? usage.discount_type : coupon.discount_details?.discount_type) {
+    case 'product_free':
+      await handleProductInventory(webhook);
+      break;
+    case 'buy_one_get_one':
+      await handleBOGOInventory(webhook);
+      break;
+    default:
+      // No inventory impact for percentage/fixed discounts
+      break;
+  }
+};
+
+const handleProductInventory = async (webhook) => {
+  const isUsageEvent = webhook.event === 'coupon.used';
+  
+  if (isUsageEvent) {
+    const { usage } = webhook;
+    
+    // Decrement actual inventory on usage
+    for (const item of usage.items_affected) {
+      if (item.discount_applied === item.unit_price) { // Fully free item
+        await inventory.decrement(item.name, item.quantity);
+        
+        // Check for low stock alert
+        const currentStock = await inventory.getStock(item.name);
+        if (currentStock <= 5) {
+          await sendLowStockAlert({
+            product: item.name,
+            currentStock,
+            location: usage.location,
+            lastUsedBy: webhook.customer.name
+          });
+        }
+      }
+    }
+    
+    // Update reserved inventory (release reservation)
+    await inventory.releaseReservation(usage.coupon_code);
+  } else {
+    // On redemption, reserve inventory
+    const { coupon } = webhook;
+    await inventory.reserve(coupon.reward_name, 1, coupon.coupon_code, {
+      expiresAt: coupon.expires_at,
+      customerId: webhook.customer.member_id
+    });
+  }
+};
+```
+
+### Fraud Detection
+
+```javascript
+const detectCouponFraud = async (webhook) => {
+  const { customer, coupon, usage } = webhook;
+  const suspiciousActivity = [];
+  
+  // Check for rapid redemptions
+  if (webhook.event === 'coupon.redeemed') {
+    const recentRedemptions = await getRecentRedemptions(customer.member_id, '1h');
+    if (recentRedemptions.length >= 5) {
+      suspiciousActivity.push({
+        type: 'rapid_redemption',
+        severity: 'medium',
+        details: `${recentRedemptions.length} redemptions in last hour`
+      });
+    }
+  }
+  
+  // Check for unusual usage patterns
+  if (webhook.event === 'coupon.used') {
+    const { usage } = webhook;
+    
+    // Same coupon used multiple times (should be impossible)
+    const previousUsages = await getCouponUsageHistory(usage.coupon_code);
+    if (previousUsages.length > 0) {
+      suspiciousActivity.push({
+        type: 'duplicate_usage',
+        severity: 'high',
+        details: `Coupon ${usage.coupon_code} used multiple times`
+      });
+    }
+    
+    // Usage after expiration
+    const couponDetails = await getCouponDetails(usage.coupon_code);
+    if (new Date(couponDetails.expires_at) < new Date(webhook.timestamp)) {
+      suspiciousActivity.push({
+        type: 'expired_usage',
+        severity: 'high',
+        details: `Coupon used after expiration: ${couponDetails.expires_at}`
+      });
+    }
+    
+    // Unusual discount amount
+    if (usage.discount_applied > usage.order_value) {
+      suspiciousActivity.push({
+        type: 'excessive_discount',
+        severity: 'critical',
+        details: `Discount (${usage.discount_applied}) exceeds order value (${usage.order_value})`
+      });
+    }
+  }
+  
+  // Alert if suspicious activity detected
+  if (suspiciousActivity.length > 0) {
+    await sendFraudAlert({
+      customerId: customer.member_id,
+      event: webhook.event,
+      suspiciousActivity,
+      webhook
+    });
+    
+    // Auto-flag high severity issues
+    const criticalIssues = suspiciousActivity.filter(a => a.severity === 'critical');
+    if (criticalIssues.length > 0) {
+      await flagCustomerAccount(customer.member_id, 'fraud_suspected', criticalIssues);
+    }
+  }
+  
+  return suspiciousActivity;
+};
+```
+
+### Analytics and Reporting
+
+```javascript
+const trackCouponMetrics = async (webhook) => {
+  const { customer, coupon, usage } = webhook;
+  
+  if (webhook.event === 'coupon.redeemed') {
+    // Track redemption metrics
+    await analytics.track('coupon_redeemed', {
+      customer_id: customer.member_id,
+      customer_tier: customer.tier,
+      reward_id: coupon.reward_id,
+      reward_name: coupon.reward_name,
+      points_spent: coupon.points_spent,
+      discount_type: coupon.discount_details?.discount_type,
+      discount_value: coupon.discount_details?.discount_value,
+      redemption_method: coupon.redemption_method,
+      expires_days: calculateDaysToExpiry(coupon.expires_at),
+      timestamp: webhook.timestamp
+    });
+    
+    // Update customer redemption behavior
+    await updateCustomerProfile(customer.member_id, {
+      last_redemption_date: webhook.timestamp,
+      total_redemptions: '+1',
+      total_points_spent: `+${coupon.points_spent}`,
+      preferred_reward_category: await calculatePreferredCategory(customer.member_id),
+      redemption_frequency: await calculateRedemptionFrequency(customer.member_id)
+    });
+    
+  } else if (webhook.event === 'coupon.used') {
+    // Track usage metrics
+    await analytics.track('coupon_used', {
+      customer_id: customer.member_id,
+      customer_tier: customer.tier,
+      coupon_code: usage.coupon_code,
+      reward_name: usage.reward_name,
+      discount_type: usage.discount_type,
+      discount_applied: usage.discount_applied,
+      order_value: usage.order_value,
+      final_value: usage.final_value,
+      location: usage.location,
+      platform: usage.platform,
+      staff_member: usage.staff_member,
+      items_count: usage.items_affected?.length || 0,
+      time_to_usage: await calculateTimeToUsage(usage.coupon_code, webhook.timestamp)
+    });
+    
+    // Update usage patterns
+    await updateLocationMetrics(usage.location, {
+      coupons_processed: '+1',
+      total_discount_given: `+${usage.discount_applied}`,
+      average_order_value: await calculateLocationAOV(usage.location)
+    });
+  }
+};
+
+const calculateTimeToUsage = async (couponCode, usageTimestamp) => {
+  const couponDetails = await getCouponDetails(couponCode);
+  const redemptionTime = new Date(couponDetails.created_at);
+  const usageTime = new Date(usageTimestamp);
+  
+  return Math.round((usageTime - redemptionTime) / (1000 * 60 * 60)); // Hours
+};
+```
+
+### Customer Satisfaction Tracking
+
+```javascript
+const handleCustomerSatisfaction = async (webhook) => {
+  const { customer, coupon, usage } = webhook;
+  
+  if (webhook.event === 'coupon.used') {
+    // Schedule satisfaction survey after usage
+    const surveyDelay = 2 * 60 * 60 * 1000; // 2 hours after usage
+    
+    await scheduleSurvey({
+      customerId: customer.member_id,
+      type: 'coupon_satisfaction',
+      scheduledFor: new Date(Date.now() + surveyDelay),
+      data: {
+        couponCode: usage.coupon_code,
+        rewardName: usage.reward_name,
+        location: usage.location,
+        staffMember: usage.staff_member,
+        discountValue: usage.discount_applied
+      },
+      questions: [
+        {
+          type: 'rating',
+          question: 'Como foi sua experiência ao usar o cupom?',
+          scale: 5
+        },
+        {
+          type: 'rating',
+          question: 'Qual a probabilidade de você recomendar nosso programa de fidelidade?',
+          scale: 10 // NPS
+        },
+        {
+          type: 'text',
+          question: 'Comentários adicionais (opcional)'
+        }
+      ]
+    });
+  }
+  
+  // Track redemption satisfaction (immediate)
+  if (webhook.event === 'coupon.redeemed') {
+    await trackImplicitSatisfaction({
+      customerId: customer.member_id,
+      event: 'redemption',
+      rewardType: coupon.discount_details?.discount_type,
+      pointsSpent: coupon.points_spent,
+      redemptionMethod: coupon.redemption_method
+    });
+  }
+};
+```
+
+## Business Intelligence Dashboards
+
+### Coupon Performance Metrics
+
+```javascript
+const generateCouponReport = async (timeframe = '30d') => {
+  const metrics = await Promise.all([
+    // Redemption metrics
+    analytics.aggregate('coupon_redeemed', timeframe, {
+      groupBy: ['reward_name', 'discount_type'],
+      metrics: ['count', 'sum:points_spent', 'avg:discount_value']
+    }),
+    
+    // Usage metrics
+    analytics.aggregate('coupon_used', timeframe, {
+      groupBy: ['reward_name', 'location', 'platform'],
+      metrics: ['count', 'sum:discount_applied', 'avg:order_value']
+    }),
+    
+    // Conversion rates
+    calculateCouponConversionRates(timeframe),
+    
+    // Time to usage analysis
+    calculateUsagePatterns(timeframe)
+  ]);
+  
+  return {
+    redemptions: metrics[0],
+    usage: metrics[1],
+    conversion: metrics[2],
+    patterns: metrics[3],
+    generatedAt: new Date().toISOString()
+  };
+};
+
+const calculateCouponConversionRates = async (timeframe) => {
+  const redemptions = await getCouponRedemptions(timeframe);
+  const usages = await getCouponUsages(timeframe);
+  
+  const conversionByReward = {};
+  
+  redemptions.forEach(redemption => {
+    const key = redemption.reward_id;
+    if (!conversionByReward[key]) {
+      conversionByReward[key] = {
+        reward_name: redemption.reward_name,
+        redeemed: 0,
+        used: 0,
+        conversion_rate: 0
+      };
+    }
+    conversionByReward[key].redeemed += 1;
+  });
+  
+  usages.forEach(usage => {
+    const redemption = redemptions.find(r => r.coupon_code === usage.coupon_code);
+    if (redemption) {
+      const key = redemption.reward_id;
+      conversionByReward[key].used += 1;
+    }
+  });
+  
+  // Calculate conversion rates
+  Object.keys(conversionByReward).forEach(key => {
+    const data = conversionByReward[key];
+    data.conversion_rate = data.redeemed > 0 ? (data.used / data.redeemed) * 100 : 0;
+  });
+  
+  return Object.values(conversionByReward);
+};
+```
+
+## Error Handling and Validation
+
+### Webhook Validation
+
+```javascript
+const validateCouponWebhook = (webhook) => {
+  const errors = [];
+  
+  // Validate common fields
+  if (!webhook.event || !['coupon.redeemed', 'coupon.used'].includes(webhook.event)) {
+    errors.push('Invalid or missing event type');
+  }
+  
+  if (!webhook.customer?.member_id) {
+    errors.push('Missing customer member_id');
+  }
+  
+  // Validate event-specific fields
+  if (webhook.event === 'coupon.redeemed') {
+    if (!webhook.coupon?.coupon_code) {
+      errors.push('Missing coupon code');
+    }
+    
+    if (!webhook.coupon?.points_spent || webhook.coupon.points_spent <= 0) {
+      errors.push('Invalid points_spent value');
+    }
+    
+    if (!webhook.coupon?.expires_at) {
+      errors.push('Missing coupon expiration date');
+    }
+  }
+  
+  if (webhook.event === 'coupon.used') {
+    if (!webhook.usage?.coupon_code) {
+      errors.push('Missing usage coupon code');
+    }
+    
+    if (!webhook.usage?.discount_applied || webhook.usage.discount_applied < 0) {
+      errors.push('Invalid discount_applied value');
+    }
+    
+    if (!webhook.usage?.order_value || webhook.usage.order_value <= 0) {
+      errors.push('Invalid order_value');
+    }
+  }
+  
+  return errors;
+};
+
+const processCouponWebhook = async (webhook) => {
+  try {
+    // Validate webhook structure
+    const validationErrors = validateCouponWebhook(webhook);
+    if (validationErrors.length > 0) {
+      throw new Error(`Webhook validation failed: ${validationErrors.join(', ')}`);
+    }
+    
+    // Process based on event type
+    const results = await Promise.allSettled([
+      handleCouponDelivery(webhook),
+      handleInventoryUpdate(webhook),
+      detectCouponFraud(webhook),
+      trackCouponMetrics(webhook),
+      handleCustomerSatisfaction(webhook)
+    ]);
+    
+    // Log any processing failures
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Coupon webhook handler ${index} failed:`, result.reason);
+      }
+    });
+    
+    return { processed: true, errors: results.filter(r => r.status === 'rejected') };
+    
+  } catch (error) {
+    console.error('Coupon webhook processing failed:', error);
+    
+    // Queue for retry if it's a transient error
+    if (isTransientError(error)) {
+      await queueWebhookRetry(webhook, error.message);
+    }
+    
+    throw error;
+  }
+};
+```
+
+## Testing Coupon Webhooks
+
+### Sample Test Payloads
+
+```bash
+# Test coupon.redeemed webhook
+curl -X POST http://localhost:3000/webhooks/zupy \
+  -H "Content-Type: application/json" \
+  -H "X-Zupy-Signature: sha256=test_signature" \
+  -d '{
+    "event": "coupon.redeemed",
+    "timestamp": "2025-08-26T14:20:00Z",
+    "company_id": "comp_test",
+    "customer": {
+      "member_id": "ZP-TEST001",
+      "whatsapp": "+5511999999999",
+      "email": "test@example.com",
+      "name": "Test Customer",
+      "tier": "bronze"
+    },
+    "coupon": {
+      "coupon_code": "CP-TEST123",
+      "reward_id": "rw_test_pizza",
+      "reward_name": "Pizza Test Grátis",
+      "reward_description": "Pizza test para validação",
+      "points_spent": 500,
+      "new_balance": 250,
+      "expires_at": "2025-09-26T14:20:00Z",
+      "terms": "Válido apenas para teste.",
+      "redemption_method": "manual"
+    },
+    "discount_details": {
+      "discount_type": "product_free",
+      "discount_value": 25.00
+    }
+  }'
+
+# Test coupon.used webhook  
+curl -X POST http://localhost:3000/webhooks/zupy \
+  -H "Content-Type: application/json" \
+  -H "X-Zupy-Signature: sha256=test_signature" \
+  -d '{
+    "event": "coupon.used",
+    "timestamp": "2025-08-26T18:45:00Z",
+    "company_id": "comp_test",
+    "customer": {
+      "member_id": "ZP-TEST001",
+      "whatsapp": "+5511999999999",
+      "email": "test@example.com",
+      "name": "Test Customer",
+      "tier": "bronze"
+    },
+    "usage": {
+      "coupon_code": "CP-TEST123",
+      "reward_name": "Pizza Test Grátis",
+      "discount_type": "product_free",
+      "discount_applied": 25.00,
+      "order_value": 45.00,
+      "final_value": 20.00,
+      "location": "Test Location",
+      "staff_member": "Test Staff",
+      "platform": "manual",
+      "order_id": "ord_test_001",
+      "items_affected": [
+        {
+          "name": "Pizza Test",
+          "quantity": 1,
+          "unit_price": 25.00,
+          "discount_applied": 25.00
+        }
+      ]
+    }
+  }'
+```
+
+### Unit Test Examples
+
+```javascript
+describe('Coupon Webhook Handlers', () => {
+  describe('coupon.redeemed', () => {
+    it('should process coupon redemption correctly', async () => {
+      const webhook = createTestRedemptionWebhook();
+      
+      const result = await handleCouponRedeemed(webhook);
+      
+      expect(result.processed).toBe(true);
+      expect(result.deliveryMethods).toContain('email');
+      expect(result.deliveryMethods).toContain('whatsapp');
+    });
+    
+    it('should reserve inventory for product_free coupons', async () => {
+      const webhook = createTestRedemptionWebhook({
+        discount_type: 'product_free',
+        reward_name: 'Pizza Margherita'
+      });
+      
+      await handleInventoryUpdate(webhook);
+      
+      const reservation = await getInventoryReservation(webhook.coupon.coupon_code);
+      expect(reservation.product).toBe('Pizza Margherita');
+      expect(reservation.quantity).toBe(1);
+    });
+  });
+  
+  describe('coupon.used', () => {
+    it('should process coupon usage correctly', async () => {
+      const webhook = createTestUsageWebhook();
+      
+      const result = await processCouponWebhook(webhook);
+      
+      expect(result.processed).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+    
+    it('should detect fraud for duplicate usage', async () => {
+      const webhook = createTestUsageWebhook();
+      
+      // Simulate previous usage
+      await recordCouponUsage(webhook.usage.coupon_code, '2025-08-25T12:00:00Z');
+      
+      const fraudResults = await detectCouponFraud(webhook);
+      
+      expect(fraudResults).toContainEqual(
+        expect.objectContaining({
+          type: 'duplicate_usage',
+          severity: 'high'
+        })
+      );
+    });
+  });
+});
+```
+
+## Performance Optimization
+
+### Batch Processing
+
+```javascript
+// Process multiple coupon webhooks efficiently
+const processCouponWebhooksBatch = async (webhooks) => {
+  const batchSize = 5;
+  const batches = chunkArray(webhooks, batchSize);
+  
+  for (const batch of batches) {
+    await Promise.allSettled(
+      batch.map(webhook => processCouponWebhook(webhook))
+    );
+    
+    // Small delay to prevent overwhelming external services
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+};
+
+// Optimize inventory operations
+const batchInventoryUpdates = async (updates) => {
+  const groupedUpdates = groupBy(updates, 'product');
+  
+  const inventoryPromises = Object.entries(groupedUpdates).map(([product, updates]) => {
+    const totalQuantity = updates.reduce((sum, update) => sum + update.quantity, 0);
+    return inventory.batchUpdate(product, totalQuantity);
+  });
+  
+  await Promise.all(inventoryPromises);
+};
+```
+
+<Tip>
+  **Best Practice**: Process coupon webhooks asynchronously and return HTTP 200 immediately to ensure reliable webhook delivery from Zupy.
+</Tip>
+
+<Warning>
+  **Security**: Always validate coupon codes and expiration dates before processing usage events to prevent fraud and abuse.
+</Warning>

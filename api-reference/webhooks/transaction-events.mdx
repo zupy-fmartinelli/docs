@@ -1,0 +1,803 @@
+---
+title: "Transaction Events"
+description: "Transaction webhooks for points earned and loyalty activities in real-time"
+---
+
+## Overview
+
+Transaction webhooks notify your system when customers earn points from purchases or other loyalty activities. These events are essential for real-time balance updates, progress notifications, gamification features, and integration with external systems like CRM or marketing automation platforms.
+
+## Available Transaction Events
+
+### points.earned
+
+<Card title="points.earned" icon="coins">
+  Triggered when a customer earns points from a transaction or activity
+  - **Use cases**: Transaction confirmations, progress notifications, gamification, balance sync
+  - **Payload includes**: Points earned, new balance, transaction details, next tier progress
+</Card>
+
+## Event Payload Structure
+
+### points.earned Webhook
+
+<ParamField body="event" type="string" required>
+  Event type identifier
+  ```
+  points.earned
+  ```
+</ParamField>
+
+<ParamField body="timestamp" type="string" required>
+  Event timestamp (ISO 8601)
+  ```
+  2025-08-26T15:30:00Z
+  ```
+</ParamField>
+
+<ParamField body="company_id" type="string" required>
+  Company identifier that triggered the event
+  ```
+  comp_bella_vista
+  ```
+</ParamField>
+
+<ParamField body="customer" type="object" required>
+  Customer information
+  
+  <Expandable title="Customer Object">
+    <ParamField body="member_id" type="string">
+      Unique Zupy customer identifier
+    </ParamField>
+    
+    <ParamField body="whatsapp" type="string">
+      Customer WhatsApp number
+    </ParamField>
+    
+    <ParamField body="email" type="string">
+      Customer email address
+    </ParamField>
+    
+    <ParamField body="name" type="string">
+      Customer full name
+    </ParamField>
+    
+    <ParamField body="tier" type="string">
+      Current loyalty tier
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="transaction" type="object" required>
+  Transaction details that generated the points
+  
+  <Expandable title="Transaction Object">
+    <ParamField body="transaction_id" type="string">
+      Unique transaction identifier
+    </ParamField>
+    
+    <ParamField body="order_id" type="string">
+      Original order identifier from external system
+    </ParamField>
+    
+    <ParamField body="order_value" type="number">
+      Total order value (BRL)
+    </ParamField>
+    
+    <ParamField body="platform" type="string">
+      Platform where transaction occurred
+      ```
+      goomer | repediu | ifood | manual | pos
+      ```
+    </ParamField>
+    
+    <ParamField body="points_earned" type="integer">
+      Points earned from this transaction
+    </ParamField>
+    
+    <ParamField body="base_points" type="integer">
+      Base points before bonuses
+    </ParamField>
+    
+    <ParamField body="bonus_points" type="integer">
+      Additional bonus points applied
+    </ParamField>
+    
+    <ParamField body="new_balance" type="integer">
+      Customer's total points after transaction
+    </ParamField>
+    
+    <ParamField body="items_count" type="integer">
+      Number of items in the order
+    </ParamField>
+    
+    <ParamField body="payment_method" type="string">
+      Payment method used
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="bonuses" type="array">
+  List of bonuses applied to this transaction
+  
+  <Expandable title="Bonus Object">
+    <ParamField body="type" type="string">
+      Type of bonus applied
+      ```
+      category_bonus | tier_multiplier | special_promotion | happy_hour
+      ```
+    </ParamField>
+    
+    <ParamField body="multiplier" type="number">
+      Bonus multiplier applied
+    </ParamField>
+    
+    <ParamField body="description" type="string">
+      Human-readable bonus description
+    </ParamField>
+    
+    <ParamField body="bonus_points" type="integer">
+      Additional points from this bonus
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="next_tier" type="object">
+  Information about next loyalty tier (if applicable)
+  
+  <Expandable title="Next Tier Object">
+    <ParamField body="tier_name" type="string">
+      Name of the next tier
+    </ParamField>
+    
+    <ParamField body="points_needed" type="integer">
+      Points needed to reach next tier
+    </ParamField>
+    
+    <ParamField body="progress_percentage" type="number">
+      Progress percentage to next tier (0-100)
+    </ParamField>
+    
+    <ParamField body="benefits_preview" type="array">
+      Preview of benefits in next tier
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Example Payloads
+
+<CodeGroup>
+```json Simple Purchase
+{
+  "event": "points.earned",
+  "timestamp": "2025-08-26T15:30:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-4F95FB0A",
+    "whatsapp": "+5511965958122",
+    "email": "maria@email.com",
+    "name": "Maria Silva",
+    "tier": "silver"
+  },
+  "transaction": {
+    "transaction_id": "tx_789ABC123",
+    "order_id": "ord_12345",
+    "order_value": 45.00,
+    "platform": "goomer",
+    "points_earned": 45,
+    "base_points": 45,
+    "bonus_points": 0,
+    "new_balance": 892,
+    "items_count": 2,
+    "payment_method": "credit_card"
+  },
+  "bonuses": [],
+  "next_tier": {
+    "tier_name": "gold",
+    "points_needed": 108,
+    "progress_percentage": 82.4,
+    "benefits_preview": [
+      "15% de desconto em todas as compras",
+      "Frete grátis",
+      "Atendimento prioritário"
+    ]
+  }
+}
+```
+
+```json Purchase with Bonuses
+{
+  "event": "points.earned",
+  "timestamp": "2025-08-26T19:45:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-8B23CD41",
+    "whatsapp": "+5511987654321",
+    "email": "joao@email.com",
+    "name": "João Santos",
+    "tier": "bronze"
+  },
+  "transaction": {
+    "transaction_id": "tx_890DEF456",
+    "order_id": "ord_67890",
+    "order_value": 80.00,
+    "platform": "ifood",
+    "points_earned": 120,
+    "base_points": 80,
+    "bonus_points": 40,
+    "new_balance": 470,
+    "items_count": 3,
+    "payment_method": "pix"
+  },
+  "bonuses": [
+    {
+      "type": "category_bonus",
+      "multiplier": 1.5,
+      "description": "Bônus pizza - 50% extra",
+      "bonus_points": 40
+    }
+  ],
+  "next_tier": {
+    "tier_name": "silver",
+    "points_needed": 530,
+    "progress_percentage": 47.0,
+    "benefits_preview": [
+      "10% de desconto em pizzas",
+      "Refrigerante grátis",
+      "Birthday reward"
+    ]
+  }
+}
+```
+
+```json High-Value VIP Purchase
+{
+  "event": "points.earned",
+  "timestamp": "2025-08-26T20:15:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-1A2B3C4D",
+    "whatsapp": "+5511912345678",
+    "email": "carlos@email.com",
+    "name": "Carlos Oliveira",
+    "tier": "vip"
+  },
+  "transaction": {
+    "transaction_id": "tx_123GHI789",
+    "order_id": "ord_VIP001",
+    "order_value": 250.00,
+    "platform": "manual",
+    "points_earned": 625,
+    "base_points": 250,
+    "bonus_points": 375,
+    "new_balance": 5847,
+    "items_count": 8,
+    "payment_method": "credit_card"
+  },
+  "bonuses": [
+    {
+      "type": "tier_multiplier",
+      "multiplier": 2.0,
+      "description": "Multiplicador VIP 2x",
+      "bonus_points": 250
+    },
+    {
+      "type": "happy_hour",
+      "multiplier": 1.5,
+      "description": "Happy Hour 50% extra",
+      "bonus_points": 125
+    }
+  ],
+  "next_tier": null
+}
+```
+</CodeGroup>
+
+## Integration Patterns
+
+### Real-time Balance Updates
+
+```javascript
+const handlePointsEarned = async (webhook) => {
+  const { customer, transaction, next_tier } = webhook;
+  
+  // Update customer balance in your system
+  await updateCustomerBalance(customer.member_id, transaction.new_balance);
+  
+  // Log the transaction
+  await logTransaction({
+    customerId: customer.member_id,
+    type: 'points_earned',
+    points: transaction.points_earned,
+    orderId: transaction.order_id,
+    platform: transaction.platform,
+    timestamp: webhook.timestamp
+  });
+  
+  console.log(`Customer ${customer.name} earned ${transaction.points_earned} points`);
+};
+```
+
+### Progress Notifications
+
+```javascript
+const handleProgressNotifications = async (webhook) => {
+  const { customer, next_tier } = webhook;
+  
+  if (next_tier && next_tier.progress_percentage > 80) {
+    // Send push notification for near tier upgrade
+    await sendPushNotification(customer.member_id, {
+      title: 'Quase lá! 🎉',
+      body: `Você está a ${next_tier.points_needed} pontos do ${next_tier.tier_name}!`,
+      action: 'view_rewards',
+      data: {
+        tier_name: next_tier.tier_name,
+        points_needed: next_tier.points_needed
+      }
+    });
+  }
+  
+  // Update progress in user interface
+  await updateTierProgress(customer.member_id, next_tier);
+};
+```
+
+### Gamification Features
+
+```javascript
+const handleGamification = async (webhook) => {
+  const { customer, transaction, bonuses } = webhook;
+  
+  // Achievement tracking
+  const achievements = [];
+  
+  // Check for streak achievements
+  const streak = await getCustomerStreak(customer.member_id);
+  if (streak >= 7) {
+    achievements.push({
+      type: 'streak_week',
+      title: 'Fidelidade Total!',
+      description: `${streak} dias consecutivos de compras`,
+      points_bonus: 50
+    });
+  }
+  
+  // Check for spending milestones
+  if (transaction.order_value >= 100) {
+    achievements.push({
+      type: 'high_spender',
+      title: 'Grande Comprador',
+      description: 'Compra acima de R$ 100',
+      points_bonus: 25
+    });
+  }
+  
+  // Check for bonus multiplier achievements
+  const totalMultiplier = bonuses.reduce((acc, bonus) => acc + bonus.multiplier, 1);
+  if (totalMultiplier >= 2.0) {
+    achievements.push({
+      type: 'bonus_master',
+      title: 'Mestre dos Bônus',
+      description: 'Ativou multiplicador 2x ou mais',
+      points_bonus: 20
+    });
+  }
+  
+  // Award achievements
+  for (const achievement of achievements) {
+    await awardAchievement(customer.member_id, achievement);
+  }
+};
+```
+
+### CRM Integration
+
+```javascript
+const syncWithCRM = async (webhook) => {
+  const { customer, transaction } = webhook;
+  
+  try {
+    // Update customer profile in CRM
+    await crmClient.updateContact(customer.member_id, {
+      loyaltyTier: customer.tier,
+      totalPoints: transaction.new_balance,
+      lastPurchaseDate: webhook.timestamp,
+      lastPurchaseValue: transaction.order_value,
+      lastPurchasePlatform: transaction.platform,
+      lifetimeValue: await getCustomerLTV(customer.member_id)
+    });
+    
+    // Add transaction to CRM timeline
+    await crmClient.addActivityLog(customer.member_id, {
+      type: 'points_earned',
+      description: `Earned ${transaction.points_earned} points from ${transaction.platform}`,
+      value: transaction.order_value,
+      points: transaction.points_earned,
+      timestamp: webhook.timestamp
+    });
+    
+    // Update customer segments based on new tier/balance
+    await updateCustomerSegments(customer.member_id, {
+      tier: customer.tier,
+      balance: transaction.new_balance,
+      recentPurchase: true
+    });
+    
+  } catch (error) {
+    console.error('CRM sync failed:', error);
+    // Queue for retry
+    await queueCRMSync(webhook);
+  }
+};
+```
+
+### Marketing Automation
+
+```javascript
+const triggerMarketingAutomation = async (webhook) => {
+  const { customer, transaction, next_tier } = webhook;
+  
+  // Trigger email sequences based on behavior
+  const triggers = [];
+  
+  // High-value customer sequence
+  if (transaction.order_value >= 150) {
+    triggers.push('high_value_customer');
+  }
+  
+  // Near tier upgrade sequence
+  if (next_tier && next_tier.progress_percentage > 75) {
+    triggers.push('near_tier_upgrade');
+  }
+  
+  // Platform-specific campaigns
+  if (transaction.platform === 'ifood' && transaction.points_earned >= 100) {
+    triggers.push('ifood_loyalty_boost');
+  }
+  
+  // Execute marketing triggers
+  for (const trigger of triggers) {
+    await marketingAutomation.trigger(trigger, {
+      email: customer.email,
+      whatsapp: customer.whatsapp,
+      customData: {
+        name: customer.name,
+        tier: customer.tier,
+        points_earned: transaction.points_earned,
+        order_value: transaction.order_value,
+        next_tier: next_tier?.tier_name,
+        points_to_next: next_tier?.points_needed
+      }
+    });
+  }
+};
+```
+
+## Business Intelligence Analytics
+
+### Transaction Metrics
+
+```javascript
+const trackTransactionMetrics = async (webhook) => {
+  const { customer, transaction, bonuses } = webhook;
+  
+  // Track key metrics
+  await analytics.track('points_earned', {
+    customer_id: customer.member_id,
+    customer_tier: customer.tier,
+    platform: transaction.platform,
+    order_value: transaction.order_value,
+    points_earned: transaction.points_earned,
+    base_points: transaction.base_points,
+    bonus_points: transaction.bonus_points,
+    items_count: transaction.items_count,
+    payment_method: transaction.payment_method,
+    timestamp: webhook.timestamp
+  });
+  
+  // Track bonus effectiveness
+  bonuses.forEach(bonus => {
+    analytics.track('bonus_applied', {
+      customer_id: customer.member_id,
+      bonus_type: bonus.type,
+      multiplier: bonus.multiplier,
+      bonus_points: bonus.bonus_points,
+      description: bonus.description
+    });
+  });
+  
+  // Update customer lifetime metrics
+  await updateCustomerMetrics(customer.member_id, {
+    total_transactions: +1,
+    total_spent: +transaction.order_value,
+    total_points_earned: +transaction.points_earned,
+    last_transaction_date: webhook.timestamp,
+    preferred_platform: await getCustomerPreferredPlatform(customer.member_id)
+  });
+};
+```
+
+### Cohort Analysis
+
+```javascript
+const updateCohortData = async (webhook) => {
+  const { customer, transaction } = webhook;
+  
+  // Get customer registration date for cohort grouping
+  const registrationDate = await getCustomerRegistrationDate(customer.member_id);
+  const cohort = formatCohort(registrationDate); // e.g., "2025-08"
+  
+  // Update cohort metrics
+  await cohortAnalytics.update(cohort, {
+    active_customers: await countActiveCohortCustomers(cohort),
+    total_revenue: +transaction.order_value,
+    total_points_earned: +transaction.points_earned,
+    average_order_value: await calculateCohortAOV(cohort),
+    retention_rate: await calculateCohortRetention(cohort)
+  });
+};
+```
+
+## Error Handling and Retry Logic
+
+### Webhook Processing
+
+```javascript
+const processPointsEarnedWebhook = async (webhook) => {
+  try {
+    // Validate webhook signature
+    if (!verifySignature(webhook)) {
+      throw new Error('Invalid webhook signature');
+    }
+    
+    // Process in parallel for performance
+    await Promise.allSettled([
+      handlePointsEarned(webhook),
+      handleProgressNotifications(webhook),
+      handleGamification(webhook),
+      syncWithCRM(webhook),
+      triggerMarketingAutomation(webhook),
+      trackTransactionMetrics(webhook),
+      updateCohortData(webhook)
+    ]);
+    
+    // Log successful processing
+    console.log(`Processed points.earned webhook: ${webhook.transaction.transaction_id}`);
+    
+  } catch (error) {
+    console.error('Webhook processing failed:', error);
+    
+    // Queue for retry with exponential backoff
+    await queueWebhookRetry(webhook, error.message);
+    
+    // Still return 200 to prevent Zupy retries
+    // Our internal retry system will handle it
+  }
+};
+```
+
+### Idempotency Handling
+
+```javascript
+const processedWebhooks = new Map();
+
+const handlePointsEarnedIdempotent = async (webhook) => {
+  const idempotencyKey = `${webhook.event}_${webhook.transaction.transaction_id}_${webhook.timestamp}`;
+  
+  // Check if already processed
+  if (processedWebhooks.has(idempotencyKey)) {
+    console.log(`Duplicate webhook ignored: ${idempotencyKey}`);
+    return { processed: false, reason: 'duplicate' };
+  }
+  
+  try {
+    // Process webhook
+    await processPointsEarnedWebhook(webhook);
+    
+    // Mark as processed
+    processedWebhooks.set(idempotencyKey, {
+      processedAt: new Date(),
+      customerId: webhook.customer.member_id,
+      transactionId: webhook.transaction.transaction_id
+    });
+    
+    return { processed: true };
+    
+  } catch (error) {
+    // Remove from processed set if failed
+    processedWebhooks.delete(idempotencyKey);
+    throw error;
+  }
+};
+
+// Clean up old entries periodically
+setInterval(() => {
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  for (const [key, value] of processedWebhooks.entries()) {
+    if (value.processedAt < oneHourAgo) {
+      processedWebhooks.delete(key);
+    }
+  }
+}, 15 * 60 * 1000); // Clean every 15 minutes
+```
+
+## Testing Transaction Webhooks
+
+### Sample Webhook Payload
+
+```bash
+# Test points.earned webhook with curl
+curl -X POST http://localhost:3000/webhooks/zupy \
+  -H "Content-Type: application/json" \
+  -H "X-Zupy-Signature: sha256=your_test_signature" \
+  -d '{
+    "event": "points.earned",
+    "timestamp": "2025-08-26T15:30:00Z",
+    "company_id": "comp_bella_vista",
+    "customer": {
+      "member_id": "ZP-TEST123",
+      "whatsapp": "+5511999999999",
+      "email": "test@example.com",
+      "name": "Test Customer",
+      "tier": "bronze"
+    },
+    "transaction": {
+      "transaction_id": "tx_test_001",
+      "order_id": "ord_test_001",
+      "order_value": 50.00,
+      "platform": "manual",
+      "points_earned": 50,
+      "base_points": 50,
+      "bonus_points": 0,
+      "new_balance": 150,
+      "items_count": 1,
+      "payment_method": "test"
+    },
+    "bonuses": [],
+    "next_tier": {
+      "tier_name": "silver",
+      "points_needed": 850,
+      "progress_percentage": 15.0,
+      "benefits_preview": ["10% discount", "Free delivery"]
+    }
+  }'
+```
+
+### Unit Test Examples
+
+```javascript
+describe('Points Earned Webhook Handler', () => {
+  it('should process simple points earned webhook', async () => {
+    const webhook = {
+      event: 'points.earned',
+      customer: { member_id: 'ZP-TEST123' },
+      transaction: { 
+        points_earned: 50, 
+        new_balance: 150,
+        order_value: 50.00 
+      }
+    };
+    
+    const result = await handlePointsEarned(webhook);
+    
+    expect(result.processed).toBe(true);
+    expect(await getCustomerBalance('ZP-TEST123')).toBe(150);
+  });
+  
+  it('should handle bonuses correctly', async () => {
+    const webhook = {
+      event: 'points.earned',
+      customer: { member_id: 'ZP-TEST456' },
+      transaction: { 
+        points_earned: 75, 
+        base_points: 50,
+        bonus_points: 25,
+        new_balance: 225 
+      },
+      bonuses: [
+        { type: 'category_bonus', multiplier: 1.5, bonus_points: 25 }
+      ]
+    };
+    
+    const result = await handlePointsEarned(webhook);
+    
+    expect(result.processed).toBe(true);
+    expect(result.bonuses_applied).toHaveLength(1);
+  });
+  
+  it('should trigger tier progress notifications', async () => {
+    const webhook = {
+      event: 'points.earned',
+      customer: { member_id: 'ZP-TEST789' },
+      transaction: { points_earned: 100, new_balance: 950 },
+      next_tier: {
+        tier_name: 'gold',
+        points_needed: 50,
+        progress_percentage: 95.0
+      }
+    };
+    
+    const result = await handleProgressNotifications(webhook);
+    
+    expect(result.notification_sent).toBe(true);
+    expect(result.notification_type).toBe('near_tier_upgrade');
+  });
+});
+```
+
+## Performance Considerations
+
+### High-Volume Processing
+
+- **Async Processing**: Use background jobs for heavy operations
+- **Batch Operations**: Group database updates where possible
+- **Rate Limiting**: Implement internal rate limits for external API calls
+- **Circuit Breakers**: Prevent cascade failures in integrations
+
+### Memory Management
+
+```javascript
+// Efficient webhook processing for high volumes
+const processWebhooksBatch = async (webhooks) => {
+  const batchSize = 10;
+  const batches = chunkArray(webhooks, batchSize);
+  
+  for (const batch of batches) {
+    await Promise.allSettled(
+      batch.map(webhook => processPointsEarnedWebhook(webhook))
+    );
+    
+    // Allow garbage collection between batches
+    if (global.gc) global.gc();
+  }
+};
+```
+
+## Security Best Practices
+
+### Webhook Verification
+
+```javascript
+const verifyZupyWebhook = (payload, signature, secret) => {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(signature.replace('sha256=', '')),
+    Buffer.from(expectedSignature)
+  );
+};
+```
+
+### Data Sanitization
+
+```javascript
+const sanitizeWebhookData = (webhook) => {
+  // Remove any potential script tags or dangerous content
+  const cleanWebhook = JSON.parse(JSON.stringify(webhook));
+  
+  // Validate required fields
+  if (!cleanWebhook.customer?.member_id || !cleanWebhook.transaction) {
+    throw new Error('Invalid webhook payload structure');
+  }
+  
+  // Sanitize string fields
+  ['name', 'email'].forEach(field => {
+    if (cleanWebhook.customer[field]) {
+      cleanWebhook.customer[field] = sanitizeString(cleanWebhook.customer[field]);
+    }
+  });
+  
+  return cleanWebhook;
+};
+```
+
+<Tip>
+  **Performance Tip**: Process webhooks asynchronously and return HTTP 200 immediately to ensure fast response times and prevent timeouts.
+</Tip>
+
+<Warning>
+  **Important**: Transaction webhooks contain sensitive customer data. Always verify signatures and implement proper data sanitization before processing.
+</Warning>

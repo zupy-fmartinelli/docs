@@ -1,0 +1,1240 @@
+---
+title: "Security Guide"
+description: "Advanced security practices and signature verification for Zupy webhooks"
+---
+
+## Security Overview
+
+Webhook security is critical for maintaining the integrity of your loyalty program data and preventing unauthorized access to customer information. This guide covers comprehensive security measures, from basic signature verification to advanced threat detection and compliance requirements.
+
+## Signature Verification
+
+### HMAC-SHA256 Verification
+
+All Zupy webhooks include an `X-Zupy-Signature` header containing an HMAC-SHA256 signature. Always verify this signature before processing webhook data.
+
+<CodeGroup>
+```javascript Node.js
+const crypto = require('crypto');
+
+const verifyZupySignature = (payload, signature, secret) => {
+  // Remove 'sha256=' prefix from signature
+  const receivedSignature = signature.replace('sha256=', '');
+  
+  // Calculate expected signature
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload, 'utf8')
+    .digest('hex');
+  
+  // Use timing-safe comparison to prevent timing attacks
+  return crypto.timingSafeEqual(
+    Buffer.from(receivedSignature, 'hex'),
+    Buffer.from(expectedSignature, 'hex')
+  );
+};
+
+// Middleware implementation
+const webhookAuth = (req, res, next) => {
+  const signature = req.headers['x-zupy-signature'];
+  const payload = JSON.stringify(req.body);
+  const secret = process.env.ZUPY_WEBHOOK_SECRET;
+  
+  if (!signature) {
+    return res.status(401).json({ 
+      error: 'Missing signature header',
+      code: 'SIGNATURE_MISSING'
+    });
+  }
+  
+  if (!verifyZupySignature(payload, signature, secret)) {
+    return res.status(401).json({ 
+      error: 'Invalid signature',
+      code: 'SIGNATURE_INVALID'
+    });
+  }
+  
+  next();
+};
+
+// Express.js usage
+app.post('/webhooks/zupy', 
+  express.raw({ type: 'application/json' }), // Get raw body
+  webhookAuth,
+  (req, res) => {
+    // Process verified webhook
+    const webhook = JSON.parse(req.body);
+    processWebhook(webhook);
+    res.status(200).json({ received: true });
+  }
+);
+```
+
+```python Python
+import hmac
+import hashlib
+import time
+from flask import Flask, request, jsonify
+
+def verify_zupy_signature(payload, signature, secret):
+    """Verify HMAC-SHA256 signature from Zupy webhook."""
+    
+    # Remove 'sha256=' prefix
+    received_signature = signature.replace('sha256=', '')
+    
+    # Calculate expected signature
+    expected_signature = hmac.new(
+        secret.encode('utf-8'),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    # Timing-safe comparison
+    return hmac.compare_digest(received_signature, expected_signature)
+
+def webhook_auth_required(f):
+    """Decorator to verify webhook signature."""
+    
+    def decorated_function(*args, **kwargs):
+        signature = request.headers.get('X-Zupy-Signature')
+        payload = request.get_data()
+        secret = os.environ['ZUPY_WEBHOOK_SECRET']
+        
+        if not signature:
+            return jsonify({
+                'error': 'Missing signature header',
+                'code': 'SIGNATURE_MISSING'
+            }), 401
+        
+        if not verify_zupy_signature(payload, signature, secret):
+            return jsonify({
+                'error': 'Invalid signature',
+                'code': 'SIGNATURE_INVALID'
+            }), 401
+        
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+# Flask usage
+@app.route('/webhooks/zupy', methods=['POST'])
+@webhook_auth_required
+def handle_zupy_webhook():
+    webhook = request.get_json()
+    process_webhook(webhook)
+    return jsonify({'received': True}), 200
+```
+
+```php PHP
+<?php
+function verifyZupySignature($payload, $signature, $secret) {
+    // Remove 'sha256=' prefix
+    $receivedSignature = str_replace('sha256=', '', $signature);
+    
+    // Calculate expected signature
+    $expectedSignature = hash_hmac('sha256', $payload, $secret);
+    
+    // Timing-safe comparison
+    return hash_equals($receivedSignature, $expectedSignature);
+}
+
+// Webhook handler
+$payload = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_ZUPY_SIGNATURE'] ?? '';
+$secret = $_ENV['ZUPY_WEBHOOK_SECRET'];
+
+if (empty($signature)) {
+    http_response_code(401);
+    echo json_encode([
+        'error' => 'Missing signature header',
+        'code' => 'SIGNATURE_MISSING'
+    ]);
+    exit;
+}
+
+if (!verifyZupySignature($payload, $signature, $secret)) {
+    http_response_code(401);
+    echo json_encode([
+        'error' => 'Invalid signature',
+        'code' => 'SIGNATURE_INVALID'
+    ]);
+    exit;
+}
+
+// Process verified webhook
+$webhook = json_decode($payload, true);
+processWebhook($webhook);
+
+http_response_code(200);
+echo json_encode(['received' => true]);
+?>
+```
+
+```go Go
+package main
+
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "crypto/subtle"
+    "encoding/hex"
+    "encoding/json"
+    "fmt"
+    "io/ioutil"
+    "net/http"
+    "os"
+    "strings"
+)
+
+func verifyZupySignature(payload []byte, signature, secret string) bool {
+    // Remove 'sha256=' prefix
+    receivedSignature := strings.TrimPrefix(signature, "sha256=")
+    
+    // Calculate expected signature
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write(payload)
+    expectedSignature := hex.EncodeToString(mac.Sum(nil))
+    
+    // Timing-safe comparison
+    receivedBytes, _ := hex.DecodeString(receivedSignature)
+    expectedBytes, _ := hex.DecodeString(expectedSignature)
+    
+    return subtle.ConstantTimeCompare(receivedBytes, expectedBytes) == 1
+}
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+    payload, err := ioutil.ReadAll(r.Body)
+    if err != nil {
+        http.Error(w, "Failed to read body", http.StatusBadRequest)
+        return
+    }
+    
+    signature := r.Header.Get("X-Zupy-Signature")
+    secret := os.Getenv("ZUPY_WEBHOOK_SECRET")
+    
+    if signature == "" {
+        http.Error(w, "Missing signature header", http.StatusUnauthorized)
+        return
+    }
+    
+    if !verifyZupySignature(payload, signature, secret) {
+        http.Error(w, "Invalid signature", http.StatusUnauthorized)
+        return
+    }
+    
+    // Process verified webhook
+    var webhook map[string]interface{}
+    json.Unmarshal(payload, &webhook)
+    
+    processWebhook(webhook)
+    
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]bool{"received": true})
+}
+```
+</CodeGroup>
+
+### Common Signature Verification Errors
+
+<AccordionGroup>
+  <Accordion title="Signature Mismatch">
+    **Causes:**
+    - Using modified payload (JSON parsing/reformatting changes the string)
+    - Wrong webhook secret
+    - Character encoding issues
+    
+    **Solutions:**
+    ```javascript
+    // ❌ Wrong - Don't parse JSON first
+    const webhook = JSON.parse(req.body);
+    const payload = JSON.stringify(webhook);
+    
+    // ✅ Correct - Use raw payload
+    const payload = req.body; // Raw buffer/string
+    const webhook = JSON.parse(payload);
+    ```
+  </Accordion>
+  
+  <Accordion title="Timing Attack Vulnerability">
+    **Problem:** Using `===` or `==` for signature comparison
+    
+    **Solution:**
+    ```javascript
+    // ❌ Vulnerable to timing attacks
+    if (receivedSignature === expectedSignature) { ... }
+    
+    // ✅ Timing-safe comparison
+    if (crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected))) { ... }
+    ```
+  </Accordion>
+  
+  <Accordion title="Missing Raw Body">
+    **Problem:** Middleware parsing body before signature verification
+    
+    **Solution:**
+    ```javascript
+    // Express.js - get raw body for signature verification
+    app.use('/webhooks', express.raw({ type: 'application/json' }));
+    
+    // Or capture raw body in middleware
+    app.use((req, res, next) => {
+      req.rawBody = '';
+      req.on('data', chunk => { req.rawBody += chunk; });
+      req.on('end', () => { next(); });
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## IP Allowlisting
+
+### Zupy Webhook IP Ranges
+
+Configure your firewall or load balancer to accept webhooks only from Zupy's IP ranges:
+
+```bash
+# Production IP Ranges (Update as needed)
+52.44.102.0/24     # Primary webhook servers
+18.208.0.0/16      # Backup webhook servers
+54.210.0.0/16      # Failover infrastructure
+
+# Staging IP Ranges
+52.90.0.0/16       # Staging webhook servers
+```
+
+### Nginx Configuration
+
+```nginx
+# /etc/nginx/sites-available/webhooks
+server {
+    listen 443 ssl http2;
+    server_name webhooks.yourdomain.com;
+    
+    # SSL configuration
+    ssl_certificate /path/to/certificate.crt;
+    ssl_certificate_key /path/to/private.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
+    
+    location /webhooks/zupy {
+        # IP allowlist
+        allow 52.44.102.0/24;
+        allow 18.208.0.0/16;
+        allow 54.210.0.0/16;
+        deny all;
+        
+        # Rate limiting
+        limit_req zone=webhook burst=20 nodelay;
+        
+        # Proxy to application
+        proxy_pass http://localhost:3000/webhooks/zupy;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Buffer settings for webhook payload
+        proxy_buffering off;
+        proxy_request_buffering off;
+        client_max_body_size 1M;
+    }
+}
+
+# Rate limiting configuration
+http {
+    limit_req_zone $binary_remote_addr zone=webhook:10m rate=10r/s;
+}
+```
+
+### AWS Security Groups
+
+```yaml
+# CloudFormation template for webhook security group
+WebhookSecurityGroup:
+  Type: AWS::EC2::SecurityGroup
+  Properties:
+    GroupDescription: Security group for Zupy webhooks
+    VpcId: !Ref VPC
+    SecurityGroupIngress:
+      # HTTPS from Zupy IPs only
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 52.44.102.0/24
+        Description: "Zupy Primary Webhooks"
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 18.208.0.0/16
+        Description: "Zupy Backup Webhooks"
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 54.210.0.0/16
+        Description: "Zupy Failover Webhooks"
+    SecurityGroupEgress:
+      # Allow outbound HTTPS for API calls
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 0.0.0.0/0
+        Description: "Outbound HTTPS"
+```
+
+## Request Validation
+
+### Payload Structure Validation
+
+```javascript
+const Joi = require('joi');
+
+// Define webhook schemas
+const customerEventSchema = Joi.object({
+  event: Joi.string().valid('customer.registered', 'tier.upgraded').required(),
+  timestamp: Joi.string().isoDate().required(),
+  company_id: Joi.string().pattern(/^comp_[a-zA-Z0-9_]+$/).required(),
+  customer: Joi.object({
+    member_id: Joi.string().pattern(/^ZP-[A-Z0-9]{8}$/).required(),
+    whatsapp: Joi.string().pattern(/^\+55\d{10,11}$/).required(),
+    email: Joi.string().email().required(),
+    name: Joi.string().min(2).max(100).required(),
+    tier: Joi.string().valid('default', 'bronze', 'silver', 'gold', 'platinum', 'vip').required()
+  }).required()
+});
+
+const transactionEventSchema = Joi.object({
+  event: Joi.string().valid('points.earned').required(),
+  timestamp: Joi.string().isoDate().required(),
+  company_id: Joi.string().pattern(/^comp_[a-zA-Z0-9_]+$/).required(),
+  customer: Joi.object({
+    member_id: Joi.string().pattern(/^ZP-[A-Z0-9]{8}$/).required(),
+    whatsapp: Joi.string().pattern(/^\+55\d{10,11}$/).allow(null),
+    email: Joi.string().email().allow(null),
+    name: Joi.string().min(2).max(100).required(),
+    tier: Joi.string().valid('default', 'bronze', 'silver', 'gold', 'platinum', 'vip').required()
+  }).required(),
+  transaction: Joi.object({
+    transaction_id: Joi.string().required(),
+    order_id: Joi.string().required(),
+    order_value: Joi.number().min(0).required(),
+    platform: Joi.string().valid('goomer', 'repediu', 'ifood', 'manual', 'pos').required(),
+    points_earned: Joi.number().integer().min(0).required(),
+    base_points: Joi.number().integer().min(0).required(),
+    bonus_points: Joi.number().integer().min(0).required(),
+    new_balance: Joi.number().integer().min(0).required()
+  }).required()
+});
+
+const validateWebhook = (webhook) => {
+  let schema;
+  
+  switch (webhook.event) {
+    case 'customer.registered':
+    case 'tier.upgraded':
+      schema = customerEventSchema;
+      break;
+    case 'points.earned':
+      schema = transactionEventSchema;
+      break;
+    default:
+      throw new Error(`Unsupported event type: ${webhook.event}`);
+  }
+  
+  const { error, value } = schema.validate(webhook);
+  
+  if (error) {
+    throw new Error(`Webhook validation failed: ${error.details.map(d => d.message).join(', ')}`);
+  }
+  
+  return value;
+};
+
+// Usage in webhook handler
+app.post('/webhooks/zupy', (req, res) => {
+  try {
+    // Verify signature first
+    verifySignature(req);
+    
+    // Parse and validate webhook
+    const webhook = JSON.parse(req.body);
+    const validatedWebhook = validateWebhook(webhook);
+    
+    // Process validated webhook
+    await processWebhook(validatedWebhook);
+    
+    res.status(200).json({ received: true });
+    
+  } catch (error) {
+    console.error('Webhook processing failed:', error);
+    
+    // Return appropriate error status
+    if (error.message.includes('signature')) {
+      res.status(401).json({ error: 'Unauthorized' });
+    } else if (error.message.includes('validation')) {
+      res.status(400).json({ error: 'Bad Request' });
+    } else {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+});
+```
+
+### Timestamp Validation
+
+```javascript
+const validateWebhookTimestamp = (webhook, toleranceMinutes = 5) => {
+  const webhookTime = new Date(webhook.timestamp);
+  const currentTime = new Date();
+  const tolerance = toleranceMinutes * 60 * 1000; // Convert to milliseconds
+  
+  // Check if timestamp is too old
+  if (currentTime - webhookTime > tolerance) {
+    throw new Error(`Webhook timestamp too old: ${webhook.timestamp}`);
+  }
+  
+  // Check if timestamp is in the future (clock skew)
+  if (webhookTime - currentTime > tolerance) {
+    throw new Error(`Webhook timestamp in future: ${webhook.timestamp}`);
+  }
+  
+  return true;
+};
+
+// Enhanced webhook validation
+const processSecureWebhook = (req, res) => {
+  try {
+    // 1. Verify signature
+    verifySignature(req);
+    
+    // 2. Parse webhook
+    const webhook = JSON.parse(req.body);
+    
+    // 3. Validate timestamp
+    validateWebhookTimestamp(webhook);
+    
+    // 4. Validate structure
+    const validatedWebhook = validateWebhook(webhook);
+    
+    // 5. Check for replay attacks
+    if (isReplayAttack(webhook)) {
+      throw new Error('Potential replay attack detected');
+    }
+    
+    // 6. Process webhook
+    processWebhook(validatedWebhook);
+    
+    res.status(200).json({ received: true });
+    
+  } catch (error) {
+    logSecurityEvent(error, req);
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+};
+```
+
+## Replay Attack Prevention
+
+### Idempotency Implementation
+
+```javascript
+const Redis = require('redis');
+const redis = Redis.createClient();
+
+const WEBHOOK_CACHE_TTL = 3600; // 1 hour
+
+const isReplayAttack = async (webhook) => {
+  // Create unique key from webhook signature components
+  const idempotencyKey = crypto
+    .createHash('sha256')
+    .update(`${webhook.event}:${webhook.timestamp}:${webhook.customer?.member_id}:${webhook.transaction?.transaction_id || webhook.coupon?.coupon_code}`)
+    .digest('hex');
+  
+  // Check if we've seen this webhook before
+  const exists = await redis.get(`webhook:${idempotencyKey}`);
+  
+  if (exists) {
+    console.warn(`Replay attack detected: ${idempotencyKey}`);
+    return true;
+  }
+  
+  // Store webhook signature to prevent replays
+  await redis.setex(`webhook:${idempotencyKey}`, WEBHOOK_CACHE_TTL, webhook.timestamp);
+  
+  return false;
+};
+
+// Alternative: Database-based idempotency
+const createWebhookRecord = async (webhook) => {
+  const record = {
+    event_type: webhook.event,
+    event_timestamp: webhook.timestamp,
+    company_id: webhook.company_id,
+    customer_id: webhook.customer?.member_id,
+    transaction_id: webhook.transaction?.transaction_id,
+    coupon_code: webhook.coupon?.coupon_code,
+    processed_at: new Date(),
+    signature_hash: req.headers['x-zupy-signature']
+  };
+  
+  try {
+    // Insert with unique constraint on combination of fields
+    await db.webhooks.insert(record);
+    return true;
+  } catch (error) {
+    if (error.code === 'UNIQUE_VIOLATION') {
+      console.warn('Duplicate webhook detected:', record);
+      return false;
+    }
+    throw error;
+  }
+};
+```
+
+### Nonce Implementation
+
+```javascript
+// For extremely high-security environments
+const validateWebhookNonce = async (webhook, nonce) => {
+  if (!nonce) {
+    throw new Error('Missing webhook nonce');
+  }
+  
+  // Check nonce format (UUID v4)
+  const nonceRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!nonceRegex.test(nonce)) {
+    throw new Error('Invalid nonce format');
+  }
+  
+  // Check if nonce was already used
+  const nonceKey = `nonce:${nonce}`;
+  const exists = await redis.get(nonceKey);
+  
+  if (exists) {
+    throw new Error('Nonce already used');
+  }
+  
+  // Store nonce with longer TTL than webhook cache
+  await redis.setex(nonceKey, WEBHOOK_CACHE_TTL * 2, webhook.timestamp);
+  
+  return true;
+};
+```
+
+## Rate Limiting and DDoS Protection
+
+### Application-Level Rate Limiting
+
+```javascript
+const rateLimit = require('express-rate-limit');
+const slowDown = require('express-slow-down');
+
+// Progressive rate limiting
+const webhookRateLimit = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // Limit each IP to 60 requests per minute
+  message: {
+    error: 'Too many webhook requests',
+    retryAfter: 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Custom key generator for webhook-specific limiting
+  keyGenerator: (req) => {
+    // Combine IP and company_id for more granular limiting
+    const body = JSON.parse(req.body);
+    return `${req.ip}:${body.company_id}`;
+  }
+});
+
+// Slow down repeated requests
+const webhookSlowDown = slowDown({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  delayAfter: 30, // Allow 30 requests at normal speed
+  delayMs: 100, // Add 100ms delay per request after delayAfter
+  maxDelayMs: 2000, // Maximum delay of 2 seconds
+});
+
+// Apply to webhook endpoint
+app.use('/webhooks/zupy', webhookRateLimit, webhookSlowDown);
+```
+
+### Distributed Rate Limiting
+
+```javascript
+const Redis = require('redis');
+const redis = Redis.createClient();
+
+const distributedRateLimit = async (identifier, limit, window) => {
+  const key = `rate_limit:${identifier}`;
+  const current = await redis.incr(key);
+  
+  if (current === 1) {
+    await redis.expire(key, window);
+  }
+  
+  if (current > limit) {
+    const ttl = await redis.ttl(key);
+    throw new Error(`Rate limit exceeded. Try again in ${ttl} seconds`);
+  }
+  
+  return { requests: current, limit, remaining: limit - current };
+};
+
+// Usage in webhook handler
+app.post('/webhooks/zupy', async (req, res) => {
+  try {
+    const body = JSON.parse(req.body);
+    
+    // Rate limit by company
+    await distributedRateLimit(`company:${body.company_id}`, 100, 60); // 100/min per company
+    
+    // Rate limit by IP
+    await distributedRateLimit(`ip:${req.ip}`, 200, 60); // 200/min per IP
+    
+    // Process webhook
+    await processSecureWebhook(req, res);
+    
+  } catch (error) {
+    if (error.message.includes('Rate limit')) {
+      res.status(429).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+});
+```
+
+## Security Monitoring and Alerting
+
+### Security Event Logging
+
+```javascript
+const winston = require('winston');
+
+const securityLogger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'security.log' }),
+    new winston.transports.Console()
+  ]
+});
+
+const logSecurityEvent = (event, req, webhook = null) => {
+  const logData = {
+    event_type: 'webhook_security',
+    timestamp: new Date().toISOString(),
+    ip: req.ip,
+    user_agent: req.headers['user-agent'],
+    url: req.url,
+    method: req.method,
+    error: event.message,
+    company_id: webhook?.company_id,
+    customer_id: webhook?.customer?.member_id,
+    webhook_event: webhook?.event,
+    headers: {
+      'x-zupy-signature': req.headers['x-zupy-signature'] ? '[PRESENT]' : '[MISSING]',
+      'content-type': req.headers['content-type'],
+      'content-length': req.headers['content-length']
+    }
+  };
+  
+  securityLogger.error('Security event detected', logData);
+  
+  // Send real-time alert for critical events
+  if (isCriticalSecurityEvent(event)) {
+    sendSecurityAlert(logData);
+  }
+};
+
+const isCriticalSecurityEvent = (error) => {
+  const criticalPatterns = [
+    'Invalid signature',
+    'Replay attack',
+    'Rate limit exceeded',
+    'Malformed payload',
+    'Timestamp manipulation'
+  ];
+  
+  return criticalPatterns.some(pattern => 
+    error.message.toLowerCase().includes(pattern.toLowerCase())
+  );
+};
+
+const sendSecurityAlert = async (logData) => {
+  // Slack notification
+  await fetch(process.env.SLACK_SECURITY_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text: '🚨 Webhook Security Alert',
+      attachments: [{
+        color: 'danger',
+        fields: [
+          { title: 'Event', value: logData.error, short: false },
+          { title: 'IP Address', value: logData.ip, short: true },
+          { title: 'Company ID', value: logData.company_id || 'Unknown', short: true },
+          { title: 'Timestamp', value: logData.timestamp, short: false }
+        ]
+      }]
+    })
+  });
+  
+  // Email notification for critical events
+  if (logData.error.includes('Rate limit') || logData.error.includes('Replay attack')) {
+    await sendEmailAlert(logData);
+  }
+};
+```
+
+### Anomaly Detection
+
+```javascript
+const detectAnomalies = async (webhook, req) => {
+  const anomalies = [];
+  
+  // Check for unusual request patterns
+  const recentRequests = await getRecentRequests(req.ip, '5m');
+  
+  if (recentRequests.length > 50) {
+    anomalies.push({
+      type: 'high_frequency_requests',
+      severity: 'medium',
+      details: `${recentRequests.length} requests in 5 minutes from ${req.ip}`
+    });
+  }
+  
+  // Check for geographic anomalies
+  const ipLocation = await getIPLocation(req.ip);
+  if (ipLocation.country !== 'US' && ipLocation.country !== 'BR') {
+    anomalies.push({
+      type: 'geographic_anomaly',
+      severity: 'low',
+      details: `Request from unexpected country: ${ipLocation.country}`
+    });
+  }
+  
+  // Check for timestamp anomalies
+  const webhookTime = new Date(webhook.timestamp);
+  const serverTime = new Date();
+  const timeDiff = Math.abs(serverTime - webhookTime);
+  
+  if (timeDiff > 5 * 60 * 1000) { // More than 5 minutes difference
+    anomalies.push({
+      type: 'timestamp_anomaly',
+      severity: 'high',
+      details: `Time difference: ${timeDiff}ms`
+    });
+  }
+  
+  // Check for payload size anomalies
+  const payloadSize = JSON.stringify(webhook).length;
+  if (payloadSize > 50000) { // Unusually large payload
+    anomalies.push({
+      type: 'large_payload',
+      severity: 'medium',
+      details: `Payload size: ${payloadSize} bytes`
+    });
+  }
+  
+  return anomalies;
+};
+```
+
+## Compliance and Data Protection
+
+### LGPD/GDPR Compliance
+
+```javascript
+const sanitizeWebhookData = (webhook) => {
+  // Create a copy to avoid modifying original
+  const sanitized = JSON.parse(JSON.stringify(webhook));
+  
+  // Remove or hash sensitive data based on retention policy
+  if (sanitized.customer) {
+    // Keep only necessary fields, hash PII
+    sanitized.customer = {
+      member_id: sanitized.customer.member_id, // Keep for business logic
+      tier: sanitized.customer.tier,
+      // Hash PII data
+      email_hash: hashPII(sanitized.customer.email),
+      phone_hash: hashPII(sanitized.customer.whatsapp),
+      name_hash: hashPII(sanitized.customer.name)
+    };
+  }
+  
+  return sanitized;
+};
+
+const hashPII = (data) => {
+  if (!data) return null;
+  
+  return crypto
+    .createHash('sha256')
+    .update(data + process.env.PII_SALT)
+    .digest('hex');
+};
+
+// Data retention compliance
+const enforceDataRetention = async () => {
+  const retentionPeriod = 365 * 24 * 60 * 60 * 1000; // 1 year
+  const cutoffDate = new Date(Date.now() - retentionPeriod);
+  
+  // Archive old webhook logs
+  await db.webhook_logs.update(
+    { processed_at: { $lt: cutoffDate } },
+    { 
+      $set: { 
+        archived: true,
+        customer_data: null // Remove PII
+      }
+    }
+  );
+};
+```
+
+### Audit Trail
+
+```javascript
+const createAuditLog = async (action, webhook, result) => {
+  const auditEntry = {
+    timestamp: new Date(),
+    action,
+    event_type: webhook.event,
+    company_id: webhook.company_id,
+    customer_id: webhook.customer?.member_id,
+    result: result ? 'success' : 'failure',
+    processing_time: result?.processing_time,
+    ip_address: req.ip,
+    user_agent: req.headers['user-agent'],
+    // Don't store sensitive customer data in audit logs
+    metadata: {
+      event_timestamp: webhook.timestamp,
+      points_amount: webhook.transaction?.points_earned,
+      tier: webhook.customer?.tier
+    }
+  };
+  
+  await db.audit_logs.insert(auditEntry);
+};
+
+// Usage in webhook processing
+const processWebhookWithAudit = async (webhook, req) => {
+  const startTime = Date.now();
+  let result;
+  
+  try {
+    result = await processWebhook(webhook);
+    result.processing_time = Date.now() - startTime;
+    
+    await createAuditLog('webhook_processed', webhook, result);
+    
+    return result;
+    
+  } catch (error) {
+    const failureResult = {
+      error: error.message,
+      processing_time: Date.now() - startTime
+    };
+    
+    await createAuditLog('webhook_failed', webhook, failureResult);
+    
+    throw error;
+  }
+};
+```
+
+## Security Testing
+
+### Security Test Suite
+
+```javascript
+const request = require('supertest');
+const crypto = require('crypto');
+
+describe('Webhook Security Tests', () => {
+  const validSecret = 'test-webhook-secret';
+  const validWebhook = {
+    event: 'customer.registered',
+    timestamp: new Date().toISOString(),
+    company_id: 'comp_test',
+    customer: {
+      member_id: 'ZP-TEST001',
+      whatsapp: '+5511999999999',
+      email: 'test@example.com',
+      name: 'Test Customer',
+      tier: 'bronze'
+    }
+  };
+  
+  const createSignature = (payload, secret = validSecret) => {
+    return 'sha256=' + crypto
+      .createHmac('sha256', secret)
+      .update(payload)
+      .digest('hex');
+  };
+  
+  it('should reject webhooks without signature', async () => {
+    const response = await request(app)
+      .post('/webhooks/zupy')
+      .send(validWebhook)
+      .expect(401);
+    
+    expect(response.body.error).toContain('Missing signature');
+  });
+  
+  it('should reject webhooks with invalid signature', async () => {
+    const payload = JSON.stringify(validWebhook);
+    const invalidSignature = createSignature(payload, 'wrong-secret');
+    
+    const response = await request(app)
+      .post('/webhooks/zupy')
+      .set('X-Zupy-Signature', invalidSignature)
+      .send(validWebhook)
+      .expect(401);
+    
+    expect(response.body.error).toContain('Invalid signature');
+  });
+  
+  it('should accept webhooks with valid signature', async () => {
+    const payload = JSON.stringify(validWebhook);
+    const validSignature = createSignature(payload);
+    
+    const response = await request(app)
+      .post('/webhooks/zupy')
+      .set('X-Zupy-Signature', validSignature)
+      .send(validWebhook)
+      .expect(200);
+    
+    expect(response.body.received).toBe(true);
+  });
+  
+  it('should reject webhooks with old timestamps', async () => {
+    const oldWebhook = {
+      ...validWebhook,
+      timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString() // 10 minutes ago
+    };
+    
+    const payload = JSON.stringify(oldWebhook);
+    const signature = createSignature(payload);
+    
+    const response = await request(app)
+      .post('/webhooks/zupy')
+      .set('X-Zupy-Signature', signature)
+      .send(oldWebhook)
+      .expect(401);
+    
+    expect(response.body.error).toContain('timestamp');
+  });
+  
+  it('should detect and prevent replay attacks', async () => {
+    const payload = JSON.stringify(validWebhook);
+    const signature = createSignature(payload);
+    
+    // Send webhook first time - should succeed
+    await request(app)
+      .post('/webhooks/zupy')
+      .set('X-Zupy-Signature', signature)
+      .send(validWebhook)
+      .expect(200);
+    
+    // Send same webhook again - should be rejected
+    const response = await request(app)
+      .post('/webhooks/zupy')
+      .set('X-Zupy-Signature', signature)
+      .send(validWebhook)
+      .expect(401);
+    
+    expect(response.body.error).toContain('replay');
+  });
+  
+  it('should enforce rate limits', async () => {
+    const payload = JSON.stringify(validWebhook);
+    const signature = createSignature(payload);
+    
+    // Send multiple requests rapidly
+    const promises = Array(70).fill().map((_, i) => {
+      const webhook = {
+        ...validWebhook,
+        timestamp: new Date(Date.now() + i).toISOString() // Unique timestamps
+      };
+      const uniquePayload = JSON.stringify(webhook);
+      const uniqueSignature = createSignature(uniquePayload);
+      
+      return request(app)
+        .post('/webhooks/zupy')
+        .set('X-Zupy-Signature', uniqueSignature)
+        .send(webhook);
+    });
+    
+    const responses = await Promise.all(promises);
+    
+    // Some should be rate limited
+    const rateLimitedResponses = responses.filter(r => r.status === 429);
+    expect(rateLimitedResponses.length).toBeGreaterThan(0);
+  });
+});
+```
+
+### Penetration Testing Scenarios
+
+```bash
+# Test script for security validation
+#!/bin/bash
+
+WEBHOOK_URL="https://your-domain.com/webhooks/zupy"
+VALID_SECRET="your-webhook-secret"
+
+echo "Testing webhook security..."
+
+# Test 1: Missing signature
+echo "1. Testing missing signature..."
+curl -X POST $WEBHOOK_URL \
+  -H "Content-Type: application/json" \
+  -d '{"event":"customer.registered","timestamp":"2025-08-26T12:00:00Z"}' \
+  -w "Status: %{http_code}\n"
+
+# Test 2: Invalid signature
+echo "2. Testing invalid signature..."
+curl -X POST $WEBHOOK_URL \
+  -H "Content-Type: application/json" \
+  -H "X-Zupy-Signature: sha256=invalid_signature" \
+  -d '{"event":"customer.registered","timestamp":"2025-08-26T12:00:00Z"}' \
+  -w "Status: %{http_code}\n"
+
+# Test 3: Large payload attack
+echo "3. Testing large payload..."
+LARGE_PAYLOAD=$(python3 -c "import json; print(json.dumps({'event':'customer.registered','data':'x'*100000}))")
+curl -X POST $WEBHOOK_URL \
+  -H "Content-Type: application/json" \
+  -H "X-Zupy-Signature: sha256=test" \
+  -d "$LARGE_PAYLOAD" \
+  -w "Status: %{http_code}\n"
+
+# Test 4: Rate limit testing
+echo "4. Testing rate limits..."
+for i in {1..100}; do
+  curl -X POST $WEBHOOK_URL \
+    -H "Content-Type: application/json" \
+    -H "X-Zupy-Signature: sha256=test$i" \
+    -d "{\"event\":\"test\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"id\":$i}" \
+    -w "Status: %{http_code}\n" &
+done
+wait
+
+echo "Security tests completed."
+```
+
+## Incident Response
+
+### Security Incident Playbook
+
+```yaml
+# security-incident-playbook.yml
+incident_response:
+  severity_levels:
+    critical:
+      - Invalid signatures from legitimate IPs
+      - Successful replay attacks
+      - Data exfiltration attempts
+    high:
+      - Multiple failed authentication attempts
+      - Rate limit bypasses
+      - Unusual traffic patterns
+    medium:
+      - Geographic anomalies
+      - Timestamp manipulation attempts
+      - Large payload attacks
+  
+  response_procedures:
+    immediate:
+      - Block suspicious IPs
+      - Increase monitoring levels
+      - Alert security team
+    
+    investigation:
+      - Analyze webhook logs
+      - Check for data compromise
+      - Review access patterns
+    
+    mitigation:
+      - Update security rules
+      - Patch vulnerabilities
+      - Improve monitoring
+```
+
+<Warning>
+  **Critical Security Note**: Never log webhook secrets, customer PII, or authentication tokens. Always use secure comparison methods for signature verification.
+</Warning>
+
+<Tip>
+  **Performance Tip**: Implement signature verification as early middleware to reject invalid requests quickly and protect downstream resources.
+</Tip>
+
+## Security Checklist
+
+### Pre-Production Security Review
+
+<AccordionGroup>
+  <Accordion title="✅ Authentication & Authorization">
+    - [ ] HMAC-SHA256 signature verification implemented
+    - [ ] Timing-safe signature comparison used
+    - [ ] Webhook secret stored securely (environment variables)
+    - [ ] Raw request body used for signature verification
+    - [ ] IP allowlisting configured
+  </Accordion>
+  
+  <Accordion title="✅ Input Validation">
+    - [ ] JSON schema validation implemented
+    - [ ] Timestamp validation with reasonable tolerance
+    - [ ] Payload size limits enforced
+    - [ ] Required fields validation
+    - [ ] Data type validation
+  </Accordion>
+  
+  <Accordion title="✅ Replay Attack Prevention">
+    - [ ] Idempotency mechanism implemented
+    - [ ] Nonce validation (if required)
+    - [ ] Webhook deduplication logic
+    - [ ] Time window validation
+  </Accordion>
+  
+  <Accordion title="✅ Rate Limiting">
+    - [ ] Request rate limits configured
+    - [ ] Progressive slowdown implemented
+    - [ ] Distributed rate limiting for scaling
+    - [ ] DDoS protection measures
+  </Accordion>
+  
+  <Accordion title="✅ Security Monitoring">
+    - [ ] Security event logging
+    - [ ] Real-time alerting system
+    - [ ] Anomaly detection
+    - [ ] Audit trail implementation
+  </Accordion>
+  
+  <Accordion title="✅ Data Protection">
+    - [ ] PII data handling compliant
+    - [ ] Data retention policies enforced
+    - [ ] Secure data storage
+    - [ ] Data encryption at rest
+  </Accordion>
+  
+  <Accordion title="✅ Infrastructure Security">
+    - [ ] HTTPS-only endpoints
+    - [ ] TLS 1.2+ configuration
+    - [ ] Security headers implemented
+    - [ ] Firewall rules configured
+  </Accordion>
+  
+  <Accordion title="✅ Testing & Validation">
+    - [ ] Security test suite created
+    - [ ] Penetration testing performed
+    - [ ] Load testing completed
+    - [ ] Error handling tested
+  </Accordion>
+</AccordionGroup>

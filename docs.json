@@ -103,7 +103,9 @@
             "group": "Webhooks",
             "pages": [
               "api-reference/webhooks/overview",
-              "api-reference/webhooks/events",
+              "api-reference/webhooks/customer-events",
+              "api-reference/webhooks/transaction-events",
+              "api-reference/webhooks/coupon-events",
               "api-reference/webhooks/security"
             ]
           }

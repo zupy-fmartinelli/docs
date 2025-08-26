@@ -1,0 +1,524 @@
+---
+title: "Webhooks Overview"
+description: "Understand how Zupy webhooks work and learn to configure them for real-time event notifications"
+---
+
+## What are Webhooks?
+
+Webhooks are HTTP callbacks that Zupy sends to your server when specific events occur in the loyalty program. Instead of continuously polling our API for changes, webhooks deliver real-time notifications about customer activities, point transactions, coupon usage, and tier changes directly to your application.
+
+## How Webhooks Work
+
+<Steps>
+  <Step title="Event Occurs">
+    A customer action triggers an event (e.g., customer registers, earns points, redeems coupon)
+  </Step>
+  <Step title="Webhook Triggered">
+    Zupy prepares the event payload with relevant customer and transaction data
+  </Step>
+  <Step title="HTTP Request Sent">
+    Zupy sends a POST request to your configured webhook URL
+  </Step>
+  <Step title="Response Expected">
+    Your endpoint should respond with HTTP 200 to confirm receipt
+  </Step>
+  <Step title="Retry Logic">
+    Failed deliveries are retried with exponential backoff up to 5 times
+  </Step>
+</Steps>
+
+## Available Webhook Events
+
+Zupy supports the following webhook events that you can configure in your company admin panel:
+
+### Customer Events
+
+<Card title="customer.registered" icon="user-plus">
+  Triggered when a new customer joins the loyalty program
+  - **Use cases**: Welcome email sequences, onboarding automation, CRM integration
+  - **Payload includes**: Customer profile, tier assignment, welcome reward details
+</Card>
+
+<Card title="tier.upgraded" icon="arrow-up">
+  Triggered when a customer advances to a higher loyalty tier
+  - **Use cases**: Congratulatory messages, tier benefit notifications, VIP treatment
+  - **Payload includes**: Previous tier, new tier, qualification metrics
+</Card>
+
+### Transaction Events
+
+<Card title="points.earned" icon="coins">
+  Triggered when a customer earns points from a transaction
+  - **Use cases**: Transaction confirmations, progress notifications, gamification
+  - **Payload includes**: Points earned, new balance, transaction details, next tier progress
+</Card>
+
+### Coupon Events
+
+<Card title="coupon.redeemed" icon="ticket">
+  Triggered when a customer converts points into a coupon
+  - **Use cases**: Coupon delivery, inventory management, redemption analytics
+  - **Payload includes**: Coupon code, reward details, points spent, expiration date
+</Card>
+
+<Card title="coupon.used" icon="check">
+  Triggered when a customer actually uses a coupon at your business
+  - **Use cases**: Inventory updates, sales analytics, customer behavior tracking
+  - **Payload includes**: Usage location, staff member, order details, discount applied
+</Card>
+
+## Webhook Configuration
+
+### Setting up Webhook URLs
+
+Configure your webhook endpoints in the Zupy admin panel:
+
+1. Navigate to **Settings > Webhooks**
+2. Enter your endpoint URL (must be HTTPS)
+3. Select which events you want to receive
+4. Configure authentication (optional but recommended)
+5. Test the connection with a sample payload
+
+### Endpoint Requirements
+
+Your webhook endpoint must meet these requirements:
+
+<CodeGroup>
+```javascript Express.js Example
+const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+app.use(express.json());
+
+app.post('/zupy-webhooks', (req, res) => {
+  // Verify signature (recommended)
+  const signature = req.headers['x-zupy-signature'];
+  const payload = JSON.stringify(req.body);
+  
+  if (!verifySignature(payload, signature)) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+  
+  // Process the webhook
+  const { event, company_id, customer, timestamp } = req.body;
+  
+  switch (event) {
+    case 'customer.registered':
+      handleCustomerRegistered(req.body);
+      break;
+    case 'points.earned':
+      handlePointsEarned(req.body);
+      break;
+    case 'coupon.redeemed':
+      handleCouponRedeemed(req.body);
+      break;
+    // ... handle other events
+  }
+  
+  // Always return 200 for successful processing
+  res.status(200).json({ received: true });
+});
+
+const verifySignature = (payload, signature) => {
+  const secret = process.env.ZUPY_WEBHOOK_SECRET;
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  return signature === `sha256=${expectedSignature}`;
+};
+```
+
+```python Flask Example
+from flask import Flask, request, jsonify
+import hmac
+import hashlib
+import json
+
+app = Flask(__name__)
+
+@app.route('/zupy-webhooks', methods=['POST'])
+def handle_webhook():
+    # Verify signature
+    signature = request.headers.get('X-Zupy-Signature')
+    payload = request.get_data()
+    
+    if not verify_signature(payload, signature):
+        return jsonify({'error': 'Invalid signature'}), 401
+    
+    # Process webhook
+    data = request.get_json()
+    event = data.get('event')
+    
+    if event == 'customer.registered':
+        handle_customer_registered(data)
+    elif event == 'points.earned':
+        handle_points_earned(data)
+    elif event == 'coupon.redeemed':
+        handle_coupon_redeemed(data)
+    
+    return jsonify({'received': True}), 200
+
+def verify_signature(payload, signature):
+    secret = os.environ['ZUPY_WEBHOOK_SECRET']
+    expected_signature = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return signature == f'sha256={expected_signature}'
+```
+
+```php PHP Example
+<?php
+// webhook-handler.php
+
+$payload = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_ZUPY_SIGNATURE'] ?? '';
+
+// Verify signature
+if (!verifySignature($payload, $signature)) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Invalid signature']);
+    exit;
+}
+
+$data = json_decode($payload, true);
+$event = $data['event'] ?? '';
+
+switch ($event) {
+    case 'customer.registered':
+        handleCustomerRegistered($data);
+        break;
+    case 'points.earned':
+        handlePointsEarned($data);
+        break;
+    case 'coupon.redeemed':
+        handleCouponRedeemed($data);
+        break;
+}
+
+http_response_code(200);
+echo json_encode(['received' => true]);
+
+function verifySignature($payload, $signature) {
+    $secret = $_ENV['ZUPY_WEBHOOK_SECRET'];
+    $expectedSignature = 'sha256=' . hash_hmac('sha256', $payload, $secret);
+    return hash_equals($signature, $expectedSignature);
+}
+?>
+```
+</CodeGroup>
+
+## Security Best Practices
+
+### Signature Verification
+
+Always verify webhook signatures to ensure requests are from Zupy:
+
+<Steps>
+  <Step title="Get Signature">
+    Extract the `X-Zupy-Signature` header from the request
+  </Step>
+  <Step title="Compute HMAC">
+    Create HMAC-SHA256 hash of the payload using your webhook secret
+  </Step>
+  <Step title="Compare">
+    Use constant-time comparison to match signatures
+  </Step>
+  <Step title="Reject Invalid">
+    Return 401 for requests with invalid signatures
+  </Step>
+</Steps>
+
+### Additional Security Measures
+
+<AccordionGroup>
+  <Accordion title="HTTPS Only">
+    Configure webhook URLs with HTTPS to encrypt data in transit. Zupy rejects HTTP webhook URLs in production.
+  </Accordion>
+  
+  <Accordion title="IP Allowlist">
+    Restrict webhook endpoint access to Zupy's IP ranges:
+    - `52.44.102.0/24` (Primary)
+    - `18.208.0.0/16` (Backup)
+  </Accordion>
+  
+  <Accordion title="Idempotency">
+    Handle duplicate webhooks gracefully by implementing idempotency keys based on event ID and timestamp.
+  </Accordion>
+  
+  <Accordion title="Timeout Handling">
+    Respond to webhooks within 10 seconds to avoid timeouts and retries.
+  </Accordion>
+</AccordionGroup>
+
+## Webhook Delivery and Retries
+
+### Delivery Guarantees
+
+- **At-least-once delivery**: You may receive duplicate webhooks
+- **Best-effort ordering**: Events are delivered in approximate order
+- **5 retry attempts**: Failed deliveries are retried with exponential backoff
+- **10-second timeout**: Your endpoint must respond within 10 seconds
+
+### Retry Schedule
+
+| Attempt | Delay | Total Time |
+|---------|-------|------------|
+| 1st     | Immediate | 0s |
+| 2nd     | 1 minute | 1m |
+| 3rd     | 5 minutes | 6m |
+| 4th     | 15 minutes | 21m |
+| 5th     | 1 hour | 1h 21m |
+
+### Response Codes
+
+| Code | Behavior |
+|------|----------|
+| `200-299` | Success - no retry |
+| `300-399` | Redirect - follow once, then retry |
+| `400-499` | Client error - no retry (except 408, 429) |
+| `500-599` | Server error - retry with backoff |
+| `Timeout` | No response - retry with backoff |
+
+## Testing Webhooks
+
+### Using Webhook Testing Tools
+
+<Tabs>
+  <Tab title="ngrok (Local Development)">
+    ```bash
+    # Install ngrok
+    npm install -g ngrok
+    
+    # Expose local server
+    ngrok http 3000
+    
+    # Use the HTTPS URL in Zupy admin
+    # Example: https://abc123.ngrok.io/zupy-webhooks
+    ```
+  </Tab>
+  
+  <Tab title="RequestBin (Quick Testing)">
+    ```bash
+    # Create a RequestBin
+    curl -X POST https://requestbin.com/api/v1/bins
+    
+    # Use the bin URL temporarily
+    # Check received webhooks at:
+    # https://requestbin.com/r/your-bin-id
+    ```
+  </Tab>
+  
+  <Tab title="Webhook.site (Simple Testing)">
+    ```bash
+    # Visit https://webhook.site
+    # Copy the unique URL provided
+    # Use it as your webhook URL for testing
+    ```
+  </Tab>
+</Tabs>
+
+### Manual Testing in Admin Panel
+
+1. Go to **Settings > Webhooks**
+2. Click **Test Webhook** next to your configured endpoint
+3. Select an event type to simulate
+4. Review the response and timing
+5. Check your server logs for received payload
+
+## Common Integration Patterns
+
+### Customer Relationship Management (CRM)
+
+```javascript
+const handleCustomerRegistered = (webhook) => {
+  const { customer, company_id } = webhook;
+  
+  // Sync with CRM
+  await crmClient.createContact({
+    email: customer.email,
+    phone: customer.whatsapp,
+    name: customer.name,
+    loyaltyId: customer.member_id,
+    tier: customer.tier,
+    companyId: company_id,
+    tags: ['loyalty-member', customer.tier]
+  });
+  
+  // Trigger welcome sequence
+  await emailService.triggerSequence('welcome', customer.email);
+};
+```
+
+### Marketing Automation
+
+```javascript
+const handlePointsEarned = (webhook) => {
+  const { customer, transaction, next_tier } = webhook;
+  
+  // Send progress update
+  if (next_tier && next_tier.progress_percentage > 80) {
+    await pushNotification.send(customer.member_id, {
+      title: 'Quase lá! 🎉',
+      body: `Você está a ${next_tier.points_needed} pontos do tier ${next_tier.tier_name}!`,
+      action: 'open_rewards'
+    });
+  }
+  
+  // Update customer segments
+  await marketingAutomation.updateSegment(customer.email, {
+    loyaltyTier: customer.tier,
+    totalPoints: transaction.new_balance,
+    lastPurchase: transaction.timestamp
+  });
+};
+```
+
+### Inventory Management
+
+```javascript
+const handleCouponUsed = (webhook) => {
+  const { usage, customer } = webhook;
+  
+  // Update inventory for product-free coupons
+  if (usage.discount_type === 'product_free') {
+    await inventory.decrementStock(usage.reward_name, 1);
+    
+    // Check if stock is low
+    const currentStock = await inventory.getStock(usage.reward_name);
+    if (currentStock < 5) {
+      await alerts.send('low-stock', {
+        product: usage.reward_name,
+        stock: currentStock,
+        location: usage.location
+      });
+    }
+  }
+  
+  // Track customer behavior
+  await analytics.track('coupon_used', {
+    customerId: customer.member_id,
+    rewardName: usage.reward_name,
+    orderValue: usage.order_value,
+    location: usage.location
+  });
+};
+```
+
+## Troubleshooting
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="Webhooks Not Received">
+    **Possible Causes:**
+    - Endpoint not reachable (check firewall, DNS)
+    - HTTPS certificate issues
+    - Server returning non-200 status codes
+    - Request timeout (response takes > 10s)
+    
+    **Solutions:**
+    - Test endpoint with curl or Postman
+    - Check server logs for webhook requests
+    - Verify SSL certificate validity
+    - Optimize endpoint response time
+  </Accordion>
+  
+  <Accordion title="Duplicate Webhooks">
+    **Cause:** Network issues or server errors can trigger retries
+    
+    **Solution:** Implement idempotency using event ID + timestamp
+    ```javascript
+    const processedEvents = new Set();
+    
+    app.post('/webhooks', (req, res) => {
+      const eventKey = `${req.body.event}_${req.body.timestamp}`;
+      
+      if (processedEvents.has(eventKey)) {
+        return res.status(200).json({ received: true });
+      }
+      
+      processedEvents.add(eventKey);
+      // Process webhook...
+    });
+    ```
+  </Accordion>
+  
+  <Accordion title="Signature Verification Fails">
+    **Possible Causes:**
+    - Wrong webhook secret
+    - Payload modification (proxies, middleware)
+    - Character encoding issues
+    
+    **Solutions:**
+    - Verify webhook secret in admin panel
+    - Check raw payload before JSON parsing
+    - Ensure UTF-8 encoding
+  </Accordion>
+</AccordionGroup>
+
+### Debug Mode
+
+Enable debug mode in webhook settings to receive detailed delivery logs:
+
+- Request/response headers
+- Payload content
+- Response time and status
+- Retry attempts and outcomes
+- Error messages and stack traces
+
+## Rate Limits and Monitoring
+
+### Webhook Limits
+
+- **Maximum endpoints per company**: 10
+- **Maximum events per endpoint**: All available events
+- **Delivery rate**: Up to 100 webhooks/minute per endpoint
+- **Payload size**: Maximum 1MB per webhook
+
+### Monitoring Webhook Health
+
+Track these metrics to ensure reliable webhook processing:
+
+<CardGroup cols={2}>
+  <Card title="Success Rate" icon="chart-line">
+    Monitor the percentage of successful deliveries (HTTP 200 responses)
+  </Card>
+  
+  <Card title="Response Time" icon="clock">
+    Track average response time to optimize performance
+  </Card>
+  
+  <Card title="Error Rate" icon="exclamation-triangle">
+    Monitor failed deliveries and common error patterns
+  </Card>
+  
+  <Card title="Retry Frequency" icon="rotate">
+    Track how often webhooks require retries
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+Now that you understand how Zupy webhooks work, explore the specific webhook events:
+
+<CardGroup cols={2}>
+  <Card title="Customer Events" icon="users" href="/api-reference/webhooks/customer-events">
+    Registration, tier upgrades, and profile changes
+  </Card>
+  
+  <Card title="Transaction Events" icon="money-bill" href="/api-reference/webhooks/transaction-events">
+    Points earned, balances, and loyalty activities
+  </Card>
+  
+  <Card title="Coupon Events" icon="ticket" href="/api-reference/webhooks/coupon-events">
+    Coupon generation, redemption, and usage
+  </Card>
+  
+  <Card title="Security Guide" icon="shield" href="/api-reference/webhooks/security">
+    Advanced security practices and signature verification
+  </Card>
+</CardGroup>

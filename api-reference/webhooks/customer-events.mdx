@@ -1,0 +1,901 @@
+---
+title: "Customer Events"
+api: "POST /webhooks/customer/* (Outbound)"
+description: "Webhook events triggered by customer registration and tier changes in the loyalty program"
+---
+
+## Overview
+
+Customer events are triggered when significant changes occur to customer profiles in the loyalty program. These webhooks enable real-time synchronization with CRM systems, marketing automation platforms, and customer service tools.
+
+<Warning>
+  **Outbound Webhooks**: These are events that Zupy sends TO your configured webhook endpoints when customer actions occur. You don't call these endpoints - you receive them.
+</Warning>
+
+## Event Types
+
+### customer.registered
+
+Triggered when a new customer joins the loyalty program through any channel (POS, mobile app, website, or API).
+
+### tier.upgraded
+
+Triggered when a customer's loyalty tier is upgraded based on their activity and point accumulation.
+
+---
+
+## customer.registered
+
+<ParamField header="X-Zupy-Signature" type="string" required>
+  HMAC-SHA256 signature for request verification
+  ```
+  sha256=a3b2c1d4e5f6...
+  ```
+</ParamField>
+
+<ParamField header="X-Zupy-Event" type="string" required>
+  Event type identifier
+  ```
+  customer.registered
+  ```
+</ParamField>
+
+### Webhook Payload
+
+<ResponseField name="event" type="string">
+  Event type identifier
+  ```
+  customer.registered
+  ```
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  Event occurrence timestamp (ISO 8601)
+</ResponseField>
+
+<ResponseField name="company_id" type="string">
+  Company identifier where the customer registered
+</ResponseField>
+
+<ResponseField name="customer" type="object">
+  Complete customer profile information
+  
+  <Expandable title="Customer Object">
+    <ResponseField name="member_id" type="string">
+      Unique Zupy customer identifier
+    </ResponseField>
+    
+    <ResponseField name="whatsapp" type="string">
+      Customer's WhatsApp number (with country code)
+    </ResponseField>
+    
+    <ResponseField name="email" type="string">
+      Customer's email address
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Customer's full name
+    </ResponseField>
+    
+    <ResponseField name="cpf" type="string">
+      Customer's CPF (Brazilian tax ID)
+    </ResponseField>
+    
+    <ResponseField name="tier" type="string">
+      Initial loyalty tier assigned
+      ```
+      default | bronze | silver | gold | platinum | vip
+      ```
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      Customer registration timestamp (ISO 8601)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="welcome_reward" type="object">
+  Information about welcome rewards granted to new customer
+  
+  <Expandable title="Welcome Reward Object">
+    <ResponseField name="enabled" type="boolean">
+      Whether welcome reward was granted
+    </ResponseField>
+    
+    <ResponseField name="type" type="string">
+      Type of welcome reward
+      ```
+      points | coupon | none
+      ```
+    </ResponseField>
+    
+    <ResponseField name="points_awarded" type="integer">
+      Points granted as welcome bonus (if type is "points")
+    </ResponseField>
+    
+    <ResponseField name="coupon_code" type="string">
+      Generated coupon code (if type is "coupon")
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Payload
+
+<CodeGroup>
+```json Points Welcome Reward
+{
+  "event": "customer.registered",
+  "timestamp": "2025-08-26T15:30:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-8B23CD41",
+    "whatsapp": "+5511965958122",
+    "email": "joao@email.com",
+    "name": "João Silva",
+    "cpf": "12345678901",
+    "tier": "bronze",
+    "created_at": "2025-08-26T15:30:00Z"
+  },
+  "welcome_reward": {
+    "enabled": true,
+    "type": "points",
+    "points_awarded": 100
+  }
+}
+```
+
+```json Coupon Welcome Reward
+{
+  "event": "customer.registered", 
+  "timestamp": "2025-08-26T16:15:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-9C34DE52",
+    "whatsapp": "+5511987654321", 
+    "email": "maria@email.com",
+    "name": "Maria Santos",
+    "cpf": "98765432109",
+    "tier": "bronze",
+    "created_at": "2025-08-26T16:15:00Z"
+  },
+  "welcome_reward": {
+    "enabled": true,
+    "type": "coupon",
+    "coupon_code": "CP-WELCOME1"
+  }
+}
+```
+
+```json No Welcome Reward
+{
+  "event": "customer.registered",
+  "timestamp": "2025-08-26T17:00:00Z", 
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-1A45FG63",
+    "whatsapp": "+5511555123456",
+    "email": "carlos@email.com", 
+    "name": "Carlos Oliveira",
+    "cpf": "11122233344",
+    "tier": "default",
+    "created_at": "2025-08-26T17:00:00Z"
+  },
+  "welcome_reward": {
+    "enabled": false,
+    "type": "none"
+  }
+}
+```
+</CodeGroup>
+
+### Integration Examples
+
+<CodeGroup>
+```javascript CRM Integration
+const handleCustomerRegistered = async (webhook) => {
+  const { customer, company_id, welcome_reward } = webhook;
+  
+  try {
+    // Create contact in CRM
+    const crmContact = await crmClient.createContact({
+      email: customer.email,
+      phone: customer.whatsapp,
+      firstName: customer.name.split(' ')[0],
+      lastName: customer.name.split(' ').slice(1).join(' '),
+      customFields: {
+        loyaltyId: customer.member_id,
+        loyaltyTier: customer.tier,
+        cpf: customer.cpf,
+        companyId: company_id,
+        registrationDate: customer.created_at
+      },
+      tags: ['loyalty-member', customer.tier, 'new-customer']
+    });
+    
+    // Trigger welcome sequence
+    if (welcome_reward.enabled) {
+      await emailService.triggerSequence('loyalty-welcome', customer.email, {
+        customerName: customer.name,
+        rewardType: welcome_reward.type,
+        pointsAwarded: welcome_reward.points_awarded,
+        couponCode: welcome_reward.coupon_code
+      });
+    }
+    
+    // Add to marketing segments
+    await marketingAutomation.addToSegment(customer.email, 'new-loyalty-members');
+    
+    console.log(`Customer ${customer.member_id} synced to CRM and automation`);
+  } catch (error) {
+    console.error('Failed to process customer registration:', error);
+    // Consider adding to retry queue
+  }
+};
+```
+
+```python Marketing Automation
+import requests
+from datetime import datetime
+
+def handle_customer_registered(webhook_data):
+    customer = webhook_data['customer']
+    welcome_reward = webhook_data['welcome_reward']
+    
+    # Prepare customer data for marketing platform
+    customer_data = {
+        'email': customer['email'],
+        'phone': customer['whatsapp'],
+        'first_name': customer['name'].split(' ')[0],
+        'last_name': ' '.join(customer['name'].split(' ')[1:]),
+        'attributes': {
+            'loyalty_id': customer['member_id'],
+            'loyalty_tier': customer['tier'],
+            'registration_date': customer['created_at'],
+            'welcome_reward_type': welcome_reward['type'],
+            'welcome_points': welcome_reward.get('points_awarded', 0)
+        }
+    }
+    
+    # Create or update customer in marketing platform
+    response = requests.post(
+        f"{MARKETING_API_BASE}/customers",
+        headers={'Authorization': f'Bearer {MARKETING_API_KEY}'},
+        json=customer_data
+    )
+    
+    if response.status_code == 201:
+        # Send welcome message via WhatsApp
+        send_whatsapp_welcome(customer['whatsapp'], customer['name'], welcome_reward)
+        
+        # Add to new customer campaign
+        add_to_campaign(customer['email'], 'new-loyalty-member-nurture')
+        
+        print(f"Successfully onboarded customer {customer['member_id']}")
+    else:
+        print(f"Failed to create customer: {response.text}")
+
+def send_whatsapp_welcome(whatsapp, name, welcome_reward):
+    message = f"Olá {name}! 🎉 Bem-vindo ao nosso programa de fidelidade!"
+    
+    if welcome_reward['type'] == 'points':
+        message += f" Você ganhou {welcome_reward['points_awarded']} pontos de boas-vindas!"
+    elif welcome_reward['type'] == 'coupon':
+        message += f" Use o cupom {welcome_reward['coupon_code']} na sua próxima compra!"
+    
+    # Send via WhatsApp Business API
+    whatsapp_service.send_message(whatsapp, message)
+```
+
+```php Customer Service Integration  
+<?php
+function handleCustomerRegistered($webhookData) {
+    $customer = $webhookData['customer'];
+    $welcomeReward = $webhookData['welcome_reward'];
+    
+    try {
+        // Create customer in helpdesk system
+        $helpdeskCustomer = [
+            'email' => $customer['email'],
+            'name' => $customer['name'],
+            'phone' => $customer['whatsapp'],
+            'custom_fields' => [
+                'loyalty_id' => $customer['member_id'],
+                'loyalty_tier' => $customer['tier'],
+                'cpf' => $customer['cpf'],
+                'registration_date' => $customer['created_at']
+            ],
+            'tags' => ['loyalty-member', $customer['tier']]
+        ];
+        
+        $response = createHelpdeskCustomer($helpdeskCustomer);
+        
+        if ($response['success']) {
+            // Log successful registration
+            logEvent('customer_registered', [
+                'member_id' => $customer['member_id'],
+                'tier' => $customer['tier'],
+                'welcome_reward' => $welcomeReward['type'],
+                'helpdesk_id' => $response['customer_id']
+            ]);
+            
+            // Send internal notification to customer success team
+            if ($customer['tier'] === 'vip') {
+                sendSlackNotification('#customer-success', 
+                    "🌟 New VIP customer registered: {$customer['name']} ({$customer['member_id']})"
+                );
+            }
+        }
+        
+    } catch (Exception $e) {
+        error_log("Failed to process customer registration: " . $e->getMessage());
+        // Add to retry queue
+        addToRetryQueue('customer_registered', $webhookData);
+    }
+}
+
+function createHelpdeskCustomer($customerData) {
+    $curl = curl_init();
+    curl_setopt_array($curl, [
+        CURLOPT_URL => HELPDESK_API_URL . '/customers',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($customerData),
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . HELPDESK_API_TOKEN,
+            'Content-Type: application/json'
+        ]
+    ]);
+    
+    $response = curl_exec($curl);
+    $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+    
+    return [
+        'success' => $httpCode === 201,
+        'customer_id' => json_decode($response, true)['id'] ?? null
+    ];
+}
+?>
+```
+</CodeGroup>
+
+---
+
+## tier.upgraded
+
+<ParamField header="X-Zupy-Signature" type="string" required>
+  HMAC-SHA256 signature for request verification
+  ```
+  sha256=a3b2c1d4e5f6...
+  ```
+</ParamField>
+
+<ParamField header="X-Zupy-Event" type="string" required>
+  Event type identifier
+  ```
+  tier.upgraded
+  ```
+</ParamField>
+
+### Webhook Payload
+
+<ResponseField name="event" type="string">
+  Event type identifier
+  ```
+  tier.upgraded
+  ```
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  Event occurrence timestamp (ISO 8601)
+</ResponseField>
+
+<ResponseField name="company_id" type="string">
+  Company identifier where the tier upgrade occurred
+</ResponseField>
+
+<ResponseField name="customer" type="object">
+  Customer information after tier upgrade
+  
+  <Expandable title="Customer Object">
+    <ResponseField name="member_id" type="string">
+      Unique Zupy customer identifier
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Customer's full name
+    </ResponseField>
+    
+    <ResponseField name="whatsapp" type="string">
+      Customer's WhatsApp number
+    </ResponseField>
+    
+    <ResponseField name="email" type="string">
+      Customer's email address
+    </ResponseField>
+    
+    <ResponseField name="tier" type="string">
+      New tier after upgrade
+      ```
+      bronze | silver | gold | platinum | vip
+      ```
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="tier_change" type="object">
+  Details about the tier upgrade
+  
+  <Expandable title="Tier Change Object">
+    <ResponseField name="previous_tier" type="string">
+      Customer's previous tier
+    </ResponseField>
+    
+    <ResponseField name="new_tier" type="string">
+      Customer's new tier after upgrade
+    </ResponseField>
+    
+    <ResponseField name="qualification_metric" type="string">
+      What triggered the tier upgrade
+      ```
+      points_balance | total_spent | transaction_count | custom_criteria
+      ```
+    </ResponseField>
+    
+    <ResponseField name="qualification_value" type="number">
+      The metric value that triggered the upgrade
+    </ResponseField>
+    
+    <ResponseField name="next_tier_requirements" type="object">
+      Requirements for the next tier level
+      
+      <Expandable title="Next Tier Requirements">
+        <ResponseField name="tier_name" type="string">
+          Name of the next available tier
+        </ResponseField>
+        
+        <ResponseField name="points_needed" type="integer">
+          Additional points needed for next tier
+        </ResponseField>
+        
+        <ResponseField name="total_points_required" type="integer">
+          Total points required for next tier
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Example Payload
+
+<CodeGroup>
+```json Bronze to Silver Upgrade
+{
+  "event": "tier.upgraded",
+  "timestamp": "2025-08-26T15:30:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-4F95FB0A",
+    "name": "João Silva",
+    "whatsapp": "+5511965958122",
+    "email": "joao@email.com",
+    "tier": "silver"
+  },
+  "tier_change": {
+    "previous_tier": "bronze",
+    "new_tier": "silver",
+    "qualification_metric": "points_balance",
+    "qualification_value": 2500,
+    "next_tier_requirements": {
+      "tier_name": "gold",
+      "points_needed": 2500,
+      "total_points_required": 5000
+    }
+  }
+}
+```
+
+```json Gold to Platinum Upgrade
+{
+  "event": "tier.upgraded",
+  "timestamp": "2025-08-26T18:45:00Z",
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-7H89IJ01",
+    "name": "Maria Santos",
+    "whatsapp": "+5511987654321",
+    "email": "maria@email.com", 
+    "tier": "platinum"
+  },
+  "tier_change": {
+    "previous_tier": "gold",
+    "new_tier": "platinum",
+    "qualification_metric": "total_spent",
+    "qualification_value": 15000.00,
+    "next_tier_requirements": {
+      "tier_name": "vip",
+      "points_needed": 5000,
+      "total_points_required": 25000
+    }
+  }
+}
+```
+
+```json VIP Tier Reached
+{
+  "event": "tier.upgraded",
+  "timestamp": "2025-08-26T20:15:00Z", 
+  "company_id": "comp_bella_vista",
+  "customer": {
+    "member_id": "ZP-2K34LM56",
+    "name": "Carlos Oliveira",
+    "whatsapp": "+5511555123456",
+    "email": "carlos@email.com",
+    "tier": "vip"
+  },
+  "tier_change": {
+    "previous_tier": "platinum",
+    "new_tier": "vip",
+    "qualification_metric": "transaction_count",
+    "qualification_value": 100,
+    "next_tier_requirements": null
+  }
+}
+```
+</CodeGroup>
+
+### Integration Examples
+
+<CodeGroup>
+```javascript VIP Customer Notification
+const handleTierUpgraded = async (webhook) => {
+  const { customer, tier_change, company_id } = webhook;
+  
+  try {
+    // Update customer record
+    await database.updateCustomer(customer.member_id, {
+      tier: customer.tier,
+      previous_tier: tier_change.previous_tier,
+      tier_upgraded_at: webhook.timestamp
+    });
+    
+    // Send congratulatory notification
+    const tierBenefits = await getTierBenefits(customer.tier);
+    
+    await pushNotification.send(customer.member_id, {
+      title: `Parabéns! Você subiu para ${customer.tier.toUpperCase()}! 🎉`,
+      body: `Aproveite seus novos benefícios: ${tierBenefits.summary}`,
+      action: 'view_benefits',
+      imageUrl: `https://cdn.zupy.com/tiers/${customer.tier}.jpg`
+    });
+    
+    // Send personalized email
+    await emailService.sendTemplate('tier-upgrade-congratulations', customer.email, {
+      customerName: customer.name,
+      previousTier: tier_change.previous_tier,
+      newTier: customer.tier,
+      benefits: tierBenefits,
+      nextTier: tier_change.next_tier_requirements
+    });
+    
+    // Special handling for VIP customers
+    if (customer.tier === 'vip') {
+      await handleVipUpgrade(customer, company_id);
+    }
+    
+    // Update marketing segments
+    await marketingAutomation.moveSegment(
+      customer.email, 
+      `tier-${tier_change.previous_tier}`, 
+      `tier-${customer.tier}`
+    );
+    
+  } catch (error) {
+    console.error('Failed to process tier upgrade:', error);
+  }
+};
+
+const handleVipUpgrade = async (customer, companyId) => {
+  // Notify customer success team
+  await slack.sendMessage('#customer-success', {
+    text: `🌟 New VIP Customer!`,
+    attachments: [{
+      color: '#FFD700',
+      fields: [
+        { title: 'Customer', value: customer.name, short: true },
+        { title: 'Member ID', value: customer.member_id, short: true },
+        { title: 'Email', value: customer.email, short: true },
+        { title: 'WhatsApp', value: customer.whatsapp, short: true }
+      ],
+      actions: [{
+        type: 'button',
+        text: 'View Profile',
+        url: `https://admin.zupy.com/customers/${customer.member_id}`
+      }]
+    }]
+  });
+  
+  // Schedule personal outreach
+  await crm.createTask({
+    title: `VIP Welcome Call - ${customer.name}`,
+    description: `New VIP customer needs welcome call and benefits explanation`,
+    assignee: 'vip-manager',
+    dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+    customerId: customer.member_id
+  });
+};
+```
+
+```python Tier Benefits Activation
+def handle_tier_upgraded(webhook_data):
+    customer = webhook_data['customer']
+    tier_change = webhook_data['tier_change']
+    
+    try:
+        # Activate tier-specific benefits
+        activate_tier_benefits(customer['member_id'], customer['tier'])
+        
+        # Send tier upgrade notification
+        send_tier_upgrade_notification(customer, tier_change)
+        
+        # Update customer segments and targeting
+        update_customer_segments(customer)
+        
+        # Log tier progression for analytics
+        log_tier_progression(customer, tier_change)
+        
+    except Exception as e:
+        logger.error(f"Failed to process tier upgrade for {customer['member_id']}: {e}")
+        
+def activate_tier_benefits(member_id, new_tier):
+    """Activate tier-specific benefits and permissions"""
+    
+    tier_benefits = {
+        'silver': {
+            'free_delivery': True,
+            'birthday_bonus_multiplier': 2.0,
+            'exclusive_rewards': ['rw_silver_special']
+        },
+        'gold': {
+            'free_delivery': True,
+            'priority_support': True,
+            'birthday_bonus_multiplier': 3.0,
+            'exclusive_rewards': ['rw_gold_special', 'rw_premium_discount']
+        },
+        'platinum': {
+            'free_delivery': True,
+            'priority_support': True,
+            'early_access': True,
+            'birthday_bonus_multiplier': 4.0,
+            'exclusive_rewards': ['rw_platinum_experience', 'rw_chef_table']
+        },
+        'vip': {
+            'free_delivery': True,
+            'priority_support': True,
+            'early_access': True,
+            'personal_shopper': True,
+            'birthday_bonus_multiplier': 5.0,
+            'exclusive_rewards': ['rw_vip_experience', 'rw_private_event']
+        }
+    }
+    
+    benefits = tier_benefits.get(new_tier, {})
+    
+    # Update customer benefits in database
+    update_customer_benefits(member_id, benefits)
+    
+    # Grant access to exclusive rewards
+    if 'exclusive_rewards' in benefits:
+        for reward_id in benefits['exclusive_rewards']:
+            grant_reward_access(member_id, reward_id)
+
+def send_tier_upgrade_notification(customer, tier_change):
+    """Send multi-channel tier upgrade notification"""
+    
+    # WhatsApp message
+    whatsapp_message = create_tier_upgrade_message(customer, tier_change)
+    send_whatsapp(customer['whatsapp'], whatsapp_message)
+    
+    # Push notification
+    push_payload = {
+        'title': f"Parabéns! Você é {customer['tier'].upper()} agora! 🎉",
+        'body': f"Veja seus novos benefícios exclusivos",
+        'click_action': f"view_tier_benefits_{customer['tier']}"
+    }
+    send_push_notification(customer['member_id'], push_payload)
+    
+    # Email with detailed benefits
+    email_template_data = {
+        'customer_name': customer['name'],
+        'previous_tier': tier_change['previous_tier'].title(),
+        'new_tier': customer['tier'].title(),
+        'benefits': get_tier_benefits_description(customer['tier'])
+    }
+    send_email_template('tier-upgrade', customer['email'], email_template_data)
+```
+
+```php CRM Integration
+<?php
+function handleTierUpgraded($webhookData) {
+    $customer = $webhookData['customer'];
+    $tierChange = $webhookData['tier_change'];
+    
+    try {
+        // Update customer tier in CRM
+        updateCrmCustomerTier($customer['member_id'], $customer['tier']);
+        
+        // Create tier upgrade activity
+        createCrmActivity($customer['member_id'], [
+            'type' => 'tier_upgrade',
+            'description' => "Customer upgraded from {$tierChange['previous_tier']} to {$customer['tier']}",
+            'date' => $webhookData['timestamp'],
+            'qualification_metric' => $tierChange['qualification_metric'],
+            'qualification_value' => $tierChange['qualification_value']
+        ]);
+        
+        // Assign account manager for high-value tiers
+        if (in_array($customer['tier'], ['platinum', 'vip'])) {
+            assignAccountManager($customer['member_id'], $customer['tier']);
+        }
+        
+        // Update customer lifecycle stage
+        updateCustomerLifecycleStage($customer['member_id'], getTierLifecycleStage($customer['tier']));
+        
+        // Schedule follow-up tasks
+        schedulePostUpgradeTasks($customer, $tierChange);
+        
+    } catch (Exception $e) {
+        error_log("Failed to process tier upgrade: " . $e->getMessage());
+    }
+}
+
+function assignAccountManager($memberId, $tier) {
+    // Assign dedicated account manager for premium tiers
+    $accountManager = ($tier === 'vip') ? 'vip-manager' : 'premium-manager';
+    
+    $crmData = [
+        'owner' => $accountManager,
+        'priority' => 'high',
+        'tier' => $tier,
+        'assignment_date' => date('c'),
+        'assignment_reason' => 'tier_upgrade'
+    ];
+    
+    updateCrmCustomer($memberId, $crmData);
+    
+    // Create introduction task
+    createCrmTask([
+        'title' => "Welcome new {$tier} customer - {$memberId}",
+        'description' => "Introduce yourself and explain tier benefits",
+        'assignee' => $accountManager,
+        'due_date' => date('Y-m-d', strtotime('+1 day')),
+        'customer_id' => $memberId
+    ]);
+}
+
+function schedulePostUpgradeTasks($customer, $tierChange) {
+    $tasks = [];
+    
+    // Schedule benefits explanation call
+    $tasks[] = [
+        'title' => "Explain {$customer['tier']} benefits - {$customer['name']}",
+        'due_date' => date('Y-m-d', strtotime('+2 days')),
+        'type' => 'phone_call',
+        'priority' => 'high'
+    ];
+    
+    // Schedule feedback collection
+    $tasks[] = [
+        'title' => "Collect tier upgrade feedback - {$customer['name']}",
+        'due_date' => date('Y-m-d', strtotime('+1 week')),
+        'type' => 'survey',
+        'priority' => 'medium'
+    ];
+    
+    foreach ($tasks as $task) {
+        $task['customer_id'] = $customer['member_id'];
+        createCrmTask($task);
+    }
+}
+?>
+```
+</CodeGroup>
+
+## Common Use Cases
+
+### Customer Onboarding
+- **CRM Sync**: Create contacts with loyalty data
+- **Welcome Sequences**: Trigger email/SMS campaigns
+- **Marketing Segments**: Add to appropriate customer lists
+- **Support Integration**: Create customer service profiles
+
+### VIP Customer Management
+- **Account Assignment**: Assign dedicated account managers
+- **Personal Outreach**: Schedule welcome calls and check-ins
+- **Exclusive Access**: Grant early access to products/events
+- **Special Recognition**: Send personalized congratulations
+
+### Marketing Automation
+- **Segmentation**: Move customers between tier-based segments
+- **Personalization**: Customize content based on tier status
+- **Retention**: Trigger tier-appropriate retention campaigns
+- **Upselling**: Promote next tier benefits and requirements
+
+## Response Requirements
+
+Your webhook endpoint must return a `200` status code to acknowledge successful processing. Any other status code will trigger Zupy's retry mechanism.
+
+<CodeGroup>
+```javascript Success Response
+app.post('/webhooks/customer', (req, res) => {
+  // Process the webhook
+  processCustomerWebhook(req.body);
+  
+  // Return success response
+  res.status(200).json({ 
+    received: true,
+    processed_at: new Date().toISOString()
+  });
+});
+```
+
+```python Success Response
+@app.route('/webhooks/customer', methods=['POST'])
+def handle_customer_webhook():
+    # Process the webhook
+    process_customer_webhook(request.get_json())
+    
+    # Return success response
+    return jsonify({
+        'received': True,
+        'processed_at': datetime.utcnow().isoformat()
+    }), 200
+```
+
+```php Success Response
+<?php
+// Process the webhook
+$webhookData = json_decode(file_get_contents('php://input'), true);
+processCustomerWebhook($webhookData);
+
+// Return success response
+http_response_code(200);
+echo json_encode([
+    'received' => true,
+    'processed_at' => date('c')
+]);
+?>
+```
+</CodeGroup>
+
+## Testing Customer Webhooks
+
+Use these test scenarios to verify your webhook integration:
+
+<Tabs>
+  <Tab title="New Customer Registration">
+    **Trigger:** Create a new customer via API or admin panel
+    
+    **Expected Webhook:** `customer.registered`
+    
+    **Test Points:**
+    - Verify all customer fields are populated
+    - Check welcome reward information
+    - Confirm CRM/marketing system sync
+  </Tab>
+  
+  <Tab title="Tier Upgrade Simulation">
+    **Trigger:** Manually upgrade customer tier in admin panel
+    
+    **Expected Webhook:** `tier.upgraded`
+    
+    **Test Points:**
+    - Verify tier change information
+    - Check next tier requirements
+    - Confirm tier-specific benefits activation
+  </Tab>
+</Tabs>
+
+<Tip>
+  **Development Tip**: Use the webhook test feature in the Zupy admin panel to send sample payloads to your development endpoint without triggering actual customer events.
+</Tip>
