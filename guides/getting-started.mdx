@@ -1,0 +1,741 @@
+---
+title: "Getting Started Guide"
+description: "Complete step-by-step guide to integrating with Zupy's loyalty program APIs for partner developers"
+---
+
+## Welcome, Partner Developers! 
+
+This guide will take you from zero to your first successful loyalty program integration with Zupy. Whether you're building a PDV system, delivery app, or e-commerce platform, this walkthrough covers everything you need to get started.
+
+<Note>
+  **Estimated Time**: 30-45 minutes to complete your first integration
+</Note>
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+<Card title="Partner Account Access" icon="user-check">
+  Active Zupy partner account with developer dashboard access
+  
+  **Don't have access?** Contact [dev@zupy.com](mailto:dev@zupy.com)
+</Card>
+
+<Card title="Development Environment" icon="code">
+  Your preferred development setup with ability to make HTTP requests
+  
+  **Supported Languages**: JavaScript, Python, PHP, Java, C#, and more
+</Card>
+
+<Card title="Test Customer Data" icon="users">
+  Sample customer phone numbers and order data for testing
+  
+  **Staging Environment**: We provide test data for development
+</Card>
+
+## Integration Overview
+
+Zupy's loyalty integration follows this flow:
+
+<Steps>
+  <Step title="Authentication Setup">
+    Generate API keys and verify access to loyalty endpoints
+  </Step>
+  <Step title="Customer Management">
+    Search/create customers and access their loyalty profiles
+  </Step>
+  <Step title="Points & Rewards">
+    Award points, validate rewards, and manage coupon redemption
+  </Step>
+  <Step title="Production Deployment">
+    Test thoroughly and deploy with confidence
+  </Step>
+</Steps>
+
+## Step 1: Authentication & API Access
+
+### Generate Your API Key
+
+1. **Access Dashboard**: Navigate to [app.zupy.com/developers](https://app.zupy.com/developers/api-keys)
+2. **Verify Account**: Complete OTP verification (WhatsApp or Email)
+3. **Create API Key**: Generate a staging key with these permissions:
+
+```json
+{
+  "name": "Staging Integration Test",
+  "environment": "staging", 
+  "permissions": [
+    "customer:read",
+    "customer:write",
+    "loyalty:read", 
+    "loyalty:write",
+    "coupons:validate",
+    "coupons:redeem"
+  ],
+  "rate_limit": 500
+}
+```
+
+<Warning>
+  **Key Security**: Save your API key securely. It's only shown once during generation.
+</Warning>
+
+### Test API Connection
+
+Verify your authentication with a simple API call:
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api-staging.zupy.com/v1/loyalty/program" \
+  -H "Authorization: Bearer zup_test_sk_YOUR_STAGING_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const zupyAPI = {
+  baseUrl: 'https://api-staging.zupy.com/v1',
+  apiKey: 'zup_test_sk_YOUR_STAGING_KEY',
+  
+  async request(endpoint, options = {}) {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+    return response.json();
+  }
+};
+
+// Test connection
+const program = await zupyAPI.request('/loyalty/program');
+console.log('Program config:', program);
+```
+
+```python Python
+import requests
+
+class ZupyAPI:
+    def __init__(self):
+        self.base_url = 'https://api-staging.zupy.com/v1'
+        self.api_key = 'zup_test_sk_YOUR_STAGING_KEY'
+        self.headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+    
+    def request(self, endpoint, method='GET', data=None):
+        response = requests.request(
+            method, f'{self.base_url}{endpoint}', 
+            headers=self.headers, json=data
+        )
+        return response.json()
+
+# Test connection
+zupy = ZupyAPI()
+program = zupy.request('/loyalty/program')
+print('Program config:', program)
+```
+</CodeGroup>
+
+**Expected Response**: Loyalty program configuration including points conversion rates and tier information.
+
+## Step 2: Customer Management Integration
+
+### Search for Existing Customers
+
+Most integrations start by checking if a customer exists in the loyalty program:
+
+<CodeGroup>
+```bash Customer Search
+curl -X GET "https://api-staging.zupy.com/v1/loyalty/customers/search?whatsapp=+5511999888777" \
+  -H "Authorization: Bearer zup_test_sk_YOUR_STAGING_KEY"
+```
+
+```javascript JavaScript  
+// Search by WhatsApp (most common)
+const customer = await zupyAPI.request('/loyalty/customers/search?whatsapp=' + encodeURIComponent('+5511999888777'));
+
+if (customer.member_id) {
+  console.log('Existing customer:', customer.name);
+  console.log('Current points:', customer.current_points);
+  console.log('Tier:', customer.tier);
+} else {
+  console.log('Customer not found - will create new profile');
+}
+```
+
+```python Python
+# Search for customer
+customer = zupy.request('/loyalty/customers/search', data={'whatsapp': '+5511999888777'})
+
+if 'member_id' in customer:
+    print(f"Existing customer: {customer['name']}")
+    print(f"Current points: {customer['current_points']}")
+    print(f"Tier: {customer['tier']}")
+else:
+    print("Customer not found - will create new profile")
+```
+</CodeGroup>
+
+### Create New Customers
+
+If the customer doesn't exist, create their loyalty profile:
+
+<CodeGroup>
+```bash Create Customer
+curl -X POST "https://api-staging.zupy.com/v1/loyalty/customers" \
+  -H "Authorization: Bearer zup_test_sk_YOUR_STAGING_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "whatsapp": "+5511999888777",
+    "name": "João Silva",
+    "email": "joao@email.com",
+    "integration_source": "staging_test",
+    "company_id": "your_company_id"
+  }'
+```
+
+```javascript JavaScript
+const newCustomer = await zupyAPI.request('/loyalty/customers', {
+  method: 'POST',
+  body: JSON.stringify({
+    whatsapp: '+5511999888777',
+    name: 'João Silva', 
+    email: 'joao@email.com',
+    integration_source: 'staging_test',
+    company_id: 'your_company_id'
+  })
+});
+
+console.log('New customer created:', newCustomer.member_id);
+console.log('Welcome reward:', newCustomer.welcome_reward);
+```
+
+```python Python
+new_customer = zupy.request('/loyalty/customers', 'POST', {
+    'whatsapp': '+5511999888777',
+    'name': 'João Silva',
+    'email': 'joao@email.com', 
+    'integration_source': 'staging_test',
+    'company_id': 'your_company_id'
+})
+
+print(f"New customer created: {new_customer['member_id']}")
+print(f"Welcome reward: {new_customer['welcome_reward']}")
+```
+</CodeGroup>
+
+**Integration Tip**: Use upsert logic - the API automatically handles whether to create or update based on existing customer data.
+
+## Step 3: Points & Rewards Integration
+
+### Award Points for Transactions
+
+When a customer makes a purchase, award loyalty points:
+
+<CodeGroup>
+```javascript Points Award Example
+// Example: Award points for a R$ 45.50 order
+const pointsTransaction = await zupyAPI.request('/loyalty/points/add', {
+  method: 'POST',
+  body: JSON.stringify({
+    customer_id: customer.member_id,
+    amount: 46, // Points (usually 1 point per R$ 1.00)
+    reason: `Purchase order #ORD789 - R$ 45.50`,
+    reference_id: 'ORD789',
+    order_total: 45.50
+  })
+});
+
+console.log('Points awarded:', pointsTransaction.amount_added);
+console.log('New balance:', pointsTransaction.new_balance);
+```
+
+```python Python
+# Award points for transaction
+points_transaction = zupy.request('/loyalty/points/add', 'POST', {
+    'customer_id': customer['member_id'],
+    'amount': 46,
+    'reason': 'Purchase order #ORD789 - R$ 45.50',
+    'reference_id': 'ORD789', 
+    'order_total': 45.50
+})
+
+print(f"Points awarded: {points_transaction['amount_added']}")
+print(f"New balance: {points_transaction['new_balance']}")
+```
+</CodeGroup>
+
+### Check Available Rewards
+
+Show customers what rewards they can redeem:
+
+<CodeGroup>
+```javascript Available Rewards
+const rewards = await zupyAPI.request(`/loyalty/rewards?customer_id=${customer.member_id}`);
+
+console.log('Available rewards:');
+rewards.rewards.forEach(reward => {
+  if (reward.available) {
+    console.log(`✅ ${reward.name} - ${reward.points_required} points`);
+  } else {
+    console.log(`⏳ ${reward.name} - Need ${reward.points_required - customer.current_points} more points`);
+  }
+});
+```
+
+```python Python
+rewards = zupy.request(f'/loyalty/rewards?customer_id={customer["member_id"]}')
+
+print('Available rewards:')
+for reward in rewards['rewards']:
+    if reward['available']:
+        print(f"✅ {reward['name']} - {reward['points_required']} points")
+    else:
+        points_needed = reward['points_required'] - customer['current_points']
+        print(f"⏳ {reward['name']} - Need {points_needed} more points")
+```
+</CodeGroup>
+
+### Validate & Redeem Coupons
+
+Handle coupon validation and redemption in your order flow:
+
+<CodeGroup>
+```javascript Coupon Validation
+// Step 1: Validate coupon before order completion
+const validation = await zupyAPI.request('/loyalty/validate-coupon', {
+  method: 'POST',
+  body: JSON.stringify({
+    coupon_code: 'ZUP-ABC123',
+    order: {
+      total: '45.50',
+      order_type: 'DELIVERY',
+      items: [...], // Your order items
+      customer_id: customer.member_id
+    }
+  })
+});
+
+if (validation.valid) {
+  console.log('✅ Coupon valid!');
+  console.log('Discount:', validation.discount.discount_amount);
+  console.log('Description:', validation.discount.description);
+  
+  // Apply discount to order...
+  
+  // Step 2: Mark coupon as used after successful payment
+  const usage = await zupyAPI.request('/loyalty/use-coupon', {
+    method: 'POST', 
+    body: JSON.stringify({
+      coupon_code: 'ZUP-ABC123',
+      order: {
+        order_id: 'ORD789',
+        total: '45.50',
+        discount_applied: validation.discount.discount_amount,
+        platform: 'your_platform',
+        timestamp: new Date().toISOString()
+      }
+    })
+  });
+  
+  console.log('Coupon redeemed successfully:', usage.success);
+} else {
+  console.log('❌ Coupon invalid:', validation.message);
+}
+```
+</CodeGroup>
+
+## Step 4: Complete Integration Example
+
+Here's a complete example integrating customer lookup, points award, and coupon validation:
+
+<CodeGroup>
+```javascript Complete Integration Flow
+class LoyaltyIntegration {
+  constructor(apiKey) {
+    this.baseUrl = 'https://api-staging.zupy.com/v1';
+    this.apiKey = apiKey;
+  }
+
+  async processOrder(orderData) {
+    try {
+      // 1. Find or create customer
+      let customer = await this.findOrCreateCustomer(orderData.customer);
+      
+      // 2. Award points for purchase
+      if (orderData.total > 0) {
+        await this.awardPoints(customer.member_id, orderData);
+      }
+      
+      // 3. Validate coupon if provided
+      let discount = 0;
+      if (orderData.coupon_code) {
+        const couponResult = await this.validateAndUseCoupon(
+          orderData.coupon_code, 
+          orderData, 
+          customer.member_id
+        );
+        discount = couponResult.discount_amount || 0;
+      }
+      
+      // 4. Return updated customer data
+      const updatedCustomer = await this.getCustomerBalance(customer.member_id);
+      
+      return {
+        success: true,
+        customer: updatedCustomer,
+        discount_applied: discount,
+        points_awarded: Math.floor(orderData.total)
+      };
+      
+    } catch (error) {
+      console.error('Loyalty integration error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async findOrCreateCustomer(customerData) {
+    // Search for existing customer
+    const searchResult = await this.request(
+      `/loyalty/customers/search?whatsapp=${encodeURIComponent(customerData.whatsapp)}`
+    );
+    
+    if (searchResult.member_id) {
+      return searchResult;
+    }
+    
+    // Create new customer
+    return await this.request('/loyalty/customers', {
+      method: 'POST',
+      body: JSON.stringify({
+        whatsapp: customerData.whatsapp,
+        name: customerData.name,
+        email: customerData.email,
+        integration_source: 'your_platform',
+        company_id: 'your_company_id'
+      })
+    });
+  }
+
+  async awardPoints(memberId, orderData) {
+    const points = Math.floor(orderData.total); // 1 point per R$ 1.00
+    
+    return await this.request('/loyalty/points/add', {
+      method: 'POST',
+      body: JSON.stringify({
+        customer_id: memberId,
+        amount: points,
+        reason: `Purchase order #${orderData.order_id} - R$ ${orderData.total}`,
+        reference_id: orderData.order_id,
+        order_total: orderData.total
+      })
+    });
+  }
+
+  async validateAndUseCoupon(couponCode, orderData, customerId) {
+    // Validate first
+    const validation = await this.request('/loyalty/validate-coupon', {
+      method: 'POST',
+      body: JSON.stringify({
+        coupon_code: couponCode,
+        order: {
+          total: orderData.total.toString(),
+          order_type: orderData.order_type,
+          items: orderData.items,
+          customer_id: customerId
+        }
+      })
+    });
+    
+    if (!validation.valid) {
+      throw new Error(`Invalid coupon: ${validation.message}`);
+    }
+    
+    // Use coupon after successful validation
+    await this.request('/loyalty/use-coupon', {
+      method: 'POST',
+      body: JSON.stringify({
+        coupon_code: couponCode,
+        order: {
+          order_id: orderData.order_id,
+          total: orderData.total.toString(),
+          discount_applied: validation.discount.discount_amount,
+          platform: 'your_platform',
+          timestamp: new Date().toISOString()
+        }
+      })
+    });
+    
+    return validation.discount;
+  }
+
+  async getCustomerBalance(memberId) {
+    return await this.request(`/loyalty/customers/${memberId}/balance`);
+  }
+
+  async request(endpoint, options = {}) {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`API Error: ${error.message}`);
+    }
+    
+    return response.json();
+  }
+}
+
+// Usage example
+const loyalty = new LoyaltyIntegration('zup_test_sk_YOUR_STAGING_KEY');
+
+const result = await loyalty.processOrder({
+  order_id: 'ORD789',
+  total: 45.50,
+  order_type: 'DELIVERY', 
+  customer: {
+    whatsapp: '+5511999888777',
+    name: 'João Silva',
+    email: 'joao@email.com'
+  },
+  coupon_code: 'ZUP-ABC123', // Optional
+  items: [
+    { name: 'Pizza Margherita', price: 35.50 },
+    { name: 'Refrigerante', price: 10.00 }
+  ]
+});
+
+console.log('Integration result:', result);
+```
+</CodeGroup>
+
+## Step 5: Testing & Validation
+
+### Test Your Integration
+
+Use these test scenarios to validate your implementation:
+
+<Accordion title="Test Scenario 1: New Customer Order">
+```javascript
+const testOrder = {
+  order_id: 'TEST001',
+  total: 50.00,
+  order_type: 'DELIVERY',
+  customer: {
+    whatsapp: '+5511888999000',
+    name: 'Maria Test',
+    email: 'maria@test.com'
+  }
+};
+
+const result = await loyalty.processOrder(testOrder);
+// Expected: Customer created, 50 points awarded, welcome reward triggered
+```
+</Accordion>
+
+<Accordion title="Test Scenario 2: Returning Customer with Coupon">
+```javascript  
+const returningCustomerOrder = {
+  order_id: 'TEST002',
+  total: 75.00,
+  order_type: 'PICKUP',
+  customer: {
+    whatsapp: '+5511888999000' // Same customer as before
+  },
+  coupon_code: 'WELCOME10' // 10% discount coupon
+};
+
+const result = await loyalty.processOrder(returningCustomerOrder);
+// Expected: Customer found, points awarded, coupon discount applied
+```
+</Accordion>
+
+<Accordion title="Test Scenario 3: Invalid Coupon Handling">
+```javascript
+const invalidCouponOrder = {
+  order_id: 'TEST003', 
+  total: 25.00,
+  order_type: 'DELIVERY',
+  customer: {
+    whatsapp: '+5511888999000'
+  },
+  coupon_code: 'EXPIRED123' // Invalid/expired coupon
+};
+
+const result = await loyalty.processOrder(invalidCouponOrder);
+// Expected: Order processed, but coupon error handled gracefully
+```
+</Accordion>
+
+### Error Handling Best Practices
+
+Implement robust error handling for production use:
+
+<CodeGroup>
+```javascript Error Handling Examples
+// Handle network errors
+try {
+  const customer = await loyalty.findOrCreateCustomer(customerData);
+} catch (error) {
+  if (error.message.includes('timeout') || error.message.includes('network')) {
+    // Retry logic for network issues
+    console.log('Network error, retrying...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    return await loyalty.findOrCreateCustomer(customerData);
+  }
+  throw error;
+}
+
+// Handle rate limiting
+if (error.message.includes('rate_limit_exceeded')) {
+  const retryAfter = error.details?.retry_after || 60;
+  console.log(`Rate limited. Retrying after ${retryAfter} seconds`);
+  await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+  return await apiCall();
+}
+
+// Handle business logic errors gracefully  
+if (error.code === 'COUPON_EXPIRED') {
+  // Continue with order processing, just skip the discount
+  console.log('Coupon expired, processing order without discount');
+  return { discount_amount: 0, message: 'Coupon expired' };
+}
+```
+</CodeGroup>
+
+## Step 6: Production Deployment
+
+### Pre-Production Checklist
+
+Before going live, ensure you've completed:
+
+<Card title="API Key Management" icon="key">
+  - [ ] Generate production API keys with minimal required permissions
+  - [ ] Store keys securely as environment variables
+  - [ ] Configure IP restrictions if applicable
+  - [ ] Set up key rotation schedule
+</Card>
+
+<Card title="Error Handling" icon="shield">
+  - [ ] Implement retry logic for network issues
+  - [ ] Handle rate limiting gracefully  
+  - [ ] Log API errors for monitoring
+  - [ ] Test with invalid/expired coupons
+</Card>
+
+<Card title="Performance" icon="gauge">
+  - [ ] Test with high order volumes
+  - [ ] Implement request timeout handling
+  - [ ] Cache customer data appropriately
+  - [ ] Monitor API response times
+</Card>
+
+<Card title="Business Logic" icon="briefcase">
+  - [ ] Verify points calculation accuracy
+  - [ ] Test all discount types (percentage, fixed, free items)
+  - [ ] Validate coupon usage restrictions
+  - [ ] Confirm tier progression logic
+</Card>
+
+### Production Configuration
+
+Update your configuration for production environment:
+
+<CodeGroup>
+```javascript Production Config
+const loyaltyConfig = {
+  // Use production API URL
+  baseUrl: 'https://api.zupy.com/v1',
+  
+  // Production API key from environment
+  apiKey: process.env.ZUPY_PRODUCTION_API_KEY,
+  
+  // Your company configuration  
+  companyId: process.env.ZUPY_COMPANY_ID,
+  
+  // Timeout and retry settings
+  timeout: 30000, // 30 seconds
+  maxRetries: 3,
+  
+  // Enable production logging
+  enableLogging: true,
+  logLevel: 'info'
+};
+```
+
+```python Production Config
+import os
+
+LOYALTY_CONFIG = {
+    'base_url': 'https://api.zupy.com/v1',
+    'api_key': os.environ['ZUPY_PRODUCTION_API_KEY'],
+    'company_id': os.environ['ZUPY_COMPANY_ID'],
+    'timeout': 30,
+    'max_retries': 3,
+    'enable_logging': True,
+    'log_level': 'INFO'
+}
+```
+</CodeGroup>
+
+### Monitoring & Support
+
+Set up monitoring for your loyalty integration:
+
+- **API Response Times**: Monitor average response times and set alerts for degradation
+- **Error Rates**: Track authentication failures, validation errors, and network issues  
+- **Business Metrics**: Monitor points awarded, coupons redeemed, and customer engagement
+- **Support Contact**: [dev@zupy.com](mailto:dev@zupy.com) for production issues
+
+## Next Steps
+
+Congratulations! You now have a complete loyalty program integration. Here's what to explore next:
+
+<Card title="Advanced Features" icon="star">
+  Explore webhooks, RFM segmentation, and advanced reward configurations
+</Card>
+
+<Card title="Analytics Integration" icon="chart-line">
+  Set up analytics tracking for loyalty program performance
+</Card>
+
+<Card title="Customer Communications" icon="message">
+  Integrate WhatsApp notifications and email campaigns
+</Card>
+
+<Card title="Apple Wallet Integration" icon="wallet">
+  Create digital loyalty cards for Apple Wallet
+</Card>
+
+## Support & Community
+
+<Card title="Developer Support" icon="envelope" href="mailto:dev@zupy.com">
+  Get technical support from our developer team
+</Card>
+
+<Card title="API Documentation" icon="book" href="/api-reference/loyalty/introduction">
+  Complete reference for all loyalty program endpoints
+</Card>
+
+<Card title="Status Page" icon="activity" href="https://status.zupy.com">
+  Monitor API availability and system status
+</Card>
+
+---
+
+<Tip>
+  **Success Tip**: Start with staging environment testing, then gradually roll out to production with proper monitoring and error handling in place.
+</Tip>

@@ -1,36 +1,98 @@
 ---
 title: "Validate Coupon"
-api: "POST /loyalty/coupons/validate"
-description: "Verify if a coupon code is valid and retrieve its details without marking it as used"
+api: "POST /api/coupons/{coupon_code}/validate"
+description: "Validate coupon codes for usage and calculate discount amounts with comprehensive business rule checking"
 ---
 
 ## Overview
 
-This endpoint validates a coupon code without consuming it, allowing staff to verify coupon details before applying discounts. It checks expiration dates, usage status, and returns complete coupon information including customer details and discount values. This is typically used by POS systems to preview coupon details before redemption.
+This endpoint validates coupon codes before usage, returning detailed discount information and eligibility status. It performs comprehensive validation including expiration dates, usage limits, order restrictions, and customer eligibility rules.
+
+<Note>
+  **Integration Flow**: Use this endpoint before order finalization to check coupon validity and calculate discounts. Follow with the [Use Coupon](/api-reference/coupons/redeem) endpoint after successful payment.
+</Note>
 
 ## Authentication
 
 <ParamField header="Authorization" type="string" required>
   Bearer token for API authentication
   ```
-  Authorization: Bearer {your_api_key}
+  Authorization: Bearer zup_live_sk_1a2b3c4d5e6f7g8h9i0j
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="coupon_code" type="string" required>
+  The coupon code to validate
+  ```
+  ZUP-ABC123 or CZ-A7B9C2D1
   ```
 </ParamField>
 
 ## Request Body
 
-<ParamField body="coupon_code" type="string" required>
-  Unique coupon code to validate (format: CP-XXXXXXXX)
-  ```
-  CP-14A578D0
-  ```
-</ParamField>
-
-<ParamField body="restaurant_id" type="string" required>
-  Company identifier for validation context
-  ```
-  comp_bella_vista
-  ```
+<ParamField body="order" type="object" required>
+  Order information for discount calculation and validation
+  
+  <Expandable title="Order Object">
+    <ParamField body="total" type="string" required>
+      Order total amount in Brazilian reais
+      ```
+      "45.50"
+      ```
+    </ParamField>
+    
+    <ParamField body="order_type" type="string">
+      Type of order for restriction validation
+      ```
+      DELIVERY | PICKUP | DINE_IN
+      ```
+    </ParamField>
+    
+    <ParamField body="shipping_fee" type="string">
+      Delivery fee amount (relevant for delivery discounts)
+      ```
+      "8.00"
+      ```
+    </ParamField>
+    
+    <ParamField body="customer_id" type="string" required>
+      Zupy customer identifier
+      ```
+      ZP-4F95FB0A
+      ```
+    </ParamField>
+    
+    <ParamField body="items" type="array">
+      Array of order items for FREE_ITEM validation
+      
+      <Expandable title="Item Object">
+        <ParamField body="id" type="string">
+          Product/item identifier
+        </ParamField>
+        
+        <ParamField body="name" type="string">
+          Item name
+        </ParamField>
+        
+        <ParamField body="price" type="number">
+          Item price
+        </ParamField>
+        
+        <ParamField body="category" type="string">
+          Item category (for category-specific coupons)
+        </ParamField>
+      </Expandable>
+    </ParamField>
+    
+    <ParamField body="platform" type="string">
+      Integration platform identifier
+      ```
+      goomer | repediu | ifood | pdv
+      ```
+    </ParamField>
+  </Expandable>
 </ParamField>
 
 ## Response
@@ -43,115 +105,239 @@ This endpoint validates a coupon code without consuming it, allowing staff to ve
   The validated coupon code
 </ResponseField>
 
-<ResponseField name="member_id" type="string">
-  Customer identifier who owns this coupon
+<ResponseField name="reward_name" type="string">
+  Name of the reward associated with this coupon
 </ResponseField>
 
-<ResponseField name="customer_name" type="string">
-  Customer's display name
+<ResponseField name="customer_id" type="string">
+  Customer identifier who can use this coupon
 </ResponseField>
 
-<ResponseField name="reward" type="object">
-  Details about the reward this coupon provides
+<ResponseField name="discount" type="object">
+  Detailed discount calculation information
   
-  <Expandable title="Reward Details">
-    <ResponseField name="name" type="string">
-      Display name of the reward
+  <Expandable title="Discount Object">
+    <ResponseField name="applicable" type="boolean">
+      Whether discount can be applied to this order
+    </ResponseField>
+    
+    <ResponseField name="discount_amount" type="string">
+      Calculated discount amount in BRL
     </ResponseField>
     
     <ResponseField name="discount_type" type="string">
-      Type of discount this coupon provides
+      Type of discount being applied
       ```
-      product_free | percentage | fixed_amount | buy_one_get_one
+      percentage | fixed_amount | free_item
       ```
     </ResponseField>
     
-    <ResponseField name="discount_value" type="number">
-      Discount amount or value (interpretation depends on discount_type)
+    <ResponseField name="discount_percentage" type="number">
+      Percentage value (for percentage discounts)
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Human-readable discount description
+    </ResponseField>
+    
+    <ResponseField name="free_item_id" type="string">
+      SKU/ID of free item (for FREE_ITEM coupons)
+    </ResponseField>
+    
+    <ResponseField name="free_item_name" type="string">
+      Name of free item being offered
+    </ResponseField>
+    
+    <ResponseField name="free_item_description" type="string">
+      Description of free item offer
+    </ResponseField>
+    
+    <ResponseField name="maximum_discount" type="string">
+      Maximum discount amount (for percentage coupons with caps)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="usage_instructions" type="string">
+  Instructions for proper coupon usage
+</ResponseField>
+
+<ResponseField name="restrictions" type="object">
+  Active restrictions and requirements
+  
+  <Expandable title="Restrictions Object">
+    <ResponseField name="minimum_order_amount" type="string">
+      Minimum order total required
+    </ResponseField>
+    
+    <ResponseField name="valid_order_types" type="array">
+      Allowed order types for this coupon
+    </ResponseField>
+    
+    <ResponseField name="excluded_items" type="array">
+      Items that cannot be discounted
+    </ResponseField>
+    
+    <ResponseField name="max_usage_per_customer" type="integer">
+      Maximum uses per customer
+    </ResponseField>
+    
+    <ResponseField name="remaining_uses" type="integer">
+      Remaining uses for this customer
     </ResponseField>
   </Expandable>
 </ResponseField>
 
 <ResponseField name="expires_at" type="string">
-  Coupon expiration date and time (ISO 8601)
-</ResponseField>
-
-<ResponseField name="terms" type="string">
-  Terms and conditions for coupon usage
+  Coupon expiration timestamp (ISO 8601)
 </ResponseField>
 
 ## Example Request
 
 <CodeGroup>
 ```bash cURL
-curl -X POST "https://api.zupy.com/v1/loyalty/coupons/validate" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl -X POST "https://api.zupy.com/v1/api/coupons/ZUP-ABC123/validate" \
+  -H "Authorization: Bearer zup_live_sk_1a2b3c4d5e6f7g8h9i0j" \
   -H "Content-Type: application/json" \
   -d '{
-    "coupon_code": "CP-14A578D0",
-    "restaurant_id": "comp_bella_vista"
+    "order": {
+      "total": "45.50",
+      "order_type": "DELIVERY",
+      "shipping_fee": "8.00",
+      "customer_id": "ZP-4F95FB0A",
+      "items": [
+        {
+          "id": "pizza-margherita",
+          "name": "Pizza Margherita",
+          "price": 35.50,
+          "category": "pizza"
+        },
+        {
+          "id": "coca-cola-350ml", 
+          "name": "Coca-Cola 350ml",
+          "price": 10.00,
+          "category": "bebidas"
+        }
+      ],
+      "platform": "goomer"
+    }
   }'
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.zupy.com/v1/loyalty/coupons/validate', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    coupon_code: 'CP-14A578D0',
-    restaurant_id: 'comp_bella_vista'
-  })
-});
+const validateCoupon = async (couponCode, orderData) => {
+  const response = await fetch(`https://api.zupy.com/v1/api/coupons/${couponCode}/validate`, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer zup_live_sk_1a2b3c4d5e6f7g8h9i0j',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      order: {
+        total: "45.50",
+        order_type: "DELIVERY", 
+        shipping_fee: "8.00",
+        customer_id: "ZP-4F95FB0A",
+        items: [
+          {
+            id: "pizza-margherita",
+            name: "Pizza Margherita", 
+            price: 35.50,
+            category: "pizza"
+          }
+        ],
+        platform: "goomer"
+      }
+    })
+  });
+  
+  return await response.json();
+};
 
-const validation = await response.json();
-console.log(validation);
+// Usage
+const result = await validateCoupon('ZUP-ABC123', orderData);
+console.log('Validation result:', result);
 ```
 
 ```python Python
 import requests
 
-url = "https://api.zupy.com/v1/loyalty/coupons/validate"
-headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
-    "Content-Type": "application/json"
-}
-data = {
-    "coupon_code": "CP-14A578D0",
-    "restaurant_id": "comp_bella_vista"
-}
+def validate_coupon(coupon_code, order_data):
+    url = f"https://api.zupy.com/v1/api/coupons/{coupon_code}/validate"
+    headers = {
+        'Authorization': 'Bearer zup_live_sk_1a2b3c4d5e6f7g8h9i0j',
+        'Content-Type': 'application/json'
+    }
+    
+    payload = {
+        'order': {
+            'total': '45.50',
+            'order_type': 'DELIVERY',
+            'shipping_fee': '8.00', 
+            'customer_id': 'ZP-4F95FB0A',
+            'items': [
+                {
+                    'id': 'pizza-margherita',
+                    'name': 'Pizza Margherita',
+                    'price': 35.50,
+                    'category': 'pizza'
+                }
+            ],
+            'platform': 'goomer'
+        }
+    }
+    
+    response = requests.post(url, json=payload, headers=headers)
+    return response.json()
 
-response = requests.post(url, headers=headers, json=data)
-validation = response.json()
-print(validation)
+# Usage
+result = validate_coupon('ZUP-ABC123', order_data)
+print('Validation result:', result)
 ```
 
 ```php PHP
 <?php
-$url = "https://api.zupy.com/v1/loyalty/coupons/validate";
+function validateCoupon($couponCode, $orderData) {
+    $url = "https://api.zupy.com/v1/api/coupons/{$couponCode}/validate";
+    
+    $headers = [
+        'Authorization: Bearer zup_live_sk_1a2b3c4d5e6f7g8h9i0j',
+        'Content-Type: application/json'
+    ];
+    
+    $payload = [
+        'order' => [
+            'total' => '45.50',
+            'order_type' => 'DELIVERY',
+            'shipping_fee' => '8.00',
+            'customer_id' => 'ZP-4F95FB0A',
+            'items' => [
+                [
+                    'id' => 'pizza-margherita',
+                    'name' => 'Pizza Margherita',
+                    'price' => 35.50,
+                    'category' => 'pizza'
+                ]
+            ],
+            'platform' => 'goomer'
+        ]
+    ];
+    
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => implode("\r\n", $headers),
+            'content' => json_encode($payload)
+        ]
+    ]);
+    
+    $response = file_get_contents($url, false, $context);
+    return json_decode($response, true);
+}
 
-$headers = [
-    "Authorization: Bearer YOUR_API_KEY",
-    "Content-Type: application/json"
-];
-
-$data = [
-    "coupon_code" => "CP-14A578D0",
-    "restaurant_id" => "comp_bella_vista"
-];
-
-$response = file_get_contents($url, false, stream_context_create([
-    'http' => [
-        'method' => 'POST',
-        'header' => implode("\r\n", $headers),
-        'content' => json_encode($data)
-    ]
-]));
-
-$validation = json_decode($response, true);
-print_r($validation);
+// Usage
+$result = validateCoupon('ZUP-ABC123', $orderData);
+print_r($result);
 ?>
 ```
 </CodeGroup>
@@ -159,295 +345,336 @@ print_r($validation);
 ## Example Response
 
 <CodeGroup>
-```json 200 - Valid Coupon
+```json 200 - Valid Percentage Coupon
 {
   "valid": true,
-  "coupon_code": "CP-14A578D0",
-  "member_id": "ZP-4F95FB0A",
-  "customer_name": "João Silva",
-  "reward": {
-    "name": "Pizza Margherita Grátis",
-    "discount_type": "product_free",
-    "discount_value": 35.00
+  "coupon_code": "ZUP-ABC123",
+  "reward_name": "15% Desconto Delivery",
+  "customer_id": "ZP-4F95FB0A",
+  "discount": {
+    "applicable": true,
+    "discount_amount": "6.83",
+    "discount_type": "percentage", 
+    "discount_percentage": 15,
+    "description": "15% de desconto no pedido",
+    "free_item_id": null,
+    "free_item_name": null,
+    "free_item_description": null,
+    "maximum_discount": "20.00"
   },
-  "expires_at": "2025-09-20T23:59:59Z",
-  "terms": "Válido apenas para consumo no local. Não pode ser combinado com outras promoções."
+  "usage_instructions": "Válido apenas para delivery. Desconto aplicado sobre o valor total do pedido.",
+  "restrictions": {
+    "minimum_order_amount": "30.00",
+    "valid_order_types": ["DELIVERY"],
+    "excluded_items": [],
+    "max_usage_per_customer": 1,
+    "remaining_uses": 1
+  },
+  "expires_at": "2025-09-10T23:59:59Z"
 }
 ```
 
-```json 200 - Valid Percentage Discount
+```json 200 - Valid Free Item Coupon
 {
   "valid": true,
-  "coupon_code": "CP-B47XY912",
-  "member_id": "ZP-4F95FB0A",
-  "customer_name": "João Silva",
-  "reward": {
-    "name": "10% de Desconto",
-    "discount_type": "percentage",
-    "discount_value": 10.0
+  "coupon_code": "CZ-WELCOME01",
+  "reward_name": "🎉 Shake de Chegada Grátis", 
+  "customer_id": "ZP-4F95FB0A",
+  "discount": {
+    "applicable": true,
+    "discount_amount": "0.00",
+    "discount_type": "free_item",
+    "discount_percentage": null,
+    "description": "Shake grátis para novos clientes",
+    "free_item_id": "shake-morango-300ml",
+    "free_item_name": "Shake de Morango 300ml",
+    "free_item_description": "Shake cremoso de morango com chantilly",
+    "maximum_discount": null
   },
-  "expires_at": "2025-09-22T23:59:59Z",
-  "terms": "Válido para pedidos acima de R$ 20,00. Desconto máximo de R$ 50,00."
+  "usage_instructions": "Adicione o item gratuito ao pedido. Válido apenas uma vez por cliente.",
+  "restrictions": {
+    "minimum_order_amount": "0.00",
+    "valid_order_types": ["DELIVERY", "PICKUP"],
+    "excluded_items": [],
+    "max_usage_per_customer": 1,
+    "remaining_uses": 1
+  },
+  "expires_at": "2025-12-31T23:59:59Z"
 }
 ```
 
-```json 400 - Invalid Coupon
+```json 200 - Valid Fixed Amount Coupon
 {
-  "valid": false,
-  "error": "coupon_not_found",
-  "message": "Cupom 'CP-INVALID1' não encontrado"
+  "valid": true,
+  "coupon_code": "SAVE10BRL",
+  "reward_name": "R$ 10,00 OFF",
+  "customer_id": "ZP-4F95FB0A",
+  "discount": {
+    "applicable": true,
+    "discount_amount": "10.00",
+    "discount_type": "fixed_amount",
+    "discount_percentage": null,
+    "description": "R$ 10,00 de desconto",
+    "free_item_id": null,
+    "free_item_name": null, 
+    "free_item_description": null,
+    "maximum_discount": null
+  },
+  "usage_instructions": "Desconto de R$ 10,00 aplicado automaticamente no checkout.",
+  "restrictions": {
+    "minimum_order_amount": "40.00",
+    "valid_order_types": ["DELIVERY", "PICKUP", "DINE_IN"],
+    "excluded_items": ["taxa-entrega"],
+    "max_usage_per_customer": 3,
+    "remaining_uses": 2
+  },
+  "expires_at": "2025-09-30T23:59:59Z"
 }
 ```
 
-```json 400 - Expired Coupon
+```json 400 - Invalid Coupon (Expired)
 {
   "valid": false,
-  "error": "coupon_expired",
-  "message": "Cupom expirou em 20/09/2025"
+  "coupon_code": "EXPIRED123",
+  "error": {
+    "code": "COUPON_EXPIRED",
+    "message": "Este cupom expirou em 30 de agosto de 2025",
+    "details": {
+      "expired_at": "2025-08-30T23:59:59Z",
+      "current_time": "2025-09-04T15:30:00Z"
+    }
+  }
 }
 ```
 
-```json 400 - Already Used
+```json 400 - Minimum Order Not Met
 {
   "valid": false,
-  "error": "coupon_already_used",
-  "message": "Cupom já foi utilizado em 18/09/2025 às 14:32"
+  "coupon_code": "ZUP-ABC123", 
+  "error": {
+    "code": "MINIMUM_ORDER_NOT_MET",
+    "message": "Pedido mínimo de R$ 50,00 não atingido",
+    "details": {
+      "required_minimum": "50.00",
+      "order_total": "35.50",
+      "difference": "14.50"
+    }
+  }
+}
+```
+
+```json 400 - Usage Limit Exceeded
+{
+  "valid": false,
+  "coupon_code": "ZUP-ABC123",
+  "error": {
+    "code": "USAGE_LIMIT_EXCEEDED", 
+    "message": "Este cupom já foi usado o máximo de vezes permitidas",
+    "details": {
+      "max_usage_per_customer": 1,
+      "current_usage_count": 1,
+      "last_used_at": "2025-08-15T14:30:00Z"
+    }
+  }
+}
+```
+
+```json 400 - Invalid Order Type
+{
+  "valid": false,
+  "coupon_code": "DELIVERY-ONLY",
+  "error": {
+    "code": "INVALID_ORDER_TYPE",
+    "message": "Este cupom é válido apenas para delivery", 
+    "details": {
+      "order_type": "PICKUP",
+      "valid_order_types": ["DELIVERY"]
+    }
+  }
+}
+```
+
+```json 404 - Coupon Not Found
+{
+  "valid": false,
+  "coupon_code": "NOTFOUND123",
+  "error": {
+    "code": "COUPON_NOT_FOUND",
+    "message": "Cupom não encontrado ou inativo",
+    "details": {
+      "suggestions": [
+        "Verifique se o código foi digitado corretamente",
+        "Confirme se o cupom ainda está ativo"
+      ]
+    }
+  }
 }
 ```
 </CodeGroup>
 
-## Validation Rules
+## Discount Types Explained
 
-### Format Validation
-- **Code Format**: Must match pattern `CP-[A-Z0-9]{8}`
-- **Case Insensitive**: Codes are normalized to uppercase
-- **Length**: Exactly 11 characters including prefix
-
-### Status Validation
-- **Not Used**: Coupon hasn't been redeemed yet
-- **Not Expired**: Current time before expiration date
-- **Active Customer**: Customer account is active
-- **Correct Company**: Coupon belongs to requesting company
-
-### Business Rules
-- **Single Use**: Each coupon can only be validated/used once
-- **Company Scope**: Coupons are only valid for their issuing company
-- **Timezone**: Expiration checked against company timezone
-- **Customer Status**: Inactive customers have invalid coupons
-
-## Discount Value Interpretation
-
-### Product Free (product_free)
-```json
-{
-  "discount_type": "product_free",
-  "discount_value": 35.00  // Value of the free product
-}
+### Percentage Discount
+Calculates discount as percentage of order total:
 ```
-- Customer receives specific item at no charge
-- `discount_value` represents the monetary value saved
-
-### Percentage Discount (percentage)
-```json
-{
-  "discount_type": "percentage", 
-  "discount_value": 10.0  // 10% discount
-}
+discount_amount = (order_total * discount_percentage) / 100
+final_total = order_total - discount_amount
 ```
-- Applied as percentage off total order
-- May have maximum discount limit (check terms)
 
-### Fixed Amount Discount (fixed_amount)
-```json
-{
-  "discount_type": "fixed_amount",
-  "discount_value": 15.00  // R$ 15,00 off
-}
+**Maximum Discount Cap**: Some percentage coupons have maximum discount limits to prevent excessive discounts on large orders.
+
+### Fixed Amount Discount  
+Applies fixed monetary discount:
 ```
-- Fixed monetary discount in BRL
-- Applied directly to order total
-
-### Buy One Get One (buy_one_get_one)
-```json
-{
-  "discount_type": "buy_one_get_one",
-  "discount_value": 25.00  // Value of free item
-}
+discount_amount = fixed_discount_value
+final_total = max(0, order_total - discount_amount)
 ```
-- Purchase requirement for free item
-- `discount_value` represents value of free item
 
-## POS Integration Examples
+**Minimum Order Protection**: Fixed discounts usually require minimum order amounts to prevent negative totals.
 
-### Basic Validation Flow
-```javascript
-const validateCoupon = async (couponCode) => {
+### Free Item Discount
+Adds specific item to order at no charge:
+- Item is identified by `free_item_id` (SKU/product code)
+- Item must be added to cart by the integration system
+- `discount_amount` is typically "0.00" as item addition is handled separately
+
+## Business Rules Validation
+
+### Order Type Restrictions
+Coupons can be restricted to specific order types:
+
+<ResponseField name="DELIVERY">
+  **Delivery Orders**: Orders delivered to customer address
+</ResponseField>
+
+<ResponseField name="PICKUP">
+  **Pickup Orders**: Customer collects order at store
+</ResponseField>
+
+<ResponseField name="DINE_IN">
+  **Dine-in Orders**: Customer eats at restaurant
+</ResponseField>
+
+### Customer Eligibility
+- **First-time Customer**: Some coupons only for new customers
+- **Loyalty Tier**: Certain coupons restricted by customer tier (Bronze, Silver, Gold, etc.)
+- **Usage History**: Limits on how many times each customer can use specific coupons
+
+### Item Restrictions
+- **Excluded Items**: Some items cannot be discounted (e.g., delivery fees, alcohol)
+- **Category Restrictions**: Discounts may apply only to specific product categories
+- **FREE_ITEM Availability**: Free items must be in stock and available
+
+## Error Codes
+
+| Code | Description | Action Required |
+|------|-------------|-----------------|
+| `COUPON_EXPIRED` | Coupon has passed expiration date | Show expiration date to customer |
+| `COUPON_NOT_FOUND` | Invalid or inactive coupon code | Verify code spelling |
+| `MINIMUM_ORDER_NOT_MET` | Order total below required minimum | Display required minimum amount |
+| `USAGE_LIMIT_EXCEEDED` | Customer has used coupon maximum times | Explain usage limit |
+| `INVALID_ORDER_TYPE` | Order type not allowed for coupon | Show valid order types |
+| `CUSTOMER_NOT_ELIGIBLE` | Customer doesn't meet coupon requirements | Explain eligibility criteria |
+| `FREE_ITEM_UNAVAILABLE` | Free item is out of stock | Offer alternative or rain check |
+| `INVALID_CUSTOMER_ID` | Customer ID not found or invalid | Verify customer exists |
+
+## Integration Best Practices
+
+### Pre-validation Checks
+Before calling the validation endpoint, verify:
+
+1. **Coupon Code Format**: Basic format validation to avoid unnecessary API calls
+2. **Customer Authentication**: Ensure customer is logged in and ID is available
+3. **Order Completeness**: All required order data is collected
+
+### Error Handling Strategy
+
+<CodeGroup>
+```javascript Error Handling Example
+const validateCouponSafely = async (couponCode, orderData) => {
   try {
-    const response = await fetch('/loyalty/coupons/validate', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer API_KEY',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        coupon_code: couponCode,
-        restaurant_id: 'comp_bella_vista'
-      })
-    });
-    
-    const result = await response.json();
+    const result = await validateCoupon(couponCode, orderData);
     
     if (result.valid) {
+      // Apply discount to UI
       return {
         success: true,
-        customerName: result.customer_name,
-        rewardName: result.reward.name,
-        discountType: result.reward.discount_type,
-        discountValue: result.reward.discount_value,
-        expiresAt: result.expires_at,
-        terms: result.terms
+        discount: result.discount,
+        message: result.usage_instructions
       };
     } else {
-      return {
-        success: false,
-        error: result.error,
-        message: result.message
-      };
+      // Handle business rule violations gracefully
+      const error = result.error;
+      
+      switch (error.code) {
+        case 'MINIMUM_ORDER_NOT_MET':
+          return {
+            success: false,
+            message: `Adicione mais R$ ${error.details.difference} para usar este cupom`,
+            suggestedAction: 'increase_order'
+          };
+          
+        case 'COUPON_EXPIRED':
+          return {
+            success: false,
+            message: 'Este cupom expirou. Confira outros cupons disponíveis.',
+            suggestedAction: 'show_available_coupons'
+          };
+          
+        case 'USAGE_LIMIT_EXCEEDED':
+          return {
+            success: false,
+            message: 'Você já usou este cupom. Confira outros cupons disponíveis.',
+            suggestedAction: 'show_available_coupons'
+          };
+          
+        default:
+          return {
+            success: false,
+            message: error.message || 'Cupom inválido',
+            suggestedAction: 'remove_coupon'
+          };
+      }
     }
-  } catch (error) {
+    
+  } catch (networkError) {
+    // Handle network/API errors
+    console.error('Coupon validation error:', networkError);
     return {
       success: false,
-      error: 'network_error',
-      message: 'Erro de conexão. Tente novamente.'
+      message: 'Erro ao validar cupom. Tente novamente.',
+      suggestedAction: 'retry'
     };
   }
 };
 ```
+</CodeGroup>
 
-### Display Validation Result
-```javascript
-const displayCouponValidation = (validation) => {
-  if (!validation.success) {
-    return showErrorMessage(validation.message);
-  }
-  
-  const discountText = formatDiscount(
-    validation.discountType, 
-    validation.discountValue
-  );
-  
-  return `
-    <div class="coupon-validation-success">
-      <h3>Cupom Válido ✓</h3>
-      <div class="customer-info">
-        <strong>Cliente:</strong> ${validation.customerName}
-      </div>
-      <div class="reward-info">
-        <strong>Recompensa:</strong> ${validation.rewardName}
-      </div>
-      <div class="discount-info">
-        <strong>Desconto:</strong> ${discountText}
-      </div>
-      <div class="expiry-info">
-        <strong>Válido até:</strong> ${formatDate(validation.expiresAt)}
-      </div>
-      <div class="terms-info">
-        <small>${validation.terms}</small>
-      </div>
-      <button onclick="applyCoupon()">Aplicar Cupom</button>
-    </div>
-  `;
-};
+### Performance Optimization
 
-const formatDiscount = (type, value) => {
-  switch(type) {
-    case 'percentage': return `${value}% de desconto`;
-    case 'fixed_amount': return `R$ ${value.toFixed(2)} de desconto`;
-    case 'product_free': return 'Produto grátis';
-    case 'buy_one_get_one': return 'Compre 1 Leve 2';
-    default: return 'Desconto especial';
-  }
-};
-```
-
-### Error Handling
-```javascript
-const handleCouponValidationError = (error, message) => {
-  const errorMessages = {
-    'coupon_not_found': 'Cupom não encontrado. Verifique o código digitado.',
-    'coupon_expired': 'Este cupom já expirou.',
-    'coupon_already_used': 'Este cupom já foi utilizado.',
-    'invalid_company': 'Cupom não válido para este estabelecimento.',
-    'customer_inactive': 'Cliente inativo. Entre em contato com o suporte.',
-    'network_error': 'Erro de conexão. Verifique sua internet.'
-  };
-  
-  const userMessage = errorMessages[error] || message || 'Erro desconhecido';
-  
-  return showErrorDialog({
-    title: 'Cupom Inválido',
-    message: userMessage,
-    actions: ['Tentar Novamente', 'Cancelar']
-  });
-};
-```
-
-## Business Logic
-
-### Validation Process
-1. **Format Check**: Verify coupon code format
-2. **Database Lookup**: Find coupon in system
-3. **Status Check**: Verify not used and not expired
-4. **Company Match**: Ensure coupon belongs to requesting company
-5. **Customer Status**: Check if customer account is active
-
-### Security Considerations
-- **Rate Limiting**: Prevent brute force coupon guessing
-- **Audit Logging**: Log all validation attempts
-- **Company Isolation**: Strict company boundary enforcement
-- **Time-based Checks**: Server-side expiration validation
-
-## Common Use Cases
-
-### Restaurant POS
-- Staff scans/enters coupon code
-- System validates before applying discount
-- Clear display of customer info and discount details
-- Terms and conditions shown to staff
-
-### Mobile App
-- Customer shows coupon in app
-- Staff validates code manually
-- Real-time validation feedback
-- Expiration warnings
-
-### Self-Service Kiosks
-- Customer enters coupon code
-- Automatic validation and discount application
-- Clear success/error messaging
-- Fallback to staff assistance
-
-## Error Codes
-
-| Code | Description |
-|------|-------------|
-| `coupon_not_found` | Coupon code doesn't exist |
-| `coupon_expired` | Coupon has passed expiration date |
-| `coupon_already_used` | Coupon has been redeemed already |
-| `invalid_company` | Coupon doesn't belong to requesting company |
-| `customer_inactive` | Customer account is deactivated |
-| `invalid_format` | Coupon code format is incorrect |
-| `unauthorized` | Missing or invalid API credentials |
+- **Debounce Validation**: Avoid validating on every keystroke
+- **Cache Results**: Cache validation results for 30-60 seconds
+- **Async Validation**: Don't block UI while validating
+- **Fallback Handling**: Gracefully handle API timeouts
 
 ## Rate Limits
 
-- **Production**: 300 requests per minute per company
-- **Staging**: 100 requests per minute per company
+- **Production**: 500 validations per minute per API key
+- **Staging**: 100 validations per minute per API key
 
 <Tip>
-  **Validation Flow**: Always validate coupons before redemption to provide better user experience and prevent errors during actual redemption process.
+  **Performance**: Validation typically responds within 200ms. Cache results temporarily to avoid redundant validations for the same coupon + order combination.
 </Tip>
 
 <Warning>
-  **Security**: Validation requests are logged for security purposes. Excessive failed validations may trigger rate limiting or security alerts.
+  **Security**: Always validate coupons server-side before applying discounts. Never trust client-side validation alone for discount calculations.
 </Warning>
+
+## Next Steps
+
+After successful validation:
+
+1. **Apply Discount**: Update order total with calculated discount amount
+2. **Show Restrictions**: Display any usage instructions to the customer  
+3. **Use Coupon**: Call [Use Coupon endpoint](/api-reference/coupons/redeem) after payment
+4. **Handle Errors**: Implement graceful error handling for all validation scenarios

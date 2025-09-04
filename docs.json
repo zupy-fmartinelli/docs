@@ -64,7 +64,9 @@
               "api-reference/loyalty/transactions",
               "api-reference/loyalty/balance",
               "api-reference/loyalty/history",
-              "api-reference/loyalty/calculate-points"
+              "api-reference/loyalty/calculate-points",
+              "api-reference/loyalty/points-add",
+              "api-reference/loyalty/points-subtract"
             ]
           },
           {
