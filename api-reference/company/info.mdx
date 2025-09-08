@@ -1,6 +1,6 @@
 ---
 title: "Get Company Information"
-api: "GET /api/loyalty/v1/company/info/"
+api: "GET /api/loyalty/v1/company/"
 description: "Retrieve basic company information including loyalty program overview and configuration details"
 ---
 
@@ -112,13 +112,13 @@ This endpoint returns essential company information including loyalty program co
 <RequestExample>
 
 ```bash cURL
-curl -X GET "https://webmaster.zupers.com.br/api/loyalty/v1/company/info/" \
+curl -X GET "https://webmaster.zupers.com.br/api/loyalty/v1/company/" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://webmaster.zupers.com.br/api/loyalty/v1/company/info/', {
+const response = await fetch('https://webmaster.zupers.com.br/api/loyalty/v1/company/', {
   method: 'GET',
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY',
@@ -133,7 +133,7 @@ console.log('Company information:', companyInfo);
 ```python Python
 import requests
 
-url = "https://webmaster.zupers.com.br/api/loyalty/v1/company/info/"
+url = "https://webmaster.zupers.com.br/api/loyalty/v1/company/"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -150,30 +150,22 @@ print("Company information:", company_info)
 
 ```json Response
 {
-  "id": "comp_1234567890",
-  "name": "Miola Restaurante",
-  "slug": "miola-restaurante",
-  "description": "Authentic Brazilian cuisine with modern flavors",
-  "logo_url": "https://storage.zupy.com/logos/miola-logo.png",
-  "website": "https://miolarestaurante.com.br",
-  "loyalty_program": {
-    "program_name": "Miola Rewards",
-    "currency_name": "ZupCoins",
-    "currency_symbol": "ZC",
-    "point_value": 0.01,
-    "active": true
-  },
-  "contact": {
-    "email": "contato@miolarestaurante.com.br",
-    "phone": "+5511999999999",
-    "address": "Rua das Palmeiras, 123 - São Paulo, SP - Brasil",
-    "support_email": "suporte@miolarestaurante.com.br"
-  },
-  "settings": {
-    "timezone": "America/Sao_Paulo",
-    "currency": "BRL",
-    "language": "pt-BR"
-  }
+  "id": "1474883d96603e4914ef43bb135",
+  "name": "Miola Smash Burger",
+  "trading_name": "Miola Smash Burger",
+  "email": "wendel_f_m@hotmail.com",
+  "phone": "(11) 98574-9872",
+  "website": "https://miolaburger.com.br/",
+  "logo": "https://cdn.zupy.com/media/company_files/logo-miola-smash-burger.jpg",
+  "description": "Miola Burger Hamburgueria Artesanal",
+  "business_type": "Hamburgueria",
+  "currency": "BRL",
+  "cnpj": "35.251.614/0001-20",
+  "address": null,
+  "loyalty_programs_count": 1,
+  "active_customers_count": 1022,
+  "created_at": "2025-03-28T17:02:53.092523Z",
+  "active": true
 }
 ```
 
