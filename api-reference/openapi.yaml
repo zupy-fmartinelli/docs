@@ -297,6 +297,124 @@ components:
           type: string
           format: date-time
 
+    LoyaltyProgram:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "1474884f79a5ec42bc017be2aac"
+        name:
+          type: string
+          example: "Clube do Miola"
+        description:
+          type: string
+          example: "Os Melhores Hamburguers da sua Vida!"
+        company:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "1474883d96603e4914ef43bb135"
+            name:
+              type: string
+              example: "Miola Smash Burger"
+        active:
+          type: boolean
+          example: true
+        points_name:
+          type: string
+          example: "Smashes"
+        is_public:
+          type: boolean
+          example: true
+        has_welcome_reward:
+          type: boolean
+          example: false
+        welcome_reward_description:
+          type: string
+          nullable: true
+          example: null
+        logo:
+          type: string
+          format: uri
+          example: "https://cdn.zupy.com/media/loyalty/program/logos/4603621878005760_logo_iQ5HYT9.png"
+        icon_image:
+          type: string
+          format: uri
+          nullable: true
+          example: null
+        rewards_count:
+          type: integer
+          example: 20
+        customers_count:
+          type: integer
+          example: 1022
+
+    Reward:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "reward_123456789"
+        name:
+          type: string
+          example: "Free Burger"
+        description:
+          type: string
+          example: "One free classic burger from our menu"
+        points_cost:
+          type: integer
+          example: 500
+        available:
+          type: boolean
+          example: true
+        image:
+          type: string
+          format: uri
+          nullable: true
+        category:
+          type: string
+          example: "Food"
+
+    RedeemRewardRequest:
+      type: object
+      required:
+        - customer_id
+      properties:
+        customer_id:
+          type: string
+          example: "cust_1234567890"
+        notes:
+          type: string
+          example: "Customer preference: no onions"
+
+    RedemptionTransaction:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        redemption_id:
+          type: string
+          example: "redemption_987654321"
+        customer_id:
+          type: string
+          example: "cust_1234567890"
+        reward:
+          $ref: '#/components/schemas/Reward'
+        points_deducted:
+          type: integer
+          example: 500
+        new_balance:
+          type: integer
+          example: 750
+        redemption_code:
+          type: string
+          example: "REDEEM-ABC123"
+        timestamp:
+          type: string
+          format: date-time
+
     Error:
       type: object
       properties:
@@ -561,6 +679,139 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /loyalty/programs/:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: List Loyalty Programs
+      description: Retrieve all active loyalty programs for the company with complete program details including rewards count and customer statistics
+      responses:
+        '200':
+          description: Loyalty programs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LoyaltyProgram'
+              example:
+                - id: "1474884f79a5ec42bc017be2aac"
+                  name: "Clube do Miola"
+                  description: "Os Melhores Hamburguers da sua Vida!"
+                  company:
+                    id: "1474883d96603e4914ef43bb135"
+                    name: "Miola Smash Burger"
+                  active: true
+                  points_name: "Smashes"
+                  is_public: true
+                  has_welcome_reward: false
+                  welcome_reward_description: null
+                  logo: "https://cdn.zupy.com/media/loyalty/program/logos/4603621878005760_logo_iQ5HYT9.png"
+                  icon_image: null
+                  rewards_count: 20
+                  customers_count: 1022
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /loyalty/programs/{program_id}/rewards/:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: List Program Rewards
+      description: Retrieve all rewards available within a specific loyalty program including cost, availability, and redemption details
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Unique loyalty program identifier
+          schema:
+            type: string
+            example: "1474884f79a5ec42bc017be2aac"
+      responses:
+        '200':
+          description: Program rewards retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reward'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Program not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /loyalty/programs/{program_id}/rewards/{reward_id}/redeem/:
+    post:
+      tags:
+        - Loyalty Programs
+      summary: Redeem Reward
+      description: Process a reward redemption for a customer, deducting points and generating redemption confirmation
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Unique loyalty program identifier
+          schema:
+            type: string
+            example: "1474884f79a5ec42bc017be2aac"
+        - name: reward_id
+          in: path
+          required: true
+          description: Unique reward identifier
+          schema:
+            type: string
+            example: "reward_123456789"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedeemRewardRequest'
+      responses:
+        '200':
+          description: Reward redeemed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedemptionTransaction'
+        '400':
+          description: Invalid request or insufficient points
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorValidation'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Program or reward not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /points/add/:
     post:
       tags:
@@ -622,7 +873,7 @@ tags:
   - name: Company
     description: Company information and settings
   - name: Loyalty Programs
-    description: Loyalty program configuration and details
+    description: Loyalty program management, rewards, and redemption operations
   - name: Customers
     description: Customer management and search operations
   - name: Points Operations
