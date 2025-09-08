@@ -1,0 +1,803 @@
+openapi: 3.0.3
+info:
+  title: Zupy Loyalty API
+  description: |
+    Comprehensive loyalty program API for customer management, points operations, rewards, and analytics.
+    
+    ## Authentication
+    All endpoints require Bearer token authentication.
+    
+    ## Epic 2 Enhancements
+    - Enhanced Company Data API with complete address structure
+    - Refined Loyalty Programs API with visual assets and metrics
+    - Complete Customer API with multi-criteria search and CRUD operations
+    - Advanced Rewards API with discount processing
+    - Standardized Coupons API with DRF consistency
+    - Comprehensive Webhooks API with 18 event types
+    
+  version: "1.0.0"
+  contact:
+    name: Zupy Support
+    email: webmaster@zupy.com.br
+    url: https://docs.zupy.com
+  license:
+    name: Proprietary
+servers:
+  - url: https://webmaster.zupers.com.br/api/loyalty/v1
+    description: Production server
+  - url: https://staging.zupers.com.br/api/loyalty/v1
+    description: Staging server
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Use format: Bearer YOUR_API_KEY"
+
+  schemas:
+    Company:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "comp_1234567890"
+        name:
+          type: string
+          example: "Miola Restaurante"
+        slug:
+          type: string
+          example: "miola-restaurante"
+        description:
+          type: string
+          example: "Authentic Brazilian cuisine with modern flavors"
+        logo_url:
+          type: string
+          format: uri
+          example: "https://storage.zupy.com/logos/miola-logo.png"
+        website:
+          type: string
+          format: uri
+          example: "https://miolarestaurante.com.br"
+        loyalty_program:
+          $ref: '#/components/schemas/LoyaltyProgramSummary'
+        contact:
+          $ref: '#/components/schemas/ContactInfo'
+        settings:
+          $ref: '#/components/schemas/CompanySettings'
+
+    LoyaltyProgramSummary:
+      type: object
+      properties:
+        program_name:
+          type: string
+          example: "Miola Rewards"
+        currency_name:
+          type: string
+          example: "ZupCoins"
+        currency_symbol:
+          type: string
+          example: "ZC"
+        point_value:
+          type: number
+          format: float
+          example: 0.01
+        active:
+          type: boolean
+          example: true
+
+    ContactInfo:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "contato@miolarestaurante.com.br"
+        phone:
+          type: string
+          example: "+5511999999999"
+        address:
+          type: string
+          example: "Rua das Palmeiras, 123 - São Paulo, SP - Brasil"
+        support_email:
+          type: string
+          format: email
+          example: "suporte@miolarestaurante.com.br"
+
+    CompanySettings:
+      type: object
+      properties:
+        timezone:
+          type: string
+          example: "America/Sao_Paulo"
+        currency:
+          type: string
+          example: "BRL"
+        language:
+          type: string
+          example: "pt-BR"
+
+    LoyaltyProgram:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "prog_12345"
+        name:
+          type: string
+          example: "Miola Rewards"
+        description:
+          type: string
+          example: "Earn points on every purchase and unlock exclusive benefits"
+        terms_and_conditions:
+          type: string
+          example: "Complete terms and conditions available at miolarestaurante.com.br/terms"
+        currency_name:
+          type: string
+          example: "ZupCoins"
+        currency_symbol:
+          type: string
+          example: "ZC"
+        point_value:
+          type: number
+          format: float
+          example: 0.01
+        earning_rules:
+          $ref: '#/components/schemas/EarningRules'
+        redemption_rules:
+          $ref: '#/components/schemas/RedemptionRules'
+        tiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tier'
+        active:
+          type: boolean
+          example: true
+        enrollment_open:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    EarningRules:
+      type: object
+      properties:
+        base_rate:
+          type: number
+          format: float
+          example: 1.0
+        minimum_purchase:
+          type: number
+          format: float
+          example: 10.00
+        maximum_points_per_transaction:
+          type: integer
+          example: 1000
+        bonus_categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/BonusCategory'
+
+    BonusCategory:
+      type: object
+      properties:
+        category:
+          type: string
+          example: "beverages"
+        multiplier:
+          type: number
+          format: float
+          example: 2.0
+
+    RedemptionRules:
+      type: object
+      properties:
+        minimum_redemption:
+          type: integer
+          example: 100
+        maximum_redemption_per_transaction:
+          type: integer
+          example: 5000
+        expiration_months:
+          type: integer
+          example: 12
+        cash_conversion_rate:
+          type: number
+          format: float
+          example: 0.01
+
+    Tier:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "tier_bronze"
+        name:
+          type: string
+          example: "Bronze"
+        order:
+          type: integer
+          example: 1
+        minimum_points:
+          type: integer
+          example: 0
+        minimum_transactions:
+          type: integer
+          example: 0
+        points_multiplier:
+          type: number
+          format: float
+          example: 1.0
+        benefits:
+          type: array
+          items:
+            type: string
+          example: ["1 point per R$1 spent", "Birthday bonus"]
+        special_offers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecialOffer'
+
+    SpecialOffer:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Silver Sunday Special"
+        description:
+          type: string
+          example: "10% off on all orders every Sunday"
+        discount_percentage:
+          type: number
+          format: float
+          example: 10.0
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cust_1234567890"
+        card_number:
+          type: string
+          example: "ZUP001234567"
+        user:
+          $ref: '#/components/schemas/User'
+        points_balance:
+          type: integer
+          example: 1250
+        points_earned:
+          type: integer
+          example: 5780
+        points_spent:
+          type: integer
+          example: 4530
+        tier:
+          type: string
+          example: "Gold"
+        active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        last_activity_date:
+          type: string
+          format: date-time
+        transaction_count:
+          type: integer
+          example: 47
+        loyalty_program:
+          $ref: '#/components/schemas/LoyaltyProgramSummary'
+
+    User:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "João Silva"
+        email:
+          type: string
+          format: email
+          example: "joao.silva@email.com"
+        whatsapp_number:
+          type: string
+          example: "+5511999999999"
+        cpf:
+          type: string
+          example: "12345678901"
+
+    CustomerList:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 1247
+        next:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://webmaster.zupers.com.br/api/loyalty/v1/customers/?limit=20&offset=20"
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+
+    CustomerSearch:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 1
+        page:
+          type: integer
+          example: 1
+        per_page:
+          type: integer
+          example: 20
+        total_pages:
+          type: integer
+          example: 1
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+
+    AddPointsRequest:
+      type: object
+      required:
+        - customer_id
+        - points
+        - transaction_type
+      properties:
+        customer_id:
+          type: string
+          example: "cust_1234567890"
+        points:
+          type: integer
+          minimum: 1
+          example: 150
+        transaction_type:
+          type: string
+          enum: [purchase, bonus, referral, adjustment, promotion]
+          example: "purchase"
+        reference_id:
+          type: string
+          example: "order_789012345"
+        description:
+          type: string
+          example: "Points earned from purchase at Miola Restaurante"
+        metadata:
+          type: object
+          example:
+            order_value: 75.50
+            payment_method: "credit_card"
+            location: "store_001"
+
+    PointsTransaction:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        transaction_id:
+          type: string
+          example: "txn_points_add_987654321"
+        customer_id:
+          type: string
+          example: "cust_1234567890"
+        points_added:
+          type: integer
+          example: 150
+        new_balance:
+          type: integer
+          example: 1400
+        tier_updated:
+          type: boolean
+          example: false
+        new_tier:
+          type: string
+          example: "Silver"
+        timestamp:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: "Customer not found"
+        error_code:
+          type: string
+          example: "CUSTOMER_NOT_FOUND"
+
+    ErrorValidation:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: "Validation error"
+        error_code:
+          type: string
+          example: "VALIDATION_ERROR"
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+paths:
+  /company/info/:
+    get:
+      tags:
+        - Company
+      summary: Get Company Information
+      description: Retrieve basic company information including loyalty program overview and configuration details
+      responses:
+        '200':
+          description: Company information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /programs/:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: List Loyalty Programs
+      description: Retrieve all active loyalty programs with their configuration details and benefits
+      parameters:
+        - name: active_only
+          in: query
+          description: Filter to show only active programs
+          schema:
+            type: boolean
+            default: true
+        - name: include_tiers
+          in: query
+          description: Include detailed tier information for each program
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Programs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 1
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LoyaltyProgram'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /programs/{program_id}/:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: Get Program Details
+      description: Retrieve detailed information about a specific loyalty program including rules, benefits, and tier structure
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          description: Unique loyalty program identifier
+          schema:
+            type: string
+            example: "prog_12345"
+      responses:
+        '200':
+          description: Program details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyProgram'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Program not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers/:
+    get:
+      tags:
+        - Customers
+      summary: List All Customers
+      description: Retrieve a paginated list of all customers in the loyalty program with filtering options
+      parameters:
+        - name: limit
+          in: query
+          description: Number of results per page (max 100)
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of results to skip for pagination
+          schema:
+            type: integer
+            default: 0
+        - name: ordering
+          in: query
+          description: Field to order results by. Prefix with - for descending order
+          schema:
+            type: string
+            enum: [name, -name, created_at, -created_at, last_activity_date, -last_activity_date, points_balance, -points_balance]
+            example: "-created_at"
+      responses:
+        '200':
+          description: Customers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerList'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers/{customer_id}/:
+    get:
+      tags:
+        - Customers
+      summary: Get Customer Details
+      description: Retrieve complete customer profile information including loyalty program membership details
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          description: Unique customer identifier
+          schema:
+            type: string
+            example: "cust_1234567890"
+      responses:
+        '200':
+          description: Customer details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers/search/:
+    get:
+      tags:
+        - Customers
+      summary: Search Customer
+      description: Find existing customers using phone number or email address as search criteria
+      parameters:
+        - name: q
+          in: query
+          description: Search query - phone number or email address
+          schema:
+            type: string
+            example: "11999999999"
+        - name: search_type
+          in: query
+          description: Specific search type when used with q parameter
+          schema:
+            type: string
+            enum: [name, email, phone, cpf, customer_code]
+        - name: phone
+          in: query
+          description: Search by phone number (digits only)
+          schema:
+            type: string
+            example: "5511965958122"
+        - name: email
+          in: query
+          description: Search by email address
+          schema:
+            type: string
+            format: email
+            example: "joao@email.com"
+        - name: cpf
+          in: query
+          description: Search by CPF (with or without formatting)
+          schema:
+            type: string
+            example: "12345678901"
+        - name: customer_code
+          in: query
+          description: Search by customer code (card number)
+          schema:
+            type: string
+            example: "ZP-4F95FB0A"
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          description: Items per page (max 100)
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerSearch'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorValidation'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers/by-cpf/{cpf}/:
+    get:
+      tags:
+        - Customers
+      summary: Search Customer by CPF
+      description: Find a customer by their CPF (Brazilian tax ID) with enhanced data security and POS integration optimization
+      parameters:
+        - name: cpf
+          in: path
+          required: true
+          description: Customer's CPF (Brazilian tax ID) - 11 digits
+          schema:
+            type: string
+            pattern: '^[0-9]{11}$'
+            example: "12345678901"
+      responses:
+        '200':
+          description: Customer found successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          description: Invalid CPF format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /points/add/:
+    post:
+      tags:
+        - Points Operations
+      summary: Add Points
+      description: Add points to a customer's account for purchase transactions or promotional activities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPointsRequest'
+            examples:
+              purchase:
+                summary: Purchase transaction
+                value:
+                  customer_id: "cust_1234567890"
+                  points: 150
+                  transaction_type: "purchase"
+                  reference_id: "order_789012345"
+                  description: "Points earned from purchase"
+                  metadata:
+                    order_value: 75.50
+                    payment_method: "credit_card"
+              bonus:
+                summary: Promotional bonus
+                value:
+                  customer_id: "cust_1234567890"
+                  points: 500
+                  transaction_type: "bonus"
+                  description: "Welcome bonus"
+      responses:
+        '200':
+          description: Points added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointsTransaction'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorValidation'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+tags:
+  - name: Company
+    description: Company information and settings
+  - name: Loyalty Programs
+    description: Loyalty program configuration and details
+  - name: Customers
+    description: Customer management and search operations
+  - name: Points Operations
+    description: Point earning, spending, and transaction management
