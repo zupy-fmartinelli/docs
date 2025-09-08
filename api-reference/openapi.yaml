@@ -11,12 +11,14 @@ info:
     Use the token: `ZsCUqECc9aCQtN5z9z9sTs81933YnklP` for testing purposes.
     
     ## Epic 2 Enhancements
-    - Enhanced Company Data API with complete address structure
-    - Refined Loyalty Programs API with visual assets and metrics
+    - Enhanced Company Data API with complete address structure  
     - Complete Customer API with multi-criteria search and CRUD operations
-    - Advanced Rewards API with discount processing
-    - Standardized Coupons API with DRF consistency
+    - CPF-based customer search for POS integration
     - Comprehensive Webhooks API with 18 event types
+    
+    ## Note on API Versions
+    This documentation covers the **v1 API endpoints** that use Bearer token authentication.
+    Legacy endpoints (without v1) may use different authentication methods.
     
   version: "1.0.0"
   contact:
@@ -98,25 +100,6 @@ components:
           type: boolean
           example: true
 
-    LoyaltyProgramSummary:
-      type: object
-      properties:
-        program_name:
-          type: string
-          example: "Miola Rewards"
-        currency_name:
-          type: string
-          example: "ZupCoins"
-        currency_symbol:
-          type: string
-          example: "ZC"
-        point_value:
-          type: number
-          format: float
-          example: 0.01
-        active:
-          type: boolean
-          example: true
 
     ContactInfo:
       type: object
@@ -148,145 +131,6 @@ components:
         language:
           type: string
           example: "pt-BR"
-
-    LoyaltyProgram:
-      type: object
-      properties:
-        id:
-          type: string
-          example: "prog_12345"
-        name:
-          type: string
-          example: "Miola Rewards"
-        description:
-          type: string
-          example: "Earn points on every purchase and unlock exclusive benefits"
-        terms_and_conditions:
-          type: string
-          example: "Complete terms and conditions available at miolarestaurante.com.br/terms"
-        currency_name:
-          type: string
-          example: "ZupCoins"
-        currency_symbol:
-          type: string
-          example: "ZC"
-        point_value:
-          type: number
-          format: float
-          example: 0.01
-        earning_rules:
-          $ref: '#/components/schemas/EarningRules'
-        redemption_rules:
-          $ref: '#/components/schemas/RedemptionRules'
-        tiers:
-          type: array
-          items:
-            $ref: '#/components/schemas/Tier'
-        active:
-          type: boolean
-          example: true
-        enrollment_open:
-          type: boolean
-          example: true
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-
-    EarningRules:
-      type: object
-      properties:
-        base_rate:
-          type: number
-          format: float
-          example: 1.0
-        minimum_purchase:
-          type: number
-          format: float
-          example: 10.00
-        maximum_points_per_transaction:
-          type: integer
-          example: 1000
-        bonus_categories:
-          type: array
-          items:
-            $ref: '#/components/schemas/BonusCategory'
-
-    BonusCategory:
-      type: object
-      properties:
-        category:
-          type: string
-          example: "beverages"
-        multiplier:
-          type: number
-          format: float
-          example: 2.0
-
-    RedemptionRules:
-      type: object
-      properties:
-        minimum_redemption:
-          type: integer
-          example: 100
-        maximum_redemption_per_transaction:
-          type: integer
-          example: 5000
-        expiration_months:
-          type: integer
-          example: 12
-        cash_conversion_rate:
-          type: number
-          format: float
-          example: 0.01
-
-    Tier:
-      type: object
-      properties:
-        id:
-          type: string
-          example: "tier_bronze"
-        name:
-          type: string
-          example: "Bronze"
-        order:
-          type: integer
-          example: 1
-        minimum_points:
-          type: integer
-          example: 0
-        minimum_transactions:
-          type: integer
-          example: 0
-        points_multiplier:
-          type: number
-          format: float
-          example: 1.0
-        benefits:
-          type: array
-          items:
-            type: string
-          example: ["1 point per R$1 spent", "Birthday bonus"]
-        special_offers:
-          type: array
-          items:
-            $ref: '#/components/schemas/SpecialOffer'
-
-    SpecialOffer:
-      type: object
-      properties:
-        title:
-          type: string
-          example: "Silver Sunday Special"
-        description:
-          type: string
-          example: "10% off on all orders every Sunday"
-        discount_percentage:
-          type: number
-          format: float
-          example: 10.0
 
     Customer:
       type: object
@@ -324,7 +168,18 @@ components:
           type: integer
           example: 47
         loyalty_program:
-          $ref: '#/components/schemas/LoyaltyProgramSummary'
+          type: object
+          description: "Basic loyalty program information"
+          properties:
+            program_name:
+              type: string
+              example: "Miola Rewards"
+            currency_name:
+              type: string
+              example: "ZupCoins"
+            currency_symbol:
+              type: string
+              example: "ZC"
 
     User:
       type: object
@@ -512,80 +367,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /programs/:
-    get:
-      tags:
-        - Loyalty Programs
-      summary: List Loyalty Programs
-      description: Retrieve all active loyalty programs with their configuration details and benefits
-      parameters:
-        - name: active_only
-          in: query
-          description: Filter to show only active programs
-          schema:
-            type: boolean
-            default: true
-        - name: include_tiers
-          in: query
-          description: Include detailed tier information for each program
-          schema:
-            type: boolean
-            default: false
-      responses:
-        '200':
-          description: Programs retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  count:
-                    type: integer
-                    example: 1
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/LoyaltyProgram'
-        '401':
-          description: Authentication required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /programs/{program_id}/:
-    get:
-      tags:
-        - Loyalty Programs
-      summary: Get Program Details
-      description: Retrieve detailed information about a specific loyalty program including rules, benefits, and tier structure
-      parameters:
-        - name: program_id
-          in: path
-          required: true
-          description: Unique loyalty program identifier
-          schema:
-            type: string
-            example: "prog_12345"
-      responses:
-        '200':
-          description: Program details retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LoyaltyProgram'
-        '401':
-          description: Authentication required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Program not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
   /customers/:
     get:
