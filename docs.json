@@ -41,37 +41,7 @@
       },
       {
         "tab": "API Reference",
-        "openapi": "api-reference/openapi.yaml",
-        "groups": [
-          {
-            "group": "Company Information",
-            "pages": [
-              "api-reference/company/info"
-            ]
-          },
-          {
-            "group": "Loyalty Programs",
-            "pages": [
-              "api-reference/programs/list",
-              "api-reference/programs/details"
-            ]
-          },
-          {
-            "group": "Customer Management",
-            "pages": [
-              "api-reference/customers/search",
-              "api-reference/customers/search-by-cpf",
-              "api-reference/customers/list",
-              "api-reference/customers/details"
-            ]
-          },
-          {
-            "group": "Points Operations",
-            "pages": [
-              "api-reference/points/add"
-            ]
-          }
-        ]
+        "openapi": "api-reference/openapi.yaml"
       }
     ],
     "global": {
