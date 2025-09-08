@@ -1,7 +1,7 @@
 ---
 title: "Search Customer"
-api: "GET /api/loyalty/v1/customers/search"
-description: "Find existing customers using multiple search criteria including phone, email, CPF, or customer code"
+api: "GET /api/loyalty/v1/customers/search/"
+description: "Find existing customers using phone number or email address as search criteria"
 ---
 
 ## Overview
@@ -20,13 +20,16 @@ This endpoint locates existing customers in the loyalty program using multiple i
 ## Query Parameters
 
 <Note>
-  **Search Options**: You can search using general query, specific field types, or direct field parameters. At least one parameter is required.
+  **Search Options**: You can search using phone number or email address. The `q` parameter is required.
 </Note>
 
-<ParamField query="q" type="string">
-  General search query (minimum 3 characters) - searches across name, email, phone, CPF, and customer code
+<ParamField query="q" type="string" required>
+  Search query - phone number or email address
   ```
-  João Silva
+  11999999999
+  ```
+  ```
+  cliente@email.com
   ```
 </ParamField>
 

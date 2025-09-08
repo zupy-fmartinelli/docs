@@ -1,0 +1,352 @@
+---
+title: "Get Program Details"
+api: "GET /api/loyalty/v1/programs/{program_id}/"
+description: "Retrieve detailed information about a specific loyalty program including rules, benefits, and tier structure"
+---
+
+## Overview
+
+This endpoint provides comprehensive details about a specific loyalty program, including complete tier structure, earning rules, redemption options, and program-specific benefits. This information is essential for customer onboarding and program management.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="program_id" type="string" required>
+  Unique loyalty program identifier
+  ```
+  prog_12345
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="string">
+  Unique program identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Program display name
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Detailed program description
+</ResponseField>
+
+<ResponseField name="terms_and_conditions" type="string">
+  Program terms and conditions text
+</ResponseField>
+
+<ResponseField name="currency_name" type="string">
+  Points currency name
+</ResponseField>
+
+<ResponseField name="currency_symbol" type="string">
+  Points currency symbol
+</ResponseField>
+
+<ResponseField name="point_value" type="number">
+  Monetary value per point in local currency
+</ResponseField>
+
+<ResponseField name="earning_rules" type="object">
+  Point earning configuration
+  
+  <Expandable title="earning_rules object">
+    <ResponseField name="base_rate" type="number">
+      Base points earned per currency unit spent
+    </ResponseField>
+    
+    <ResponseField name="minimum_purchase" type="number">
+      Minimum purchase amount to earn points
+    </ResponseField>
+    
+    <ResponseField name="maximum_points_per_transaction" type="integer">
+      Maximum points that can be earned in a single transaction
+    </ResponseField>
+    
+    <ResponseField name="bonus_categories" type="array">
+      Special earning rates for specific categories
+      
+      <Expandable title="bonus_category object">
+        <ResponseField name="category" type="string">
+          Product category name
+        </ResponseField>
+        
+        <ResponseField name="multiplier" type="number">
+          Points multiplier for this category
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="redemption_rules" type="object">
+  Point redemption configuration
+  
+  <Expandable title="redemption_rules object">
+    <ResponseField name="minimum_redemption" type="integer">
+      Minimum points required for redemption
+    </ResponseField>
+    
+    <ResponseField name="maximum_redemption_per_transaction" type="integer">
+      Maximum points that can be redeemed in one transaction
+    </ResponseField>
+    
+    <ResponseField name="expiration_months" type="integer">
+      Number of months before points expire
+    </ResponseField>
+    
+    <ResponseField name="cash_conversion_rate" type="number">
+      Rate for converting points to cash discount
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="tiers" type="array">
+  Complete tier structure with benefits
+  
+  <Expandable title="tier object">
+    <ResponseField name="id" type="string">
+      Unique tier identifier
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Tier name (e.g., "Bronze", "Silver", "Gold", "Platinum")
+    </ResponseField>
+    
+    <ResponseField name="order" type="integer">
+      Tier progression order (1 = lowest)
+    </ResponseField>
+    
+    <ResponseField name="minimum_points" type="integer">
+      Minimum points required to reach this tier
+    </ResponseField>
+    
+    <ResponseField name="minimum_transactions" type="integer">
+      Minimum transactions required for tier qualification
+    </ResponseField>
+    
+    <ResponseField name="points_multiplier" type="number">
+      Points earning multiplier for this tier
+    </ResponseField>
+    
+    <ResponseField name="benefits" type="array">
+      List of tier-specific benefits
+    </ResponseField>
+    
+    <ResponseField name="special_offers" type="array">
+      Exclusive offers available to this tier
+      
+      <Expandable title="special_offer object">
+        <ResponseField name="title" type="string">
+          Offer title
+        </ResponseField>
+        
+        <ResponseField name="description" type="string">
+          Offer description
+        </ResponseField>
+        
+        <ResponseField name="discount_percentage" type="number">
+          Discount percentage (if applicable)
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="active" type="boolean">
+  Whether the program is currently active
+</ResponseField>
+
+<ResponseField name="enrollment_open" type="boolean">
+  Whether new customer enrollment is open
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Program creation timestamp (ISO 8601)
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  Last program update timestamp (ISO 8601)
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X GET "https://webmaster.zupers.com.br/api/loyalty/v1/programs/prog_12345/" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const programId = 'prog_12345';
+const response = await fetch(`https://webmaster.zupers.com.br/api/loyalty/v1/programs/${programId}/`, {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const program = await response.json();
+console.log('Program details:', program);
+```
+
+```python Python
+import requests
+
+program_id = "prog_12345"
+url = f"https://webmaster.zupers.com.br/api/loyalty/v1/programs/{program_id}/"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+program = response.json()
+print("Program name:", program["name"])
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Response
+{
+  "id": "prog_12345",
+  "name": "Miola Rewards",
+  "description": "Our comprehensive loyalty program designed to reward our most valued customers with exclusive benefits and personalized experiences.",
+  "terms_and_conditions": "Complete terms and conditions available at miolarestaurante.com.br/terms",
+  "currency_name": "ZupCoins",
+  "currency_symbol": "ZC",
+  "point_value": 0.01,
+  "earning_rules": {
+    "base_rate": 1.0,
+    "minimum_purchase": 10.00,
+    "maximum_points_per_transaction": 1000,
+    "bonus_categories": [
+      {
+        "category": "beverages",
+        "multiplier": 2.0
+      },
+      {
+        "category": "desserts",
+        "multiplier": 1.5
+      }
+    ]
+  },
+  "redemption_rules": {
+    "minimum_redemption": 100,
+    "maximum_redemption_per_transaction": 5000,
+    "expiration_months": 12,
+    "cash_conversion_rate": 0.01
+  },
+  "tiers": [
+    {
+      "id": "tier_bronze",
+      "name": "Bronze",
+      "order": 1,
+      "minimum_points": 0,
+      "minimum_transactions": 0,
+      "points_multiplier": 1.0,
+      "benefits": [
+        "1 point per R$1 spent",
+        "Birthday bonus of 100 points",
+        "Monthly newsletter with offers"
+      ],
+      "special_offers": []
+    },
+    {
+      "id": "tier_silver",
+      "name": "Silver",
+      "order": 2,
+      "minimum_points": 1000,
+      "minimum_transactions": 5,
+      "points_multiplier": 1.2,
+      "benefits": [
+        "1.2 points per R$1 spent",
+        "Free delivery on orders over R$50",
+        "Priority customer support",
+        "Early access to new menu items"
+      ],
+      "special_offers": [
+        {
+          "title": "Silver Sunday Special",
+          "description": "10% off on all orders every Sunday",
+          "discount_percentage": 10.0
+        }
+      ]
+    },
+    {
+      "id": "tier_gold",
+      "name": "Gold",
+      "order": 3,
+      "minimum_points": 5000,
+      "minimum_transactions": 20,
+      "points_multiplier": 1.5,
+      "benefits": [
+        "1.5 points per R$1 spent",
+        "Free delivery on all orders",
+        "Priority customer support",
+        "Exclusive chef's table reservations",
+        "Complimentary appetizer monthly"
+      ],
+      "special_offers": [
+        {
+          "title": "Gold Member Exclusive",
+          "description": "15% off on all orders + free dessert",
+          "discount_percentage": 15.0
+        }
+      ]
+    }
+  ],
+  "active": true,
+  "enrollment_open": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-08-15T14:20:00Z"
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseField name="404" type="object">
+  Program not found
+  ```json
+  {
+    "detail": "Program not found",
+    "error_code": "PROGRAM_NOT_FOUND"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401" type="object">
+  Authentication required
+  ```json
+  {
+    "detail": "Authentication credentials were not provided.",
+    "error_code": "AUTHENTICATION_REQUIRED"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+- **Customer Onboarding**: Display complete program benefits during registration
+- **Tier Progress Tracking**: Show customers their current tier and next tier requirements
+- **Benefit Communication**: Clearly communicate available benefits and earning opportunities
+- **Program Administration**: Manage and update program configurations
+- **Marketing Campaigns**: Use tier-specific benefits for targeted promotions
+
+<Note>
+  This endpoint provides the complete program structure. For frequently accessed information, consider caching the response and implementing cache invalidation when program details are updated.
+</Note>

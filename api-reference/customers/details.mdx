@@ -1,0 +1,211 @@
+---
+title: "Get Customer Details"
+api: "GET /api/loyalty/v1/customers/{customer_id}/"
+description: "Retrieve complete customer profile information including loyalty program membership details"
+---
+
+## Overview
+
+This endpoint returns complete customer profile information for a specific customer ID, including current points balance, loyalty program membership, and account activity details.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="customer_id" type="string" required>
+  Unique customer identifier
+  ```
+  cust_1234567890
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="string">
+  Unique customer identifier
+</ResponseField>
+
+<ResponseField name="card_number" type="string">
+  Customer loyalty card number
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  Customer personal information
+  
+  <Expandable title="user object">
+    <ResponseField name="name" type="string">
+      Customer full name
+    </ResponseField>
+    
+    <ResponseField name="email" type="string">
+      Customer email address
+    </ResponseField>
+    
+    <ResponseField name="whatsapp_number" type="string">
+      Customer WhatsApp number
+    </ResponseField>
+    
+    <ResponseField name="cpf" type="string">
+      Customer CPF (Brazilian tax ID)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="points_balance" type="integer">
+  Current available points balance
+</ResponseField>
+
+<ResponseField name="points_earned" type="integer">
+  Total lifetime points earned
+</ResponseField>
+
+<ResponseField name="points_spent" type="integer">
+  Total points spent/redeemed
+</ResponseField>
+
+<ResponseField name="tier" type="string">
+  Customer loyalty tier/segment
+</ResponseField>
+
+<ResponseField name="active" type="boolean">
+  Whether the customer account is active
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Account creation timestamp (ISO 8601)
+</ResponseField>
+
+<ResponseField name="last_activity_date" type="string">
+  Last customer activity timestamp (ISO 8601)
+</ResponseField>
+
+<ResponseField name="transaction_count" type="integer">
+  Total number of transactions
+</ResponseField>
+
+<ResponseField name="loyalty_program" type="object">
+  Associated loyalty program information
+  
+  <Expandable title="loyalty_program object">
+    <ResponseField name="id" type="string">
+      Loyalty program identifier
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Loyalty program name
+    </ResponseField>
+    
+    <ResponseField name="tier_benefits" type="array">
+      Benefits available for current tier
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X GET "https://webmaster.zupers.com.br/api/loyalty/v1/customers/cust_1234567890/" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const customerId = 'cust_1234567890';
+const response = await fetch(`https://webmaster.zupers.com.br/api/loyalty/v1/customers/${customerId}/`, {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const customer = await response.json();
+console.log('Customer details:', customer);
+```
+
+```python Python
+import requests
+
+customer_id = "cust_1234567890"
+url = f"https://webmaster.zupers.com.br/api/loyalty/v1/customers/{customer_id}/"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+customer = response.json()
+print("Customer details:", customer)
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Response
+{
+  "id": "cust_1234567890",
+  "card_number": "ZUP001234567",
+  "user": {
+    "name": "João Silva",
+    "email": "joao.silva@email.com",
+    "whatsapp_number": "+5511999999999",
+    "cpf": "12345678901"
+  },
+  "points_balance": 1250,
+  "points_earned": 5780,
+  "points_spent": 4530,
+  "tier": "Gold",
+  "active": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "last_activity_date": "2024-09-07T14:22:35Z",
+  "transaction_count": 47,
+  "loyalty_program": {
+    "id": "prog_12345",
+    "name": "Miola Rewards",
+    "tier_benefits": [
+      "10% discount on all orders",
+      "Free delivery",
+      "Priority customer support"
+    ]
+  }
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseField name="404" type="object">
+  Customer not found
+  ```json
+  {
+    "detail": "Customer not found",
+    "error_code": "CUSTOMER_NOT_FOUND"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401" type="object">
+  Authentication required
+  ```json
+  {
+    "detail": "Authentication credentials were not provided.",
+    "error_code": "AUTHENTICATION_REQUIRED"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+- **Customer Service**: View complete customer profile for support interactions
+- **Account Management**: Customer profile page in admin dashboard
+- **Transaction Processing**: Verify customer details before processing orders
+- **Analytics**: Detailed customer data for analysis and reporting

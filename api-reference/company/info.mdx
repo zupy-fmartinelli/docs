@@ -1,0 +1,214 @@
+---
+title: "Get Company Information"
+api: "GET /api/loyalty/v1/company/info/"
+description: "Retrieve basic company information including loyalty program overview and configuration details"
+---
+
+## Overview
+
+This endpoint returns essential company information including loyalty program configuration, business details, and system settings. This information is typically used for application initialization and branding purposes.
+
+## Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for API authentication
+  ```
+  Authorization: Bearer {your_api_key}
+  ```
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="string">
+  Unique company identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Company/business name
+</ResponseField>
+
+<ResponseField name="slug" type="string">
+  Company URL slug for identification
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Company description or tagline
+</ResponseField>
+
+<ResponseField name="logo_url" type="string">
+  URL to company logo image
+</ResponseField>
+
+<ResponseField name="website" type="string">
+  Company website URL
+</ResponseField>
+
+<ResponseField name="loyalty_program" type="object">
+  Loyalty program configuration
+  
+  <Expandable title="loyalty_program object">
+    <ResponseField name="program_name" type="string">
+      Name of the loyalty program
+    </ResponseField>
+    
+    <ResponseField name="currency_name" type="string">
+      Name of the points currency (e.g., "ZupCoins", "Points")
+    </ResponseField>
+    
+    <ResponseField name="currency_symbol" type="string">
+      Symbol for the points currency
+    </ResponseField>
+    
+    <ResponseField name="point_value" type="number">
+      Monetary value of each point in local currency
+    </ResponseField>
+    
+    <ResponseField name="active" type="boolean">
+      Whether the loyalty program is currently active
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="contact" type="object">
+  Company contact information
+  
+  <Expandable title="contact object">
+    <ResponseField name="email" type="string">
+      Company contact email
+    </ResponseField>
+    
+    <ResponseField name="phone" type="string">
+      Company phone number
+    </ResponseField>
+    
+    <ResponseField name="address" type="string">
+      Company physical address
+    </ResponseField>
+    
+    <ResponseField name="support_email" type="string">
+      Customer support email address
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="settings" type="object">
+  System configuration settings
+  
+  <Expandable title="settings object">
+    <ResponseField name="timezone" type="string">
+      Company timezone (e.g., "America/Sao_Paulo")
+    </ResponseField>
+    
+    <ResponseField name="currency" type="string">
+      Local currency code (e.g., "BRL")
+    </ResponseField>
+    
+    <ResponseField name="language" type="string">
+      Default language (e.g., "pt-BR")
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X GET "https://webmaster.zupers.com.br/api/loyalty/v1/company/info/" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://webmaster.zupers.com.br/api/loyalty/v1/company/info/', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const companyInfo = await response.json();
+console.log('Company information:', companyInfo);
+```
+
+```python Python
+import requests
+
+url = "https://webmaster.zupers.com.br/api/loyalty/v1/company/info/"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+company_info = response.json()
+print("Company information:", company_info)
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json Response
+{
+  "id": "comp_1234567890",
+  "name": "Miola Restaurante",
+  "slug": "miola-restaurante",
+  "description": "Authentic Brazilian cuisine with modern flavors",
+  "logo_url": "https://storage.zupy.com/logos/miola-logo.png",
+  "website": "https://miolarestaurante.com.br",
+  "loyalty_program": {
+    "program_name": "Miola Rewards",
+    "currency_name": "ZupCoins",
+    "currency_symbol": "ZC",
+    "point_value": 0.01,
+    "active": true
+  },
+  "contact": {
+    "email": "contato@miolarestaurante.com.br",
+    "phone": "+5511999999999",
+    "address": "Rua das Palmeiras, 123 - São Paulo, SP - Brasil",
+    "support_email": "suporte@miolarestaurante.com.br"
+  },
+  "settings": {
+    "timezone": "America/Sao_Paulo",
+    "currency": "BRL",
+    "language": "pt-BR"
+  }
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseField name="401" type="object">
+  Authentication required
+  ```json
+  {
+    "detail": "Authentication credentials were not provided.",
+    "error_code": "AUTHENTICATION_REQUIRED"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="403" type="object">
+  Access forbidden
+  ```json
+  {
+    "detail": "You do not have permission to access company information.",
+    "error_code": "ACCESS_FORBIDDEN"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+- **Application Initialization**: Load company branding and program details on app startup
+- **User Interface Customization**: Display company logo, colors, and program information
+- **Integration Setup**: Configure third-party systems with company-specific settings
+- **Customer Support**: Access company contact information for support interactions
+- **Reporting and Analytics**: Include company context in reports and dashboards
+
+<Note>
+  This endpoint is typically called once during application initialization and the response can be cached for subsequent requests to improve performance.
+</Note>
