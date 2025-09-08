@@ -1,6 +1,6 @@
 ---
 title: "Generate Coupon from Points"
-api: "POST /loyalty/coupons/generate"
+api: "POST /api/loyalty/v1/rewards/{reward_id}/redeem"
 description: "Convert customer loyalty points into a usable coupon for a specific reward"
 ---
 
@@ -17,123 +17,112 @@ This endpoint allows customers to redeem their loyalty points for specific rewar
   ```
 </ParamField>
 
-## Request Body
+## Path Parameters
 
-<ParamField body="member_id" type="string" required>
-  Unique Zupy customer identifier
-  ```
-  ZP-4F95FB0A
-  ```
-</ParamField>
-
-<ParamField body="reward_id" type="string" required>
+<ParamField path="reward_id" type="string" required>
   Unique reward identifier from the rewards catalog
   ```
-  rw_pizza_margherita
+  550e8400-e29b-41d4-a716-446655440001
   ```
 </ParamField>
 
-<ParamField body="restaurant_id" type="string" required>
-  Company identifier for the reward redemption
+## Request Body
+
+<ParamField body="customer_id" type="string" required>
+  Unique customer identifier (UUID)
   ```
-  comp_bella_vista
+  550e8400-e29b-41d4-a716-446655440000
+  ```
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Optional metadata for the redemption
+  ```
+  {
+    "location": "store_front",
+    "channel": "mobile_app"
+  }
   ```
 </ParamField>
 
 ## Response
 
-<ResponseField name="success" type="boolean">
-  Whether the coupon was successfully generated
-</ResponseField>
-
 <ResponseField name="coupon_code" type="string">
   Unique coupon code generated (format: CP-XXXXXXXX)
 </ResponseField>
 
-<ResponseField name="member_id" type="string">
-  Customer identifier who redeemed the points
-</ResponseField>
-
-<ResponseField name="reward" type="object">
-  Details about the reward that was redeemed
-  
-  <Expandable title="Reward Details">
-    <ResponseField name="name" type="string">
-      Display name of the reward
-    </ResponseField>
-    
-    <ResponseField name="description" type="string">
-      Detailed description of what the customer receives
-    </ResponseField>
-  </Expandable>
-</ResponseField>
-
-<ResponseField name="points_debited" type="integer">
-  Number of points deducted from customer's balance
-</ResponseField>
-
-<ResponseField name="expires_at" type="string">
-  Coupon expiration date and time (ISO 8601)
-</ResponseField>
-
-<ResponseField name="new_balance" type="integer">
+<ResponseField name="customer_balance" type="integer">
   Customer's remaining points balance after redemption
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Success message confirming the redemption
+</ResponseField>
+
+<ResponseField name="redemption_id" type="string">
+  Unique identifier for this redemption transaction
 </ResponseField>
 
 ## Example Request
 
 <CodeGroup>
 ```bash cURL
-curl -X POST "https://api.zupy.com/v1/loyalty/coupons/generate" \
+curl -X POST "https://api.zupy.com/api/loyalty/v1/rewards/550e8400-e29b-41d4-a716-446655440001/redeem" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "member_id": "ZP-4F95FB0A",
-    "reward_id": "rw_pizza_margherita",
-    "restaurant_id": "comp_bella_vista"
+    "customer_id": "550e8400-e29b-41d4-a716-446655440000",
+    "metadata": {
+      "location": "store_front",
+      "channel": "mobile_app"
+    }
   }'
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.zupy.com/v1/loyalty/coupons/generate', {
+const response = await fetch('https://api.zupy.com/api/loyalty/v1/rewards/550e8400-e29b-41d4-a716-446655440001/redeem', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY',
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    member_id: 'ZP-4F95FB0A',
-    reward_id: 'rw_pizza_margherita',
-    restaurant_id: 'comp_bella_vista'
+    customer_id: '550e8400-e29b-41d4-a716-446655440000',
+    metadata: {
+      location: 'store_front',
+      channel: 'mobile_app'
+    }
   })
 });
 
-const coupon = await response.json();
-console.log(coupon);
+const result = await response.json();
+console.log(result);
 ```
 
 ```python Python
 import requests
 
-url = "https://api.zupy.com/v1/loyalty/coupons/generate"
+url = "https://api.zupy.com/api/loyalty/v1/rewards/550e8400-e29b-41d4-a716-446655440001/redeem"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
 }
 data = {
-    "member_id": "ZP-4F95FB0A",
-    "reward_id": "rw_pizza_margherita",
-    "restaurant_id": "comp_bella_vista"
+    "customer_id": "550e8400-e29b-41d4-a716-446655440000",
+    "metadata": {
+        "location": "store_front",
+        "channel": "mobile_app"
+    }
 }
 
 response = requests.post(url, headers=headers, json=data)
-coupon = response.json()
-print(coupon)
+result = response.json()
+print(result)
 ```
 
 ```php PHP
 <?php
-$url = "https://api.zupy.com/v1/loyalty/coupons/generate";
+$url = "https://api.zupy.com/api/loyalty/v1/rewards/550e8400-e29b-41d4-a716-446655440001/redeem";
 
 $headers = [
     "Authorization: Bearer YOUR_API_KEY",
@@ -141,9 +130,11 @@ $headers = [
 ];
 
 $data = [
-    "member_id" => "ZP-4F95FB0A",
-    "reward_id" => "rw_pizza_margherita",
-    "restaurant_id" => "comp_bella_vista"
+    "customer_id" => "550e8400-e29b-41d4-a716-446655440000",
+    "metadata" => [
+        "location" => "store_front",
+        "channel" => "mobile_app"
+    ]
 ];
 
 $response = file_get_contents($url, false, stream_context_create([
@@ -154,8 +145,8 @@ $response = file_get_contents($url, false, stream_context_create([
     ]
 ]));
 
-$coupon = json_decode($response, true);
-print_r($coupon);
+$result = json_decode($response, true);
+print_r($result);
 ?>
 ```
 </CodeGroup>
@@ -165,57 +156,43 @@ print_r($coupon);
 <CodeGroup>
 ```json 200 - Coupon Generated Successfully
 {
-  "success": true,
   "coupon_code": "CP-F8G9H0I1",
-  "member_id": "ZP-4F95FB0A",
-  "reward": {
-    "name": "Pizza Margherita Grátis",
-    "description": "Pizza Margherita tradicional completa com molho de tomate, mussarela e manjericão fresco"
-  },
-  "points_debited": 1000,
-  "expires_at": "2025-09-26T23:59:59Z",
-  "new_balance": 150
+  "customer_balance": 150,
+  "message": "Reward 'Pizza Margherita Grátis' successfully redeemed",
+  "redemption_id": "550e8400-e29b-41d4-a716-446655440010"
 }
 ```
 
-```json 200 - Percentage Discount Coupon
+```json 200 - Discount Coupon Generated
 {
-  "success": true,
   "coupon_code": "CP-K2L3M4N5",
-  "member_id": "ZP-4F95FB0A",
-  "reward": {
-    "name": "10% de Desconto",
-    "description": "10% de desconto em qualquer pedido"
-  },
-  "points_debited": 500,
-  "expires_at": "2025-09-26T23:59:59Z",
-  "new_balance": 650
+  "customer_balance": 650,
+  "message": "Reward '10% de Desconto' successfully redeemed",
+  "redemption_id": "550e8400-e29b-41d4-a716-446655440011"
 }
 ```
 
-```json 400 - Insufficient Points
+```json 400 - Invalid Request Data
 {
-  "success": false,
-  "error": "insufficient_points",
-  "message": "Cliente possui 750 pontos, mas precisa de 1000 pontos para esta recompensa",
-  "customer_balance": 750,
-  "required_points": 1000
-}
-```
-
-```json 400 - Reward Not Available
-{
-  "success": false,
-  "error": "reward_not_available",
-  "message": "Recompensa 'rw_pizza_margherita' está temporariamente indisponível"
+  "error": "Invalid customer ID provided"
 }
 ```
 
 ```json 404 - Customer Not Found
 {
-  "success": false,
-  "error": "customer_not_found",
-  "message": "Cliente com member_id 'ZP-INVALID1' não encontrado"
+  "error": "Customer not found"
+}
+```
+
+```json 404 - Reward Not Found
+{
+  "error": "Reward not found"
+}
+```
+
+```json 500 - Internal Server Error
+{
+  "error": "Failed to redeem reward"
 }
 ```
 </CodeGroup>

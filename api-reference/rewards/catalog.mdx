@@ -1,12 +1,12 @@
 ---
 title: "Get Rewards Catalog"
-api: "GET /loyalty/programs/{program_id}/rewards"
-description: "Retrieve the complete rewards catalog for a loyalty program with filtering options by category"
+api: "GET /api/loyalty/v1/rewards"
+description: "Retrieve the complete rewards catalog with comprehensive filtering options including category, points range, tier restrictions, and delivery preferences"
 ---
 
 ## Overview
 
-This endpoint returns all available rewards in the loyalty program catalog. Rewards can be filtered by category to help customers find specific types of benefits. Each reward includes points requirements, descriptions, terms of use, and availability information.
+This endpoint returns all available rewards in the loyalty program catalog with advanced filtering capabilities. The API supports comprehensive filtering by category, points range, tier restrictions, delivery preferences, and availability status. Each reward includes detailed information about points requirements, descriptions, terms of use, and real-time availability.
 
 ## Authentication
 
@@ -17,53 +17,174 @@ This endpoint returns all available rewards in the loyalty program catalog. Rewa
   ```
 </ParamField>
 
-## Path Parameters
-
-<ParamField path="program_id" type="string" required>
-  Loyalty program identifier
-  ```
-  prog_bella_vista
-  ```
-</ParamField>
-
 ## Query Parameters
 
-<ParamField query="category" type="string">
-  Filter rewards by category
-  ```
-  food | drinks | discounts | experiences
-  ```
-</ParamField>
+<Note>
+  **Advanced Filtering**: All filter parameters are optional and can be combined for precise results. The API supports Django FilterSet patterns with multiple operators per field.
+</Note>
 
-<ParamField query="max_points" type="integer">
-  Filter rewards requiring less than or equal to this points amount
-  ```
-  1000
-  ```
-</ParamField>
-
-<ParamField query="available_only" type="boolean">
-  Show only currently available rewards (default: true)
+<ParamField query="active" type="boolean">
+  Filter by reward status (active/inactive)
   ```
   true | false
   ```
 </ParamField>
 
+<ParamField query="reward_type" type="string">
+  Filter by reward type (supports multiple values with comma separation)
+  ```
+  discount | product | experience | service
+  ```
+</ParamField>
+
+<ParamField query="reward_type__in" type="array">
+  Filter by multiple reward types
+  ```
+  ?reward_type__in=discount,product,experience
+  ```
+</ParamField>
+
+<ParamField query="tier" type="string">
+  Filter by required loyalty tier (supports multiple values)
+  ```
+  bronze | silver | gold | platinum
+  ```
+</ParamField>
+
+<ParamField query="tier__in" type="array">
+  Filter by multiple loyalty tiers
+  ```
+  ?tier__in=silver,gold,platinum
+  ```
+</ParamField>
+
+<ParamField query="tier__isnull" type="boolean">
+  Filter rewards with no tier restrictions
+  ```
+  true | false
+  ```
+</ParamField>
+
+<ParamField query="points_required" type="integer">
+  Filter by exact points requirement
+  ```
+  1000
+  ```
+</ParamField>
+
+<ParamField query="points_required__gte" type="integer">
+  Filter rewards requiring points greater than or equal to value
+  ```
+  500
+  ```
+</ParamField>
+
+<ParamField query="points_required__lte" type="integer">
+  Filter rewards requiring points less than or equal to value
+  ```
+  2000
+  ```
+</ParamField>
+
+<ParamField query="points_required__range" type="string">
+  Filter rewards within points range (comma-separated min,max)
+  ```
+  500,1500
+  ```
+</ParamField>
+
+<ParamField query="delivery_enabled" type="boolean">
+  Filter rewards available for delivery orders
+  ```
+  true | false
+  ```
+</ParamField>
+
+<ParamField query="takeout_enabled" type="boolean">
+  Filter rewards available for takeout orders
+  ```
+  true | false
+  ```
+</ParamField>
+
+<ParamField query="indoor_enabled" type="boolean">
+  Filter rewards available for indoor dining
+  ```
+  true | false
+  ```
+</ParamField>
+
+<ParamField query="created_at" type="string">
+  Filter by exact creation date (ISO 8601)
+  ```
+  2025-08-15
+  ```
+</ParamField>
+
+<ParamField query="created_at__gte" type="string">
+  Filter rewards created on or after date
+  ```
+  2025-08-01
+  ```
+</ParamField>
+
+<ParamField query="created_at__lte" type="string">
+  Filter rewards created on or before date
+  ```
+  2025-08-31
+  ```
+</ParamField>
+
+<ParamField query="created_at__date" type="string">
+  Filter by specific creation date
+  ```
+  2025-08-15
+  ```
+</ParamField>
+
+<ParamField query="created_at__year" type="integer">
+  Filter by creation year
+  ```
+  2025
+  ```
+</ParamField>
+
+<ParamField query="created_at__month" type="integer">
+  Filter by creation month (1-12)
+  ```
+  8
+  ```
+</ParamField>
+
+<ParamField query="page" type="integer">
+  Page number for pagination (default: 1)
+  ```
+  2
+  ```
+</ParamField>
+
+<ParamField query="page_size" type="integer">
+  Items per page (default: 20, max: 100)
+  ```
+  50
+  ```
+</ParamField>
+
 ## Response
 
-<ResponseField name="program_id" type="string">
-  Loyalty program identifier
+<ResponseField name="count" type="integer">
+  Total number of rewards matching the filter criteria
 </ResponseField>
 
-<ResponseField name="total_rewards" type="integer">
-  Total number of rewards in the catalog (after filtering)
+<ResponseField name="next" type="string">
+  URL to the next page of results (null if no more pages)
 </ResponseField>
 
-<ResponseField name="categories" type="array">
-  List of all available reward categories
+<ResponseField name="previous" type="string">
+  URL to the previous page of results (null if first page)
 </ResponseField>
 
-<ResponseField name="rewards" type="array">
+<ResponseField name="results" type="array">
   List of rewards matching the filter criteria
   
   <Expandable title="Reward Object">
@@ -145,13 +266,13 @@ This endpoint returns all available rewards in the loyalty program catalog. Rewa
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?category=food" \
+curl -X GET "https://api.zupy.com/api/loyalty/v1/rewards?reward_type=product&points_required__lte=1000&delivery_enabled=true" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?category=food', {
+const response = await fetch('https://api.zupy.com/api/loyalty/v1/rewards?reward_type=product&points_required__lte=1000&delivery_enabled=true', {
   method: 'GET',
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY',
@@ -159,29 +280,35 @@ const response = await fetch('https://api.zupy.com/v1/loyalty/programs/prog_bell
   }
 });
 
-const catalog = await response.json();
-console.log(catalog);
+const data = await response.json();
+console.log(data);
 ```
 
 ```python Python
 import requests
 
-url = "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards"
-params = {"category": "food"}
+url = "https://api.zupy.com/api/loyalty/v1/rewards"
+params = {
+    "reward_type": "product",
+    "points_required__lte": 1000,
+    "delivery_enabled": True
+}
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
 }
 
 response = requests.get(url, params=params, headers=headers)
-catalog = response.json()
-print(catalog)
+data = response.json()
+print(data)
 ```
 
 ```php PHP
 <?php
-$url = "https://api.zupy.com/v1/loyalty/programs/prog_bella_vista/rewards?" . http_build_query([
-    'category' => 'food'
+$url = "https://api.zupy.com/api/loyalty/v1/rewards?" . http_build_query([
+    'reward_type' => 'product',
+    'points_required__lte' => 1000,
+    'delivery_enabled' => 'true'
 ]);
 
 $headers = [
@@ -196,8 +323,8 @@ $response = file_get_contents($url, false, stream_context_create([
     ]
 ]));
 
-$catalog = json_decode($response, true);
-print_r($catalog);
+$data = json_decode($response, true);
+print_r($data);
 ?>
 ```
 </CodeGroup>
@@ -205,110 +332,98 @@ print_r($catalog);
 ## Example Response
 
 <CodeGroup>
-```json 200 - Full Catalog
+```json 200 - Filtered Results
 {
-  "program_id": "prog_bella_vista",
-  "total_rewards": 12,
-  "categories": ["food", "drinks", "discounts", "experiences"],
-  "rewards": [
+  "count": 3,
+  "next": "https://api.zupy.com/api/loyalty/v1/rewards?reward_type=product&points_required__lte=1000&delivery_enabled=true&page=2",
+  "previous": null,
+  "results": [
     {
-      "reward_id": "rw_pizza_margherita",
+      "id": "550e8400-e29b-41d4-a716-446655440001",
       "name": "Pizza Margherita Grátis",
       "description": "Pizza Margherita tradicional completa com molho de tomate, mussarela e manjericão fresco",
       "points_required": 1000,
-      "category": "food",
-      "image_url": "https://cdn.zupy.com/rewards/pizza_margherita.jpg",
-      "terms": "Válido apenas para consumo no local. Não pode ser combinado com outras promoções.",
-      "availability": "unlimited",
-      "popularity_rank": 1
+      "reward_type": "product",
+      "tier": null,
+      "delivery_enabled": true,
+      "takeout_enabled": true,
+      "indoor_enabled": true,
+      "active": true,
+      "created_at": "2025-08-15T10:30:00Z"
     },
     {
-      "reward_id": "rw_drink_soda",
-      "name": "Refrigerante 350ml Grátis",
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "name": "Refrigerante 350ml Grátis", 
       "description": "Refrigerante de qualquer sabor disponível, 350ml gelado",
       "points_required": 300,
-      "category": "drinks",
-      "image_url": "https://cdn.zupy.com/rewards/soda.jpg",
-      "terms": "Válido para qualquer sabor disponível no momento",
-      "availability": "unlimited",
-      "popularity_rank": 2
+      "reward_type": "product",
+      "tier": null,
+      "delivery_enabled": true,
+      "takeout_enabled": true,
+      "indoor_enabled": true,
+      "active": true,
+      "created_at": "2025-08-10T14:20:00Z"
     },
     {
-      "reward_id": "rw_discount_10percent",
+      "id": "550e8400-e29b-41d4-a716-446655440003",
       "name": "10% de Desconto",
       "description": "10% de desconto em qualquer pedido",
       "points_required": 500,
-      "category": "discounts",
-      "terms": "Válido para pedidos acima de R$ 20,00. Não cumulativo.",
-      "availability": "unlimited",
-      "discount_details": {
-        "discount_type": "percentage",
-        "discount_value": 10.0,
-        "maximum_discount": 50.0,
-        "minimum_purchase": 20.0
-      },
-      "popularity_rank": 3
-    },
-    {
-      "reward_id": "rw_cooking_class",
-      "name": "Aula de Culinária Italiana",
-      "description": "Aula exclusiva com o chef para aprender receitas tradicionais italianas",
-      "points_required": 5000,
-      "category": "experiences",
-      "image_url": "https://cdn.zupy.com/rewards/cooking_class.jpg",
-      "terms": "Agendamento com 48h de antecedência. Máximo 8 pessoas por aula.",
-      "availability": "limited",
-      "stock_remaining": 3,
-      "popularity_rank": 8
+      "reward_type": "discount",
+      "tier": "silver",
+      "delivery_enabled": true,
+      "takeout_enabled": true,
+      "indoor_enabled": false,
+      "active": true,
+      "created_at": "2025-08-05T09:15:00Z"
     }
   ]
 }
 ```
 
-```json 200 - Drinks Category Filter
+```json 200 - Tier and Points Filter
 {
-  "program_id": "prog_bella_vista",
-  "total_rewards": 4,
-  "categories": ["drinks"],
-  "rewards": [
+  "count": 2,
+  "next": null,
+  "previous": null,
+  "results": [
     {
-      "reward_id": "rw_drink_soda",
-      "name": "Refrigerante 350ml Grátis",
-      "description": "Refrigerante de qualquer sabor disponível, 350ml gelado",
-      "points_required": 300,
-      "category": "drinks",
-      "availability": "unlimited",
-      "popularity_rank": 1
+      "id": "550e8400-e29b-41d4-a716-446655440004",
+      "name": "Desconto VIP 15%",
+      "description": "15% de desconto exclusivo para membros Gold",
+      "points_required": 800,
+      "reward_type": "discount",
+      "tier": "gold",
+      "delivery_enabled": true,
+      "takeout_enabled": true,
+      "indoor_enabled": true,
+      "active": true,
+      "created_at": "2025-08-01T12:00:00Z"
     },
     {
-      "reward_id": "rw_drink_juice",
-      "name": "Suco Natural 400ml",
-      "description": "Suco natural de frutas da temporada, 400ml",
-      "points_required": 400,
-      "category": "drinks",
-      "availability": "seasonal",
-      "valid_until": "2025-12-31T23:59:59Z",
-      "popularity_rank": 2
-    },
-    {
-      "reward_id": "rw_drink_beer",
-      "name": "Cerveja Artesanal 355ml",
-      "description": "Cerveja artesanal da casa, 355ml gelada",
-      "points_required": 600,
-      "category": "drinks",
-      "availability": "limited",
-      "stock_remaining": 12,
-      "terms": "Válido apenas para maiores de 18 anos. Apresentar documento.",
-      "popularity_rank": 4
+      "id": "550e8400-e29b-41d4-a716-446655440005",
+      "name": "Experiência Chef's Table",
+      "description": "Jantar exclusivo na mesa do chef com menu degustação",
+      "points_required": 2500,
+      "reward_type": "experience",
+      "tier": "platinum",
+      "delivery_enabled": false,
+      "takeout_enabled": false,
+      "indoor_enabled": true,
+      "active": true,
+      "created_at": "2025-07-20T16:30:00Z"
     }
   ]
 }
 ```
 
-```json 404 - Program Not Found
+```json 400 - Invalid Filter Parameters
 {
-  "error": "program_not_found",
-  "message": "Loyalty program 'prog_invalid' not found or inactive"
+  "error": "invalid_filter",
+  "message": "Invalid filter parameter provided",
+  "details": {
+    "tier__invalid": ["Select a valid choice. 'invalid' is not one of the available choices."]
+  }
 }
 ```
 </CodeGroup>
@@ -393,19 +508,19 @@ print_r($catalog);
 ### Filter by Points Budget
 ```bash
 # Show rewards a customer with 800 points can afford
-curl "/loyalty/programs/prog_123/rewards?max_points=800"
+curl "/api/loyalty/v1/rewards?points_required__lte=800"
 ```
 
 ### Filter by Category and Availability
 ```bash
 # Show only available food rewards
-curl "/loyalty/programs/prog_123/rewards?category=food&available_only=true"
+curl "/api/loyalty/v1/rewards?reward_type=product&active=true"
 ```
 
-### Show All Rewards (Including Out of Stock)
+### Show All Rewards (Including Inactive)
 ```bash
-# Include unavailable rewards in results
-curl "/loyalty/programs/prog_123/rewards?available_only=false"
+# Include inactive rewards in results
+curl "/api/loyalty/v1/rewards?active=false"
 ```
 
 ## Integration Examples
@@ -439,21 +554,21 @@ const getAvailabilityText = (reward) => {
 
 ### Filter Implementation
 ```javascript
-const filterRewards = async (programId, filters) => {
+const filterRewards = async (filters) => {
   const params = new URLSearchParams();
   
-  if (filters.category) params.append('category', filters.category);
-  if (filters.maxPoints) params.append('max_points', filters.maxPoints);
-  if (filters.availableOnly !== undefined) params.append('available_only', filters.availableOnly);
+  if (filters.reward_type) params.append('reward_type', filters.reward_type);
+  if (filters.maxPoints) params.append('points_required__lte', filters.maxPoints);
+  if (filters.active !== undefined) params.append('active', filters.active);
   
-  const response = await fetch(`/loyalty/programs/${programId}/rewards?${params}`);
+  const response = await fetch(`/api/loyalty/v1/rewards?${params}`);
   return response.json();
 };
 
 // Usage examples
-const foodRewards = await filterRewards('prog_123', { category: 'food' });
-const affordableRewards = await filterRewards('prog_123', { maxPoints: customerBalance });
-const allRewards = await filterRewards('prog_123', { availableOnly: false });
+const productRewards = await filterRewards({ reward_type: 'product' });
+const affordableRewards = await filterRewards({ maxPoints: customerBalance });
+const allRewards = await filterRewards({ active: false });
 ```
 
 ## Business Logic

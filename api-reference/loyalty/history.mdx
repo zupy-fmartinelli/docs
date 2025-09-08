@@ -479,25 +479,25 @@ const latestTransactions = await fetch(
 ### Date Range Filter
 ```bash
 # Get transactions from August 2025
-curl "/loyalty/customers/ZP-123/history?date_from=2025-08-01T00:00:00Z&date_to=2025-08-31T23:59:59Z"
+curl "/api/loyalty/v1/transactions?customer_id=ZP-123&created_at__gte=2025-08-01T00:00:00Z&created_at__lte=2025-08-31T23:59:59Z"
 ```
 
 ### Transaction Type Filter
 ```bash
 # Get only redemptions
-curl "/loyalty/customers/ZP-123/history?transaction_type=redemption"
+curl "/api/loyalty/v1/transactions?customer_id=ZP-123&transaction_type=redemption"
 ```
 
 ### Platform Filter
 ```bash
 # Get only Goomer transactions
-curl "/loyalty/customers/ZP-123/history?platform=goomer"
+curl "/api/loyalty/v1/transactions?customer_id=ZP-123&platform=goomer"
 ```
 
 ### Combined Filters
 ```bash
 # Get recent purchases from iFood
-curl "/loyalty/customers/ZP-123/history?transaction_type=purchase&platform=ifood&date_from=2025-08-20T00:00:00Z"
+curl "/api/loyalty/v1/transactions?customer_id=ZP-123&transaction_type=purchase&platform=ifood&created_at__gte=2025-08-20T00:00:00Z"
 ```
 
 ## Performance Optimization

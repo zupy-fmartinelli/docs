@@ -1,12 +1,12 @@
 ---
-title: "List Customer Coupons"
-api: "GET /loyalty/customers/{member_id}/coupons"
-description: "Retrieve all active and unused coupons for a customer in the loyalty program"
+title: "List Coupons"
+api: "GET /api/loyalty/v1/coupons"
+description: "Retrieve all coupons with comprehensive filtering options by status, customer, and date ranges"
 ---
 
 ## Overview
 
-This endpoint returns all active coupons that belong to a specific customer. Coupons are generated when customers redeem rewards using their loyalty points. Each coupon has an expiration date and specific terms of use. Only unused and non-expired coupons are returned by default.
+This endpoint returns all coupons in the loyalty program with advanced filtering capabilities. The API supports comprehensive filtering by status, customer, date ranges, and other criteria. Each coupon includes detailed information about redemption status, expiration, and associated rewards.
 
 ## Authentication
 
@@ -17,82 +17,126 @@ This endpoint returns all active coupons that belong to a specific customer. Cou
   ```
 </ParamField>
 
-## Path Parameters
-
-<ParamField path="member_id" type="string" required>
-  Unique Zupy customer identifier
-  ```
-  ZP-4F95FB0A
-  ```
-</ParamField>
-
 ## Query Parameters
 
-<ParamField query="include_expired" type="boolean">
-  Include expired coupons in the response (default: false)
+<ParamField query="status" type="string">
+  Filter by coupon status
   ```
-  true | false
+  pending | active | used | expired | cancelled
   ```
 </ParamField>
 
-<ParamField query="include_used" type="boolean">
-  Include already used coupons in the response (default: false)
+<ParamField query="customer_id" type="string">
+  Filter coupons by specific customer ID
   ```
-  true | false
+  550e8400-e29b-41d4-a716-446655440000
+  ```
+</ParamField>
+
+<ParamField query="coupon_code" type="string">
+  Search by specific coupon code
+  ```
+  CP-A1B2C3D4
+  ```
+</ParamField>
+
+<ParamField query="page" type="integer">
+  Page number for pagination (default: 1)
+  ```
+  2
+  ```
+</ParamField>
+
+<ParamField query="page_size" type="integer">
+  Items per page (default: 20, max: 100)
+  ```
+  50
   ```
 </ParamField>
 
 ## Response
 
-<ResponseField name="member_id" type="string">
-  Customer identifier
+<ResponseField name="count" type="integer">
+  Total number of coupons matching the filter criteria
 </ResponseField>
 
-<ResponseField name="total_active" type="integer">
-  Number of active (unused, non-expired) coupons
+<ResponseField name="next" type="string">
+  URL to the next page of results (null if no more pages)
 </ResponseField>
 
-<ResponseField name="active_coupons" type="array">
-  List of active coupons available for use
+<ResponseField name="previous" type="string">
+  URL to the previous page of results (null if first page)
+</ResponseField>
+
+<ResponseField name="results" type="array">
+  List of coupons matching the filter criteria
   
   <Expandable title="Coupon Object">
+    <ResponseField name="id" type="string">
+      Unique coupon identifier (UUID)
+    </ResponseField>
+    
     <ResponseField name="coupon_code" type="string">
-      Unique coupon identifier (format: CP-XXXXXXXX)
+      Human-readable coupon code for redemption
     </ResponseField>
     
-    <ResponseField name="reward_name" type="string">
-      Display name of the reward
-    </ResponseField>
-    
-    <ResponseField name="reward_description" type="string">
-      Detailed description of what the coupon provides
-    </ResponseField>
-    
-    <ResponseField name="discount_type" type="string">
-      Type of discount this coupon provides
+    <ResponseField name="status" type="string">
+      Current coupon status
       ```
-      product_free | percentage | fixed_amount | buy_one_get_one
+      pending | active | used | expired | cancelled
       ```
     </ResponseField>
     
-    <ResponseField name="discount_value" type="number">
-      Discount amount or value (interpretation depends on discount_type)
+    <ResponseField name="customer" type="object">
+      Customer information object
+      
+      <Expandable title="Customer Object">
+        <ResponseField name="id" type="string">
+          Customer UUID
+        </ResponseField>
+        
+        <ResponseField name="card_number" type="string">
+          Customer card number (e.g., ZP-4F95FB0A)
+        </ResponseField>
+        
+        <ResponseField name="user" type="object">
+          Basic user information
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="reward" type="object">
+      Associated reward information
+      
+      <Expandable title="Reward Object">
+        <ResponseField name="id" type="string">
+          Reward UUID
+        </ResponseField>
+        
+        <ResponseField name="name" type="string">
+          Reward display name
+        </ResponseField>
+        
+        <ResponseField name="description" type="string">
+          Reward description
+        </ResponseField>
+        
+        <ResponseField name="points_required" type="integer">
+          Points required for this reward
+        </ResponseField>
+      </Expandable>
     </ResponseField>
     
     <ResponseField name="created_at" type="string">
-      When the coupon was generated (ISO 8601)
+      Coupon generation timestamp (ISO 8601)
     </ResponseField>
     
     <ResponseField name="expires_at" type="string">
-      Coupon expiration date and time (ISO 8601)
+      Coupon expiration timestamp (ISO 8601)
     </ResponseField>
     
-    <ResponseField name="terms" type="string">
-      Terms and conditions for coupon usage
-    </ResponseField>
-    
-    <ResponseField name="used" type="boolean">
-      Whether the coupon has been used (always false for active coupons)
+    <ResponseField name="used_at" type="string">
+      When coupon was redeemed (null if unused) (ISO 8601)
     </ResponseField>
   </Expandable>
 </ResponseField>
@@ -101,13 +145,13 @@ This endpoint returns all active coupons that belong to a specific customer. Cou
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/coupons" \
+curl -X GET "https://api.zupy.com/api/loyalty/v1/coupons?status=active&page_size=10" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/coupons', {
+const response = await fetch('https://api.zupy.com/api/loyalty/v1/coupons?status=active&page_size=10', {
   method: 'GET',
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY',
@@ -115,27 +159,34 @@ const response = await fetch('https://api.zupy.com/v1/loyalty/customers/ZP-4F95F
   }
 });
 
-const coupons = await response.json();
-console.log(coupons);
+const data = await response.json();
+console.log(data);
 ```
 
 ```python Python
 import requests
 
-url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/coupons"
+url = "https://api.zupy.com/api/loyalty/v1/coupons"
+params = {
+    "status": "active", 
+    "page_size": 10
+}
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
 }
 
-response = requests.get(url, headers=headers)
-coupons = response.json()
-print(coupons)
+response = requests.get(url, params=params, headers=headers)
+data = response.json()
+print(data)
 ```
 
 ```php PHP
 <?php
-$url = "https://api.zupy.com/v1/loyalty/customers/ZP-4F95FB0A/coupons";
+$url = "https://api.zupy.com/api/loyalty/v1/coupons?" . http_build_query([
+    'status' => 'active',
+    'page_size' => 10
+]);
 
 $headers = [
     "Authorization: Bearer YOUR_API_KEY",
@@ -149,8 +200,8 @@ $response = file_get_contents($url, false, stream_context_create([
     ]
 ]));
 
-$coupons = json_decode($response, true);
-print_r($coupons);
+$data = json_decode($response, true);
+print_r($data);
 ?>
 ```
 </CodeGroup>
@@ -158,60 +209,98 @@ print_r($coupons);
 ## Example Response
 
 <CodeGroup>
-```json 200 - Active Coupons
+```json 200 - Filtered Coupons
 {
-  "member_id": "ZP-4F95FB0A",
-  "total_active": 3,
-  "active_coupons": [
+  "count": 3,
+  "next": "https://api.zupy.com/api/loyalty/v1/coupons?status=active&page=2&page_size=10",
+  "previous": null,
+  "results": [
     {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
       "coupon_code": "CP-14A578D0",
-      "reward_name": "Pizza Margherita Grátis",
-      "reward_description": "Pizza Margherita tradicional completa com molho de tomate, mussarela e manjericão fresco",
-      "discount_type": "product_free",
-      "discount_value": 35.00,
+      "status": "active",
+      "customer": {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "card_number": "ZP-4F95FB0A",
+        "user": {
+          "name": "João Silva",
+          "email": "joao@email.com"
+        }
+      },
+      "reward": {
+        "id": "550e8400-e29b-41d4-a716-446655440002",
+        "name": "Pizza Margherita Grátis",
+        "description": "Pizza Margherita tradicional completa com molho de tomate, mussarela e manjericão fresco",
+        "points_required": 1000
+      },
       "created_at": "2025-08-20T14:22:00Z",
       "expires_at": "2025-09-20T23:59:59Z",
-      "terms": "Válido apenas para consumo no local. Não pode ser combinado com outras promoções.",
-      "used": false
+      "used_at": null
     },
     {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
       "coupon_code": "CP-B47XY912",
-      "reward_name": "10% de Desconto",
-      "reward_description": "10% de desconto em qualquer pedido",
-      "discount_type": "percentage",
-      "discount_value": 10.0,
+      "status": "active",
+      "customer": {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "card_number": "ZP-4F95FB0A",
+        "user": {
+          "name": "João Silva",
+          "email": "joao@email.com"
+        }
+      },
+      "reward": {
+        "id": "550e8400-e29b-41d4-a716-446655440004",
+        "name": "10% de Desconto",
+        "description": "10% de desconto em qualquer pedido",
+        "points_required": 500
+      },
       "created_at": "2025-08-22T09:15:00Z",
       "expires_at": "2025-09-22T23:59:59Z",
-      "terms": "Válido para pedidos acima de R$ 20,00. Desconto máximo de R$ 50,00.",
-      "used": false
+      "used_at": null
     },
     {
+      "id": "550e8400-e29b-41d4-a716-446655440005",
       "coupon_code": "CP-Z9K3M4N7",
-      "reward_name": "Refrigerante 350ml Grátis",
-      "reward_description": "Refrigerante de qualquer sabor disponível, 350ml gelado",
-      "discount_type": "product_free",
-      "discount_value": 8.00,
+      "status": "active",
+      "customer": {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "card_number": "ZP-4F95FB0A",
+        "user": {
+          "name": "João Silva",
+          "email": "joao@email.com"
+        }
+      },
+      "reward": {
+        "id": "550e8400-e29b-41d4-a716-446655440006",
+        "name": "Refrigerante 350ml Grátis",
+        "description": "Refrigerante de qualquer sabor disponível, 350ml gelado",
+        "points_required": 300
+      },
       "created_at": "2025-08-25T16:45:00Z",
       "expires_at": "2025-09-25T23:59:59Z",
-      "terms": "Válido para qualquer sabor disponível no momento",
-      "used": false
+      "used_at": null
     }
   ]
 }
 ```
 
-```json 200 - No Active Coupons
+```json 200 - No Coupons Found
 {
-  "member_id": "ZP-8B23CD41",
-  "total_active": 0,
-  "active_coupons": []
+  "count": 0,
+  "next": null,
+  "previous": null,
+  "results": []
 }
 ```
 
-```json 404 - Customer Not Found
+```json 400 - Invalid Filter Parameters
 {
-  "error": "customer_not_found",
-  "message": "Customer with member_id 'ZP-INVALID1' not found"
+  "error": "invalid_filter",
+  "message": "Invalid status filter provided",
+  "details": {
+    "status": ["Select a valid choice. 'invalid' is not one of the available choices."]
+  }
 }
 ```
 </CodeGroup>

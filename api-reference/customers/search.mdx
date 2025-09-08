@@ -1,7 +1,7 @@
 ---
 title: "Search Customer"
-api: "GET /loyalty/customers/search"
-description: "Find existing customers using WhatsApp, email, CPF, or Zupy member code with priority-based matching"
+api: "GET /api/loyalty/v1/customers/search"
+description: "Find existing customers using multiple search criteria including phone, email, CPF, or customer code"
 ---
 
 ## Overview
@@ -20,189 +20,162 @@ This endpoint locates existing customers in the loyalty program using multiple i
 ## Query Parameters
 
 <Note>
-  **Priority Order**: If multiple parameters are provided, the search uses this priority:
-  1. Member Code (most specific)
-  2. WhatsApp (primary identifier)  
-  3. Email (secondary identifier)
-  4. CPF (document-based)
+  **Search Options**: You can search using general query, specific field types, or direct field parameters. At least one parameter is required.
 </Note>
 
-<ParamField query="member_code" type="string">
-  Zupy member code (highest priority)
+<ParamField query="q" type="string">
+  General search query (minimum 3 characters) - searches across name, email, phone, CPF, and customer code
   ```
-  ZP-4F95FB0A
+  João Silva
   ```
 </ParamField>
 
-<ParamField query="whatsapp" type="string">
-  WhatsApp number in international format
+<ParamField query="search_type" type="string">
+  Specific search type when used with `q` parameter
   ```
-  +5511965958122 or 11965958122
+  name | email | phone | cpf | customer_code
+  ```
+</ParamField>
+
+<ParamField query="phone" type="string">
+  Search by phone number (digits only)
+  ```
+  5511965958122 or +5511965958122
   ```
 </ParamField>
 
 <ParamField query="email" type="string">
-  Customer's email address
+  Search by email address
   ```
   joao@email.com
   ```
 </ParamField>
 
 <ParamField query="cpf" type="string">
-  Customer's CPF (with or without formatting)
+  Search by CPF (with or without formatting)
   ```
   12345678901 or 123.456.789-01
   ```
 </ParamField>
 
+<ParamField query="customer_code" type="string">
+  Search by customer code (card number)
+  ```
+  ZP-4F95FB0A
+  ```
+</ParamField>
+
+<ParamField query="page" type="integer">
+  Page number for pagination (default: 1)
+  ```
+  1
+  ```
+</ParamField>
+
+<ParamField query="per_page" type="integer">
+  Items per page (default: 20, max: 100)
+  ```
+  20
+  ```
+</ParamField>
+
 ## Response
 
-<ResponseField name="member_id" type="string">
-  Unique Zupy customer identifier (format: ZP-XXXXXXXX)
+<ResponseField name="count" type="integer">
+  Total number of customers matching the search criteria
 </ResponseField>
 
-<ResponseField name="whatsapp" type="string">
-  WhatsApp number in international format
+<ResponseField name="page" type="integer">
+  Current page number
 </ResponseField>
 
-<ResponseField name="whatsapp_verified" type="boolean">
-  Whether WhatsApp number has been verified
+<ResponseField name="per_page" type="integer">
+  Number of items per page
 </ResponseField>
 
-<ResponseField name="email" type="string">
-  Customer's email address
+<ResponseField name="total_pages" type="integer">
+  Total number of pages available
 </ResponseField>
 
-<ResponseField name="email_verified" type="boolean">
-  Whether email address has been verified
-</ResponseField>
-
-<ResponseField name="name" type="string">
-  Customer's full name
-</ResponseField>
-
-<ResponseField name="cpf" type="string">
-  CPF in formatted display (000.000.000-00)
-</ResponseField>
-
-<ResponseField name="cpf_verified" type="boolean">
-  Whether CPF has been verified
-</ResponseField>
-
-<ResponseField name="status" type="string">
-  Profile completion status
-  ```
-  basic_profile | partial_profile | complete_profile
-  ```
-</ResponseField>
-
-<ResponseField name="created_at" type="string">
-  Customer registration timestamp (ISO 8601)
-</ResponseField>
-
-<ResponseField name="updated_at" type="string">
-  Last profile update timestamp (ISO 8601)
-</ResponseField>
-
-<ResponseField name="tier" type="string">
-  Current loyalty tier
-  ```
-  default | bronze | silver | gold | platinum | vip
-  ```
-</ResponseField>
-
-<ResponseField name="current_points" type="integer">
-  Current available points balance
-</ResponseField>
-
-<ResponseField name="points_earned" type="integer">
-  Total points earned historically
-</ResponseField>
-
-<ResponseField name="points_spent" type="integer">
-  Total points redeemed historically
-</ResponseField>
-
-<ResponseField name="rfm_classification" type="string">
-  RFM-based customer segment
-  ```
-  New Customer | Loyal Customer | Champion | At Risk | Lost
-  ```
-</ResponseField>
-
-<ResponseField name="rfm_segment" type="string">
-  Detailed RFM segment description
-</ResponseField>
-
-<ResponseField name="rfm_cluster" type="integer">
-  Machine learning cluster ID (0-10)
-</ResponseField>
-
-<ResponseField name="rfm_score" type="object">
-  Detailed RFM scoring breakdown
+<ResponseField name="results" type="array">
+  Array of customer objects matching the search criteria
   
-  <Expandable title="RFM Score Object">
-    <ResponseField name="recency" type="integer">
-      Recency score (1-5, higher = more recent)
+  <Expandable title="Customer Object">
+    <ResponseField name="id" type="string">
+      Unique customer identifier
     </ResponseField>
     
-    <ResponseField name="frequency" type="integer">
-      Frequency score (1-5, higher = more frequent)
+    <ResponseField name="card_number" type="string">
+      Customer code/card number (e.g., ZP-4F95FB0A)
     </ResponseField>
     
-    <ResponseField name="monetary" type="integer">
-      Monetary score (1-5, higher = higher value)
+    <ResponseField name="user" type="object">
+      User information object
+      
+      <Expandable title="User Object">
+        <ResponseField name="name" type="string">
+          Customer's full name
+        </ResponseField>
+        
+        <ResponseField name="email" type="string">
+          Customer's email address
+        </ResponseField>
+        
+        <ResponseField name="whatsapp_number" type="string">
+          WhatsApp number
+        </ResponseField>
+        
+        <ResponseField name="cpf" type="string">
+          Customer's CPF
+        </ResponseField>
+      </Expandable>
     </ResponseField>
     
-    <ResponseField name="total" type="integer">
-      Combined RFM score (3-15)
+    <ResponseField name="points_balance" type="integer">
+      Current available points balance
     </ResponseField>
     
-    <ResponseField name="segment" type="string">
-      Calculated customer segment
+    <ResponseField name="points_earned" type="integer">
+      Total points earned historically
+    </ResponseField>
+    
+    <ResponseField name="points_spent" type="integer">
+      Total points spent historically
+    </ResponseField>
+    
+    <ResponseField name="tier" type="string">
+      Current loyalty tier
+    </ResponseField>
+    
+    <ResponseField name="active" type="boolean">
+      Whether customer account is active
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      Customer registration timestamp (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="last_activity_date" type="string">
+      Date of most recent activity (ISO 8601)
+    </ResponseField>
+    
+    <ResponseField name="transaction_count" type="integer">
+      Total number of loyalty transactions
     </ResponseField>
   </Expandable>
-</ResponseField>
-
-<ResponseField name="last_activity_date" type="string">
-  Date of most recent activity (ISO 8601)
-</ResponseField>
-
-<ResponseField name="last_transaction_date" type="string">
-  Date of most recent points transaction (ISO 8601)
-</ResponseField>
-
-<ResponseField name="transaction_count" type="integer">
-  Total number of loyalty transactions
-</ResponseField>
-
-<ResponseField name="total_spent" type="number">
-  Total amount spent across all transactions (BRL)
-</ResponseField>
-
-<ResponseField name="days_since_signup" type="integer">
-  Days since customer first joined loyalty program
-</ResponseField>
-
-<ResponseField name="lifetime_value" type="number">
-  Calculated customer lifetime value (BRL)
-</ResponseField>
-
-<ResponseField name="average_order_value" type="number">
-  Average transaction value (BRL)
 </ResponseField>
 
 ## Example Request
 
 <CodeGroup>
 ```bash cURL
-curl -X GET "https://api.zupy.com/v1/loyalty/customers/search?whatsapp=+5511965958122" \
+curl -X GET "https://api.zupy.com/api/loyalty/v1/customers/search?phone=5511965958122" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.zupy.com/v1/loyalty/customers/search?whatsapp=+5511965958122', {
+const response = await fetch('https://api.zupy.com/api/loyalty/v1/customers/search?phone=5511965958122', {
   method: 'GET',
   headers: {
     'Authorization': 'Bearer YOUR_API_KEY',
@@ -210,28 +183,28 @@ const response = await fetch('https://api.zupy.com/v1/loyalty/customers/search?w
   }
 });
 
-const customer = await response.json();
-console.log(customer);
+const data = await response.json();
+console.log(data);
 ```
 
 ```python Python
 import requests
 
-url = "https://api.zupy.com/v1/loyalty/customers/search"
-params = {"whatsapp": "+5511965958122"}
+url = "https://api.zupy.com/api/loyalty/v1/customers/search"
+params = {"phone": "5511965958122"}
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
 }
 
 response = requests.get(url, params=params, headers=headers)
-customer = response.json()
-print(customer)
+data = response.json()
+print(data)
 ```
 
 ```php PHP
 <?php
-$url = "https://api.zupy.com/v1/loyalty/customers/search?whatsapp=" . urlencode("+5511965958122");
+$url = "https://api.zupy.com/api/loyalty/v1/customers/search?phone=" . urlencode("5511965958122");
 
 $headers = [
     "Authorization: Bearer YOUR_API_KEY",
@@ -245,8 +218,8 @@ $response = file_get_contents($url, false, stream_context_create([
     ]
 ]));
 
-$customer = json_decode($response, true);
-print_r($customer);
+$data = json_decode($response, true);
+print_r($data);
 ?>
 ```
 </CodeGroup>
@@ -256,45 +229,40 @@ print_r($customer);
 <CodeGroup>
 ```json 200 - Customer Found
 {
-  "member_id": "ZP-4F95FB0A",
-  "whatsapp": "+5511965958122",
-  "whatsapp_verified": true,
-  "email": "joao@email.com",
-  "email_verified": false,
-  "name": "João Silva",
-  "cpf": "123.456.789-01",
-  "cpf_verified": false,
-  "status": "partial_profile",
-  "created_at": "2025-08-15T10:30:00Z",
-  "updated_at": "2025-08-20T14:22:00Z",
-  "tier": "silver",
-  "current_points": 847,
-  "points_earned": 2150,
-  "points_spent": 1303,
-  "rfm_classification": "Loyal Customer",
-  "rfm_segment": "Loyal Customers",
-  "rfm_cluster": 3,
-  "rfm_score": {
-    "recency": 4,
-    "frequency": 5,
-    "monetary": 4,
-    "total": 13,
-    "segment": "Loyal Customer"
-  },
-  "last_activity_date": "2025-08-20T14:22:00Z",
-  "last_transaction_date": "2025-08-20T14:22:00Z",
-  "transaction_count": 12,
-  "total_spent": 420.00,
-  "days_since_signup": 42,
-  "lifetime_value": 420.00,
-  "average_order_value": 35.00
+  "count": 1,
+  "page": 1,
+  "per_page": 20,
+  "total_pages": 1,
+  "results": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "card_number": "ZP-4F95FB0A",
+      "user": {
+        "name": "João Silva",
+        "email": "joao@email.com",
+        "whatsapp_number": "+5511965958122",
+        "cpf": "123.456.789-01"
+      },
+      "points_balance": 847,
+      "points_earned": 2150,
+      "points_spent": 1303,
+      "tier": "silver",
+      "active": true,
+      "created_at": "2025-08-15T10:30:00Z",
+      "last_activity_date": "2025-08-20T14:22:00Z",
+      "transaction_count": 12
+    }
+  ]
 }
 ```
 
 ```json 404 - Customer Not Found
 {
-  "error": "customer_not_found",
-  "message": "Nenhum cliente encontrado com os critérios fornecidos"
+  "count": 0,
+  "page": 1,
+  "per_page": 20,
+  "total_pages": 0,
+  "results": []
 }
 ```
 
@@ -303,7 +271,7 @@ print_r($customer);
   "error": "invalid_parameters",
   "message": "At least one search parameter is required",
   "details": {
-    "supported_parameters": ["member_code", "whatsapp", "email", "cpf"]
+    "supported_parameters": ["q", "phone", "email", "cpf", "customer_code"]
   }
 }
 ```
@@ -314,10 +282,10 @@ print_r($customer);
 When multiple parameters are provided, only the highest priority parameter is used:
 
 ```javascript
-// Example: Both member_code and whatsapp provided
-GET /loyalty/customers/search?member_code=ZP-4F95FB0A&whatsapp=+5511965958122
+// Example: Both customer_code and phone provided
+GET /api/loyalty/v1/customers/search?customer_code=ZP-4F95FB0A&phone=5511965958122
 
-// Result: Only member_code is used for search (highest priority)
+// Result: Only customer_code is used for search (highest priority)
 ```
 
 ## Profile Status Levels
