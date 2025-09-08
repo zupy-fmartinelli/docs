@@ -5,7 +5,10 @@ info:
     Comprehensive loyalty program API for customer management, points operations, rewards, and analytics.
     
     ## Authentication
-    All endpoints require Bearer token authentication.
+    All endpoints require Bearer token authentication. Use the format: `Bearer YOUR_API_KEY`
+    
+    ## Testing the API
+    Use the token: `ZsCUqECc9aCQtN5z9z9sTs81933YnklP` for testing purposes.
     
     ## Epic 2 Enhancements
     - Enhanced Company Data API with complete address structure
@@ -25,8 +28,6 @@ info:
 servers:
   - url: https://webmaster.zupers.com.br/api/loyalty/v1
     description: Production server
-  - url: https://staging.zupers.com.br/api/loyalty/v1
-    description: Staging server
 
 security:
   - BearerAuth: []
@@ -36,8 +37,8 @@ components:
     BearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
-      description: "Use format: Bearer YOUR_API_KEY"
+      bearerFormat: Token
+      description: "Use format: Bearer ZsCUqECc9aCQtN5z9z9sTs81933YnklP"
 
   schemas:
     Company:
@@ -45,30 +46,57 @@ components:
       properties:
         id:
           type: string
-          example: "comp_1234567890"
+          example: "1474883d96603e4914ef43bb135"
         name:
           type: string
-          example: "Miola Restaurante"
-        slug:
+          example: "Miola Smash Burger"
+        trading_name:
           type: string
-          example: "miola-restaurante"
-        description:
+          example: "Miola Smash Burger"
+        email:
           type: string
-          example: "Authentic Brazilian cuisine with modern flavors"
-        logo_url:
+          format: email
+          example: "wendel_f_m@hotmail.com"
+        phone:
           type: string
-          format: uri
-          example: "https://storage.zupy.com/logos/miola-logo.png"
+          example: "(11) 98574-9872"
         website:
           type: string
           format: uri
-          example: "https://miolarestaurante.com.br"
-        loyalty_program:
-          $ref: '#/components/schemas/LoyaltyProgramSummary'
-        contact:
-          $ref: '#/components/schemas/ContactInfo'
-        settings:
-          $ref: '#/components/schemas/CompanySettings'
+          example: "https://miolaburger.com.br/"
+        logo:
+          type: string
+          format: uri
+          example: "https://cdn.zupy.com/media/company_files/logo-miola-smash-burger.jpg"
+        description:
+          type: string
+          example: "Miola Burger Hamburgueria Artesanal"
+        business_type:
+          type: string
+          example: "Hamburgueria"
+        currency:
+          type: string
+          example: "BRL"
+        cnpj:
+          type: string
+          example: "35.251.614/0001-20"
+        address:
+          type: string
+          nullable: true
+          example: null
+        loyalty_programs_count:
+          type: integer
+          example: 1
+        active_customers_count:
+          type: integer
+          example: 1022
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-03-28T17:02:53.092523Z"
+        active:
+          type: boolean
+          example: true
 
     LoyaltyProgramSummary:
       type: object
@@ -454,6 +482,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Company'
+              example:
+                id: "1474883d96603e4914ef43bb135"
+                name: "Miola Smash Burger"
+                trading_name: "Miola Smash Burger"
+                email: "wendel_f_m@hotmail.com"
+                phone: "(11) 98574-9872"
+                website: "https://miolaburger.com.br/"
+                logo: "https://cdn.zupy.com/media/company_files/logo-miola-smash-burger.jpg"
+                description: "Miola Burger Hamburgueria Artesanal"
+                business_type: "Hamburgueria"
+                currency: "BRL"
+                cnpj: "35.251.614/0001-20"
+                address: null
+                loyalty_programs_count: 1
+                active_customers_count: 1022
+                created_at: "2025-03-28T17:02:53.092523Z"
+                active: true
         '401':
           description: Authentication required
           content:
