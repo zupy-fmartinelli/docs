@@ -57,6 +57,10 @@ console.log(data);
 ```
 </CodeGroup>
 
+<Note>
+  **Phone format**: The `phone` parameter accepts digits only (e.g., `5511987654321`). The API normalizes all phone numbers to E.164 format (`+5511987654321`) internally, so any input format will match the same customer.
+</Note>
+
 **If your key is valid**, you receive a `200` response (even if no customers match):
 
 ```json
@@ -85,22 +89,24 @@ console.log(data);
 
 Send order data to Zupy. Replace `{partner}` with your integration slug (e.g., `repediu`).
 
+The webhook accepts **any JSON payload** — Zupy stores it raw and processes it asynchronously using a partner-specific adapter. During onboarding, the Zupy team will map your payload format. For new integrations, use this standard catch-all format:
+
 <CodeGroup>
 ```bash cURL
-curl -X POST "https://api.zupy.com/api/v2/webhooks/integrations/repediu/" \
+curl -X POST "https://api.zupy.com/api/v2/webhooks/integrations/{partner}/" \
   -H "X-API-Key: zupy_pk_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '[
     {
-      "cliente": "Maria Santos",
-      "Celular": "+55 11 98765-4321",
-      "Email": null,
-      "CpfCnpj": null,
-      "Valor": "89.90",
-      "id_venda": 123456789,
-      "DataVenda": "2026-03-22T14:30:00.000Z",
-      "loja_cnpj": "12.345.678/0001-90",
-      "loja_nome": "Pizzaria Exemplo"
+      "customer_name": "Maria Santos",
+      "customer_phone": "+5511987654321",
+      "customer_email": null,
+      "customer_cpf": null,
+      "order_total": "89.90",
+      "order_id": "123456789",
+      "order_date": "2026-03-22T14:30:00.000Z",
+      "store_cnpj": "12.345.678/0001-90",
+      "store_name": "Pizzaria Exemplo"
     }
   ]'
 ```
@@ -108,20 +114,20 @@ curl -X POST "https://api.zupy.com/api/v2/webhooks/integrations/repediu/" \
 ```python Python
 payload = [
     {
-        "cliente": "Maria Santos",
-        "Celular": "+55 11 98765-4321",
-        "Email": None,
-        "CpfCnpj": None,
-        "Valor": "89.90",
-        "id_venda": 123456789,
-        "DataVenda": "2026-03-22T14:30:00.000Z",
-        "loja_cnpj": "12.345.678/0001-90",
-        "loja_nome": "Pizzaria Exemplo",
+        "customer_name": "Maria Santos",
+        "customer_phone": "+5511987654321",
+        "customer_email": None,
+        "customer_cpf": None,
+        "order_total": "89.90",
+        "order_id": "123456789",
+        "order_date": "2026-03-22T14:30:00.000Z",
+        "store_cnpj": "12.345.678/0001-90",
+        "store_name": "Pizzaria Exemplo",
     }
 ]
 
 response = requests.post(
-    f"{BASE_URL}/webhooks/integrations/repediu/",
+    f"{BASE_URL}/webhooks/integrations/{{partner}}/",
     json=payload,
     headers=HEADERS,
 )
@@ -129,22 +135,23 @@ print(response.json())
 ```
 
 ```javascript JavaScript
+const partner = "your_slug"; // e.g., "repediu"
 const payload = [
   {
-    cliente: "Maria Santos",
-    Celular: "+55 11 98765-4321",
-    Email: null,
-    CpfCnpj: null,
-    Valor: "89.90",
-    id_venda: 123456789,
-    DataVenda: "2026-03-22T14:30:00.000Z",
-    loja_cnpj: "12.345.678/0001-90",
-    loja_nome: "Pizzaria Exemplo",
+    customer_name: "Maria Santos",
+    customer_phone: "+5511987654321",
+    customer_email: null,
+    customer_cpf: null,
+    order_total: "89.90",
+    order_id: "123456789",
+    order_date: "2026-03-22T14:30:00.000Z",
+    store_cnpj: "12.345.678/0001-90",
+    store_name: "Pizzaria Exemplo",
   },
 ];
 
 const response = await fetch(
-  `${BASE_URL}/webhooks/integrations/repediu/`,
+  `${BASE_URL}/webhooks/integrations/${partner}/`,
   {
     method: "POST",
     headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
@@ -155,6 +162,10 @@ const data = await response.json();
 console.log(data);
 ```
 </CodeGroup>
+
+<Tip>
+  **Already have your own payload format?** Send it as-is — Zupy accepts any JSON. During onboarding, the Zupy team will create a mapper for your specific field names, just like we did for Repediu, Saipos, and other partners.
+</Tip>
 
 **Success response** (`{data, meta}` envelope):
 
