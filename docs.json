@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Zupy Developer Platform",
+  "name": "Zupy Partner API",
   "colors": {
     "primary": "#6366F1",
     "light": "#8B5CF6",
@@ -21,27 +21,19 @@
             ]
           },
           {
-            "group": "Core Features",
-            "pages": [
-              "features/loyalty-programs",
-              "features/messaging",
-              "features/apple-wallet",
-              "features/webhooks"
-            ]
-          },
-          {
-            "group": "Integration Guides",
+            "group": "Guides",
             "pages": [
               "guides/getting-started",
-              "guides/authentication-setup",
-              "guides/webhooks-setup"
+              "guides/webhook-setup",
+              "guides/otp-flow",
+              "guides/partner-onboarding"
             ]
           }
         ]
       },
       {
         "tab": "API Reference",
-        "openapi": "api-reference/openapi.yaml"
+        "openapi": "api-reference/openapi.json"
       }
     ],
     "global": {
