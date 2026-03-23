@@ -6,12 +6,12 @@ import json
 import os
 import pytest
 
-SPEC_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "api-reference", "openapi.json"
+SPEC_PATH = os.environ.get(
+    "OPENAPI_SPEC_PATH",
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "api-reference", "openapi.json"
+    ),
 )
-# Fallback for running from outside the repo (e.g. /tmp)
-if not os.path.exists(SPEC_PATH):
-    SPEC_PATH = "/home/webmaster/Documents/zuppy/docs-mintlify/api-reference/openapi.json"
 
 
 @pytest.fixture
@@ -84,27 +84,30 @@ class TestSecuritySchemes:
 
 
 class TestPartnerEndpoints:
-    """AC 1: All 20 partner endpoints must be present."""
+    """AC 1: All 23 partner endpoints must be present and no extras."""
 
     EXPECTED_PATHS = [
         ("POST", "/api/v2/auth/request-otp/"),
         ("POST", "/api/v2/auth/verify-otp/"),
+        ("GET", "/api/v2/companies/"),
+        ("GET", "/api/v2/companies/{id}/"),
         ("GET", "/api/v2/customers/"),
         ("GET", "/api/v2/customers/{id}/"),
         ("GET", "/api/v2/customers/{id}/points/"),
         ("GET", "/api/v2/customers/{id}/points/history/"),
         ("POST", "/api/v2/customers/{id}/points/add/"),
+        ("POST", "/api/v2/customers/{id}/coupons/{coupon_id}/validate/"),
+        ("POST", "/api/v2/customers/{id}/rewards/{reward_id}/redeem/"),
         ("GET", "/api/v2/customers/{id}/z-balance/"),
         ("GET", "/api/v2/loyalty/programs/"),
         ("GET", "/api/v2/loyalty/programs/{id}/"),
         ("GET", "/api/v2/rewards/"),
         ("GET", "/api/v2/rewards/{id}/"),
-        ("POST", "/api/v2/customers/{id}/rewards/{reward_id}/redeem/"),
         ("GET", "/api/v2/rewards/coupons/"),
-        ("POST", "/api/v2/customers/{id}/coupons/{coupon_id}/validate/"),
-        ("GET", "/api/v2/companies/{id}/"),
-        ("POST", "/api/v2/wallet/passes/loyalty/"),
+        ("POST", "/api/v2/wallet/notifications/"),
+        ("GET", "/api/v2/wallet/passes/"),
         ("POST", "/api/v2/wallet/passes/coupons/"),
+        ("POST", "/api/v2/wallet/passes/loyalty/"),
         ("GET", "/api/v2/wallet/passes/{pass_id}/status/"),
         ("POST", "/api/v2/webhooks/integrations/{partner}/"),
     ]
@@ -115,6 +118,12 @@ class TestPartnerEndpoints:
         assert method.lower() in spec["paths"][path], (
             f"Missing method {method} on {path}"
         )
+
+    def test_no_unexpected_paths(self, spec):
+        expected = {path for _, path in self.EXPECTED_PATHS}
+        actual = set(spec["paths"].keys())
+        unexpected = actual - expected
+        assert not unexpected, f"Unexpected paths in spec: {unexpected}"
 
 
 class TestResponseEnvelope:
@@ -209,13 +218,25 @@ class TestNoOrphanedSchemas:
     """Verify no orphaned schemas referencing internal-only models."""
 
     INTERNAL_SCHEMAS = [
-        "ScannerLookupResponse",
-        "ScannerPointsResponse",
+        "ActiveCoupon",
+        "EnvelopeErasureResponse",
+        "EnvelopeExportResponse",
+        "EnvelopeExportStatusResponse",
         "EnvelopeScannerLookupResponse",
         "EnvelopeScannerPointsResponse",
         "ErasureResponse",
+        "ErasureResponseStatusEnum",
         "ExportResponse",
+        "ExportResponseStatusEnum",
         "ExportStatusResponse",
+        "ExportStatusResponseStatusEnum",
+        "OperationEnum",
+        "PointsReduceRequest",
+        "ScannerLookupRequest",
+        "ScannerLookupResponse",
+        "ScannerPointsRequest",
+        "ScannerPointsResponse",
+        "SegmentCountsResponse",
     ]
 
     def test_no_internal_schemas(self, spec):
