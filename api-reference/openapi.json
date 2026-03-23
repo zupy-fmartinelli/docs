@@ -3,7 +3,7 @@
     "info": {
         "title": "Zupy API v2",
         "version": "2.0.0",
-        "description": "Zupy API v2 \u2014 versioned, gateway-aware API with envelope responses, RFC 7807 errors, and multi-auth support (JWT, API Key, Device Key)."
+        "description": "Zupy API v2 — versioned, gateway-aware API with envelope responses, RFC 7807 errors, and multi-auth support (JWT, API Key, Device Key)."
     },
     "paths": {
         "/api/v2/auth/request-otp/": {
@@ -32,11 +32,11 @@
                                 "$ref": "#/components/schemas/OTPRequestBody"
                             },
                             "examples": {
-                                "OTPRequest\u2014Phone": {
+                                "OTPRequest—Phone": {
                                     "value": {
                                         "identifier": "+5511987654321"
                                     },
-                                    "summary": "OTP Request \u2014 Phone"
+                                    "summary": "OTP Request — Phone"
                                 }
                             }
                         },
@@ -61,13 +61,13 @@
                                     "$ref": "#/components/schemas/OTPRequestResponse"
                                 },
                                 "examples": {
-                                    "OTPSent\u2014WhatsApp": {
+                                    "OTPSent—WhatsApp": {
                                         "value": {
                                             "status": "sent",
                                             "channel": "whatsapp",
                                             "expires_in": 300
                                         },
-                                        "summary": "OTP Sent \u2014 WhatsApp"
+                                        "summary": "OTP Sent — WhatsApp"
                                     }
                                 }
                             }
@@ -115,7 +115,11 @@
                         "description": ""
                     }
                 },
-                "security": []
+                "security": [
+                    {
+                        "apiKeyAuth": []
+                    }
+                ]
             }
         },
         "/api/v2/auth/verify-otp/": {
@@ -144,12 +148,12 @@
                                 "$ref": "#/components/schemas/OTPVerifyRequestBody"
                             },
                             "examples": {
-                                "OTPVerify\u2014Phone": {
+                                "OTPVerify—Phone": {
                                     "value": {
                                         "identifier": "+5511987654321",
                                         "otp_code": "123456"
                                     },
-                                    "summary": "OTP Verify \u2014 Phone"
+                                    "summary": "OTP Verify — Phone"
                                 }
                             }
                         },
@@ -174,16 +178,16 @@
                                     "$ref": "#/components/schemas/OTPVerifyResponse"
                                 },
                                 "examples": {
-                                    "OTPVerified\u2014ExistingCustomer": {
+                                    "OTPVerified—ExistingCustomer": {
                                         "value": {
                                             "customer_id": "2awTHloSJX7kGGprFerOOsvABcd",
                                             "is_new": false,
                                             "otp_session": "abc123def456...",
-                                            "full_name": "Jo\u00e3o Silva",
+                                            "full_name": "João Silva",
                                             "points_balance": 150,
                                             "tier": "silver"
                                         },
-                                        "summary": "OTP Verified \u2014 Existing Customer"
+                                        "summary": "OTP Verified — Existing Customer"
                                     }
                                 }
                             }
@@ -241,7 +245,11 @@
                         "description": ""
                     }
                 },
-                "security": []
+                "security": [
+                    {
+                        "apiKeyAuth": []
+                    }
+                ]
             }
         },
         "/api/v2/companies/": {
@@ -273,15 +281,6 @@
                     "Companies"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -340,15 +339,6 @@
                     "Companies"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -493,15 +483,6 @@
                 ],
                 "security": [
                     {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
                         "apiKeyAuth": []
                     }
                 ],
@@ -569,15 +550,6 @@
                     "Customers"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -665,15 +637,6 @@
                 ],
                 "security": [
                     {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
                         "apiKeyAuth": []
                     }
                 ],
@@ -741,383 +704,6 @@
                 }
             }
         },
-        "/api/v2/customers/{id}/erase/": {
-            "post": {
-                "operationId": "customers_erase_create",
-                "description": "Request customer data erasure (GDPR/LGPD). Returns 202 Accepted or 200 if already erased.",
-                "summary": "Request customer data erasure",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "id",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Unique identifier for this customer.",
-                        "required": true
-                    }
-                ],
-                "tags": [
-                    "Customers"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
-                        "apiKeyAuth": []
-                    }
-                ],
-                "responses": {
-                    "202": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/EnvelopeErasureResponse"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/EnvelopeErasureResponse"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "401": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "403": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "404": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "429": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/api/v2/customers/{id}/export/": {
-            "post": {
-                "operationId": "customers_export_create",
-                "description": "Request customer data export (GDPR/LGPD portability). Returns 202 Accepted with export_request_id. Check status at GET /export/status/.",
-                "summary": "Request customer data export",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "id",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Unique identifier for this customer.",
-                        "required": true
-                    }
-                ],
-                "tags": [
-                    "Customers"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
-                        "apiKeyAuth": []
-                    }
-                ],
-                "responses": {
-                    "202": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/EnvelopeExportResponse"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "400": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "401": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "403": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "404": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "429": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/api/v2/customers/{id}/export/download/": {
-            "get": {
-                "operationId": "customers_export_download_retrieve",
-                "description": "Download customer data export as JSON file. Token is time-limited (24 hours). Returns 410 if link has expired.",
-                "summary": "Download data export file",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "id",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Unique identifier for this customer.",
-                        "required": true
-                    },
-                    {
-                        "in": "query",
-                        "name": "token",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Download token from GET /export/status/ response",
-                        "required": true
-                    }
-                ],
-                "tags": [
-                    "Customers"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
-                        "apiKeyAuth": []
-                    }
-                ],
-                "responses": {
-                    "400": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "401": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "403": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "404": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "410": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/api/v2/customers/{id}/export/status/": {
-            "get": {
-                "operationId": "customers_export_status_retrieve",
-                "description": "Get current data export status for a customer. Returns status (pending/processing/completed/failed) and download_url when completed.",
-                "summary": "Get data export status",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "id",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Unique identifier for this customer.",
-                        "required": true
-                    }
-                ],
-                "tags": [
-                    "Customers"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
-                        "apiKeyAuth": []
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/EnvelopeExportStatusResponse"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "401": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "403": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "404": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "429": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    }
-                }
-            }
-        },
         "/api/v2/customers/{id}/points/": {
             "get": {
                 "operationId": "customers_points_retrieve",
@@ -1138,15 +724,6 @@
                     "Customers"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -1246,15 +823,6 @@
                 },
                 "security": [
                     {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
                         "apiKeyAuth": []
                     }
                 ],
@@ -1343,15 +911,6 @@
                 ],
                 "security": [
                     {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
                         "apiKeyAuth": []
                     }
                 ],
@@ -1391,123 +950,6 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "429": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/api/v2/customers/{id}/points/reduce/": {
-            "post": {
-                "operationId": "customers_points_reduce_create",
-                "description": "Reduce loyalty points from a customer's balance. Returns 422 if amount exceeds current balance. Delegates to LoyaltyUser.spend_points().",
-                "summary": "Reduce points from customer",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "id",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Unique identifier for this customer.",
-                        "required": true
-                    }
-                ],
-                "tags": [
-                    "Customers"
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PointsReduceRequest"
-                            }
-                        },
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PointsReduceRequest"
-                            }
-                        },
-                        "multipart/form-data": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PointsReduceRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
-                        "apiKeyAuth": []
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/EnvelopePointsOperationResponse"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "401": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "403": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "404": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "422": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ValidationError"
                                 }
                             }
                         },
@@ -1573,15 +1015,6 @@
                     }
                 },
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -1671,15 +1104,6 @@
                 ],
                 "security": [
                     {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
                         "apiKeyAuth": []
                     }
                 ],
@@ -1737,82 +1161,6 @@
                 }
             }
         },
-        "/api/v2/customers/segment-counts/": {
-            "get": {
-                "operationId": "customers_segment_counts_retrieve",
-                "description": "Returns counts for all RFM segments in a single query, avoiding N+1 API calls from the frontend.",
-                "summary": "Get segment counts for all RFM segments",
-                "parameters": [
-                    {
-                        "in": "query",
-                        "name": "program",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Filter by loyalty program ID"
-                    }
-                ],
-                "tags": [
-                    "Customers"
-                ],
-                "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
-                        "apiKeyAuth": []
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SegmentCountsResponse"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "401": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "403": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "429": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Error"
-                                }
-                            }
-                        },
-                        "description": ""
-                    }
-                }
-            }
-        },
         "/api/v2/loyalty/programs/": {
             "get": {
                 "operationId": "loyalty_programs_list",
@@ -1842,15 +1190,6 @@
                     "Loyalty Programs"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -1919,15 +1258,6 @@
                     "Loyalty Programs"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -2007,7 +1337,7 @@
                         "schema": {
                             "type": "string"
                         },
-                        "description": "Customer KSUID \u2014 required when redeemable=true. Also annotates already_redeemed flag on each reward."
+                        "description": "Customer KSUID — required when redeemable=true. Also annotates already_redeemed flag on each reward."
                     },
                     {
                         "name": "page_size",
@@ -2031,15 +1361,6 @@
                     "Rewards"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -2108,15 +1429,6 @@
                     "Rewards"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -2205,15 +1517,6 @@
                 ],
                 "security": [
                     {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
                         "apiKeyAuth": []
                     }
                 ],
@@ -2291,15 +1594,6 @@
                 },
                 "security": [
                     {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
                         "apiKeyAuth": []
                     }
                 ],
@@ -2368,15 +1662,6 @@
                 ],
                 "security": [
                     {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
                         "apiKeyAuth": []
                     }
                 ],
@@ -2444,15 +1729,6 @@
                     "Wallet"
                 ],
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -2530,15 +1806,6 @@
                     "required": true
                 },
                 "security": [
-                    {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
                     {
                         "apiKeyAuth": []
                     }
@@ -2627,15 +1894,6 @@
                 },
                 "security": [
                     {
-                        "jwtAuth": []
-                    },
-                    {
-                        "tokenAuth": []
-                    },
-                    {
-                        "cookieAuth": []
-                    },
-                    {
                         "apiKeyAuth": []
                     }
                 ],
@@ -2696,7 +1954,7 @@
         "/api/v2/webhooks/integrations/{partner}/": {
             "post": {
                 "operationId": "webhooks_integration_receive",
-                "description": "Receives JSON data from integration partners (e.g. Repediu, Saipos). Authenticates via per-company API key (X-API-Key header), persists to WebhookEvent, and dispatches async processing. Idempotent \u2014 duplicate payloads return 200 with status 'duplicate'.",
+                "description": "Receives JSON data from integration partners (e.g. Repediu, Saipos). Authenticates via per-company API key (X-API-Key header), persists to WebhookEvent, and dispatches async processing. Idempotent — duplicate payloads return 200 with status 'duplicate'.",
                 "summary": "Receive integration partner webhook",
                 "parameters": [
                     {
@@ -2800,43 +2058,16 @@
                         "description": ""
                     }
                 },
-                "security": []
+                "security": [
+                    {
+                        "apiKeyAuth": []
+                    }
+                ]
             }
         }
     },
     "components": {
         "schemas": {
-            "ActiveCoupon": {
-                "type": "object",
-                "description": "Summary of an active coupon for scanner display.",
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "readOnly": true
-                    },
-                    "coupon_code": {
-                        "type": "string",
-                        "readOnly": true
-                    },
-                    "reward_name": {
-                        "type": "string",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "valid_until": {
-                        "type": "string",
-                        "format": "date-time",
-                        "readOnly": true,
-                        "nullable": true
-                    }
-                },
-                "required": [
-                    "coupon_code",
-                    "id",
-                    "reward_name",
-                    "valid_until"
-                ]
-            },
             "ActivityTypeEnum": {
                 "enum": [
                     "scan_pass",
@@ -2862,7 +2093,7 @@
                     "rollback",
                     "secondary_auth",
                     "delivery",
-                    "balc\u00e3o",
+                    "balcão",
                     "dine_in",
                     "other"
                 ],
@@ -3496,51 +2727,6 @@
                     "meta"
                 ]
             },
-            "EnvelopeErasureResponse": {
-                "type": "object",
-                "properties": {
-                    "data": {
-                        "$ref": "#/components/schemas/ErasureResponse"
-                    },
-                    "meta": {
-                        "$ref": "#/components/schemas/PaginationMeta"
-                    }
-                },
-                "required": [
-                    "data",
-                    "meta"
-                ]
-            },
-            "EnvelopeExportResponse": {
-                "type": "object",
-                "properties": {
-                    "data": {
-                        "$ref": "#/components/schemas/ExportResponse"
-                    },
-                    "meta": {
-                        "$ref": "#/components/schemas/PaginationMeta"
-                    }
-                },
-                "required": [
-                    "data",
-                    "meta"
-                ]
-            },
-            "EnvelopeExportStatusResponse": {
-                "type": "object",
-                "properties": {
-                    "data": {
-                        "$ref": "#/components/schemas/ExportStatusResponse"
-                    },
-                    "meta": {
-                        "$ref": "#/components/schemas/PaginationMeta"
-                    }
-                },
-                "required": [
-                    "data",
-                    "meta"
-                ]
-            },
             "EnvelopeListPassListResponse": {
                 "type": "object",
                 "properties": {
@@ -3667,36 +2853,6 @@
                     "meta"
                 ]
             },
-            "EnvelopeScannerLookupResponse": {
-                "type": "object",
-                "properties": {
-                    "data": {
-                        "$ref": "#/components/schemas/ScannerLookupResponse"
-                    },
-                    "meta": {
-                        "$ref": "#/components/schemas/PaginationMeta"
-                    }
-                },
-                "required": [
-                    "data",
-                    "meta"
-                ]
-            },
-            "EnvelopeScannerPointsResponse": {
-                "type": "object",
-                "properties": {
-                    "data": {
-                        "$ref": "#/components/schemas/ScannerPointsResponse"
-                    },
-                    "meta": {
-                        "$ref": "#/components/schemas/PaginationMeta"
-                    }
-                },
-                "required": [
-                    "data",
-                    "meta"
-                ]
-            },
             "EnvelopeWalletNotificationResponse": {
                 "type": "object",
                 "properties": {
@@ -3742,31 +2898,6 @@
                     "meta"
                 ]
             },
-            "ErasureResponse": {
-                "type": "object",
-                "description": "Response serializer for customer data erasure endpoint (Story 9.1).",
-                "properties": {
-                    "erasure_request_id": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "status": {
-                        "$ref": "#/components/schemas/ErasureResponseStatusEnum"
-                    }
-                },
-                "required": [
-                    "erasure_request_id",
-                    "status"
-                ]
-            },
-            "ErasureResponseStatusEnum": {
-                "enum": [
-                    "accepted",
-                    "already_erased"
-                ],
-                "type": "string",
-                "description": "* `accepted` - accepted\n* `already_erased` - already_erased"
-            },
             "Error": {
                 "type": "object",
                 "description": "RFC 7807 Problem Details error response.",
@@ -3795,59 +2926,6 @@
                     "title",
                     "type"
                 ]
-            },
-            "ExportResponse": {
-                "type": "object",
-                "description": "Response serializer for POST /customers/{id}/export/ (Story 9.3).",
-                "properties": {
-                    "export_request_id": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "$ref": "#/components/schemas/ExportResponseStatusEnum"
-                    }
-                },
-                "required": [
-                    "export_request_id",
-                    "status"
-                ]
-            },
-            "ExportResponseStatusEnum": {
-                "enum": [
-                    "pending"
-                ],
-                "type": "string",
-                "description": "* `pending` - pending"
-            },
-            "ExportStatusResponse": {
-                "type": "object",
-                "description": "Response serializer for GET /customers/{id}/export/status/ (Story 9.3).",
-                "properties": {
-                    "export_request_id": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "$ref": "#/components/schemas/ExportStatusResponseStatusEnum"
-                    },
-                    "download_url": {
-                        "type": "string",
-                        "nullable": true
-                    }
-                },
-                "required": [
-                    "export_request_id",
-                    "status"
-                ]
-            },
-            "ExportStatusResponseStatusEnum": {
-                "enum": [
-                    "pending",
-                    "processing",
-                    "completed",
-                    "failed"
-                ],
-                "type": "string",
-                "description": "* `pending` - pending\n* `processing` - processing\n* `completed` - completed\n* `failed` - failed"
             },
             "FieldError": {
                 "type": "object",
@@ -4121,14 +3199,6 @@
                     "points_balance",
                     "tier"
                 ]
-            },
-            "OperationEnum": {
-                "enum": [
-                    "award",
-                    "reduce"
-                ],
-                "type": "string",
-                "description": "* `award` - award\n* `reduce` - reduce"
             },
             "PaginatedCompanyProfileList": {
                 "type": "object",
@@ -4588,24 +3658,6 @@
                     "operation"
                 ]
             },
-            "PointsReduceRequest": {
-                "type": "object",
-                "description": "Validates reduce-points request body. reason is required for audit trail.",
-                "properties": {
-                    "amount": {
-                        "type": "integer",
-                        "minimum": 1
-                    },
-                    "reason": {
-                        "type": "string",
-                        "maxLength": 255
-                    }
-                },
-                "required": [
-                    "amount",
-                    "reason"
-                ]
-            },
             "RewardCatalog": {
                 "type": "object",
                 "description": "Reward catalog serializer for v2 API.\n\nNo PII fields -- reward data is not personally identifiable.\nAll fields are read-only -- this is a read-only endpoint.",
@@ -4842,188 +3894,6 @@
                 "type": "string",
                 "description": "Reward type classification: other, generic, welcome, return, birthday, anniversary, referral, profile_completion, custom."
             },
-            "ScannerLookupRequest": {
-                "type": "object",
-                "description": "Validates the QR code lookup request body.",
-                "properties": {
-                    "code": {
-                        "type": "string",
-                        "maxLength": 500
-                    }
-                },
-                "required": [
-                    "code"
-                ]
-            },
-            "ScannerLookupResponse": {
-                "type": "object",
-                "description": "Scanner customer lookup response. PII: full_name.",
-                "properties": {
-                    "loyalty_user_id": {
-                        "type": "string",
-                        "readOnly": true
-                    },
-                    "full_name": {
-                        "type": "string",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "points_balance": {
-                        "type": "integer",
-                        "readOnly": true
-                    },
-                    "points_earned": {
-                        "type": "integer",
-                        "readOnly": true
-                    },
-                    "points_spent": {
-                        "type": "integer",
-                        "readOnly": true
-                    },
-                    "tier": {
-                        "type": "string",
-                        "readOnly": true
-                    },
-                    "card_number": {
-                        "type": "string",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "program_id": {
-                        "type": "string",
-                        "readOnly": true
-                    },
-                    "program_name": {
-                        "type": "string",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "company_id": {
-                        "type": "string",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "last_activity_date": {
-                        "type": "string",
-                        "format": "date-time",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "active_coupons": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/ActiveCoupon"
-                        },
-                        "readOnly": true
-                    }
-                },
-                "required": [
-                    "active_coupons",
-                    "card_number",
-                    "company_id",
-                    "full_name",
-                    "last_activity_date",
-                    "loyalty_user_id",
-                    "points_balance",
-                    "points_earned",
-                    "points_spent",
-                    "program_id",
-                    "program_name",
-                    "tier"
-                ]
-            },
-            "ScannerPointsRequest": {
-                "type": "object",
-                "description": "Validates point operation request body (award or reduce).",
-                "properties": {
-                    "customer_id": {
-                        "type": "string"
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "minimum": 1
-                    },
-                    "operation": {
-                        "$ref": "#/components/schemas/OperationEnum"
-                    },
-                    "reason": {
-                        "type": "string",
-                        "default": "",
-                        "maxLength": 255
-                    }
-                },
-                "required": [
-                    "amount",
-                    "customer_id",
-                    "operation"
-                ]
-            },
-            "ScannerPointsResponse": {
-                "type": "object",
-                "description": "Scanner point operation response. Points data is not PII.",
-                "properties": {
-                    "customer_id": {
-                        "type": "string",
-                        "readOnly": true
-                    },
-                    "operation": {
-                        "type": "string",
-                        "readOnly": true
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "readOnly": true
-                    },
-                    "balance_before": {
-                        "type": "integer",
-                        "readOnly": true
-                    },
-                    "balance_after": {
-                        "type": "integer",
-                        "readOnly": true
-                    },
-                    "activity_id": {
-                        "type": "string",
-                        "readOnly": true,
-                        "nullable": true
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "readOnly": true,
-                        "nullable": true
-                    }
-                },
-                "required": [
-                    "activity_id",
-                    "amount",
-                    "balance_after",
-                    "balance_before",
-                    "created_at",
-                    "customer_id",
-                    "operation"
-                ]
-            },
-            "SegmentCountsResponse": {
-                "type": "object",
-                "properties": {
-                    "segments": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "integer"
-                        },
-                        "description": "Count per RFM segment (champions, loyal, promising, at_risk, inactive, new)"
-                    },
-                    "total": {
-                        "type": "integer",
-                        "description": "Total active customers"
-                    }
-                },
-                "required": [
-                    "segments",
-                    "total"
-                ]
-            },
             "SubscriptionTierEnum": {
                 "enum": [
                     "essential",
@@ -5201,7 +4071,7 @@
             },
             "ZBalance": {
                 "type": "object",
-                "description": "Z$ on-chain balance response. NOT PII \u2014 wallet address is public on-chain data.",
+                "description": "Z$ on-chain balance response. NOT PII — wallet address is public on-chain data.",
                 "properties": {
                     "z_balance": {
                         "type": "string",
@@ -5232,23 +4102,6 @@
                 "in": "header",
                 "name": "X-API-Key",
                 "description": "API key for partner access via APISIX key-auth plugin"
-            },
-            "cookieAuth": {
-                "type": "apiKey",
-                "in": "cookie",
-                "name": "sessionid"
-            },
-            "jwtAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT",
-                "description": "JWT token via APISIX jwt-auth plugin"
-            },
-            "tokenAuth": {
-                "type": "apiKey",
-                "in": "header",
-                "name": "Authorization",
-                "description": "Token-based authentication with required prefix \"Token\""
             }
         }
     },
