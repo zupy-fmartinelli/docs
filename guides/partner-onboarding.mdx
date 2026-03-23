@@ -1,20 +1,252 @@
 ---
 title: "Partner Onboarding"
-description: "Step-by-step guide for new integration partners to get started with the Zupy API"
+description: "Step-by-step guide for integration partners — what you receive, what you configure, and how to go live"
 ---
 
+This guide walks you through the complete onboarding process — from receiving your credentials to going live in production.
+
+## What Zupy Provides
+
+When your partnership is activated, the Zupy team provides:
+
+| Item | Format | Description |
+|------|--------|-------------|
+| **API Key(s)** | `zupy_pk_*` | One key per restaurant (company) you integrate with |
+| **Integration Slug** | e.g., `repediu` | Your unique identifier for webhook URLs |
+| **Webhook URL** | `https://api.zupy.com/api/v2/webhooks/integrations/{slug}/` | Endpoint for sending order data |
+| **Company ID(s)** | KSUID strings | IDs for each restaurant in the Zupy system |
+| **OTP Policy** | strict / relaxed / trusted | Which actions require customer OTP verification |
+| **Rate Limit Tier** | Free / Standard / Enterprise | Your request quota (60 / 300 / 3,000 req/min) |
+| **Documentation** | This portal | Full API reference and integration guides |
+
 <Note>
-  This guide is being written as part of the documentation portal launch.
-  In the meantime, refer to the [Getting Started](/guides/getting-started) guide and [Authentication](/authentication) page.
+  Credentials are shared via a secure channel (encrypted email or password manager). **Never** share API keys via plain text chat (Slack, WhatsApp, etc.).
 </Note>
 
-## Overview
+## What You Configure
 
-This guide walks integration partners through the complete onboarding process — from API key provisioning to first successful API call and production go-live.
+After receiving your credentials, set up your integration:
 
-## Coming Soon
+<Steps>
+  <Step title="Store API Keys Securely">
+    Store your API keys as environment variables or in a secrets manager. **Never** hardcode keys in source code or expose them in client-side code.
 
-- Partner registration and API key provisioning
-- Environment setup (staging vs production)
-- Integration checklist
-- Go-live requirements and verification
+    <CodeGroup>
+    ```bash Environment Variables
+    # .env (add to .gitignore!)
+    ZUPY_API_KEY=zupy_pk_your_api_key_here
+    ZUPY_BASE_URL=https://api.zupy.com/api/v2
+    ZUPY_INTEGRATION_SLUG=your-partner-slug
+    ```
+
+    ```python Python
+    import os
+
+    API_KEY = os.environ["ZUPY_API_KEY"]
+    BASE_URL = os.environ.get("ZUPY_BASE_URL", "https://api.zupy.com/api/v2")
+    HEADERS = {"X-API-Key": API_KEY}
+    ```
+
+    ```javascript JavaScript
+    const API_KEY = process.env.ZUPY_API_KEY;
+    const BASE_URL = process.env.ZUPY_BASE_URL || "https://api.zupy.com/api/v2";
+    ```
+    </CodeGroup>
+  </Step>
+  <Step title="Configure Webhook Sending">
+    Set up your system to send order data to Zupy's webhook endpoint. See the [Webhook Setup](/guides/webhook-setup) guide for payload format and examples.
+
+    Your webhook URL:
+    ```
+    POST https://api.zupy.com/api/v2/webhooks/integrations/{your-slug}/
+    ```
+  </Step>
+  <Step title="Implement Customer Lookup">
+    Use the Customer Search API to look up customers by phone, email, or name:
+
+    ```
+    GET /api/v2/customers/?phone=5511987654321
+    ```
+
+    See the [Getting Started](/guides/getting-started) guide for code examples.
+  </Step>
+  <Step title="Implement Points Flow">
+    If your integration needs to display points or award them directly (beyond webhooks):
+
+    - **View balance:** `GET /api/v2/customers/{id}/points/`
+    - **Award points:** `POST /api/v2/customers/{id}/points/add/`
+    - **View history:** `GET /api/v2/customers/{id}/points/history/`
+  </Step>
+  <Step title="Implement OTP Flow (If Required)">
+    If your OTP policy requires verification for redemption or coupon usage, implement the [OTP Flow](/guides/otp-flow) in your customer-facing UI.
+
+    <Tip>
+      **Trusted partners** (e.g., Repediu) can skip this step — OTP is not required for any action.
+    </Tip>
+  </Step>
+  <Step title="Implement Error Handling">
+    Handle RFC 7807 error responses from the API:
+
+    | Status | Action |
+    |--------|--------|
+    | 401 | Check your API key |
+    | 403 | Complete OTP flow or check access level |
+    | 429 | Wait for `Retry-After` header, then retry |
+    | 400/422 | Fix request body based on `detail` field |
+  </Step>
+</Steps>
+
+## Testing Checklist
+
+Before going live, verify each integration point works correctly:
+
+<Steps>
+  <Step title="Verify API Key">
+    Send a simple customer search to confirm your key is valid:
+
+    <CodeGroup>
+    ```bash cURL
+    curl -s -o /dev/null -w "%{http_code}" \
+      -X GET "https://api.zupy.com/api/v2/customers/?phone=0000000000" \
+      -H "X-API-Key: zupy_pk_your_api_key_here"
+    # Expected: 200
+    ```
+
+    ```bash Without Key (should fail)
+    curl -s -o /dev/null -w "%{http_code}" \
+      -X GET "https://api.zupy.com/api/v2/customers/?phone=0000000000"
+    # Expected: 401
+    ```
+    </CodeGroup>
+  </Step>
+  <Step title="Send Test Webhook">
+    Send a test order payload and verify a `200` response. The payload format is partner-specific — the example below uses Repediu's format. Replace the fields with your own payload structure:
+
+    ```bash
+    curl -X POST "https://api.zupy.com/api/v2/webhooks/integrations/{your-slug}/" \
+      -H "X-API-Key: zupy_pk_your_api_key_here" \
+      -H "Content-Type: application/json" \
+      -d '[{"cliente":"Test Customer","Celular":"+5511999888777","Valor":"50.00","id_venda":999999,"DataVenda":"2026-03-23T12:00:00.000Z","loja_cnpj":"00.000.000/0001-00","loja_nome":"Test Store","Email":null,"CpfCnpj":null}]'
+    ```
+
+    <Note>
+      The webhook accepts **any JSON payload**. Zupy processes it using your partner-specific adapter. See the [Webhook Setup](/guides/webhook-setup) guide for your payload format.
+    </Note>
+
+    Expected response:
+    ```json
+    {"data": {"status": "received", "id": "..."}, "meta": {}}
+    ```
+  </Step>
+  <Step title="Verify Customer Created">
+    After the webhook processes (wait a few seconds), search for the test customer:
+
+    ```bash
+    curl -X GET "https://api.zupy.com/api/v2/customers/?phone=5511999888777" \
+      -H "X-API-Key: zupy_pk_your_api_key_here"
+    ```
+
+    Verify the customer exists and has the expected points balance.
+  </Step>
+  <Step title="Verify Points Awarded">
+    Check the customer's points balance matches the order value:
+
+    ```bash
+    curl -X GET "https://api.zupy.com/api/v2/customers/{customer_id}/points/" \
+      -H "X-API-Key: zupy_pk_your_api_key_here"
+    ```
+  </Step>
+  <Step title="Test OTP Flow (If Applicable)">
+    If your policy requires OTP for redemption or coupon usage:
+
+    1. Request OTP: `POST /api/v2/auth/request-otp/`
+    2. Verify OTP: `POST /api/v2/auth/verify-otp/`
+    3. Redeem with session: Include `X-OTP-Session` header
+
+    See the [OTP Flow](/guides/otp-flow) guide for full examples.
+  </Step>
+  <Step title="Test Error Handling">
+    Verify your integration handles errors gracefully:
+
+    - Send a request without `X-API-Key` → expect `401`
+    - Send invalid JSON → expect `400`
+    - Send the same webhook twice → expect `200` with `"status": "duplicate"`
+  </Step>
+</Steps>
+
+## Go-Live Checklist
+
+Before declaring your integration production-ready:
+
+### Infrastructure
+
+- [ ] API key stored securely (environment variable or secrets manager)
+- [ ] All API calls use HTTPS (HTTP is rejected)
+- [ ] All API calls go through your backend server (never client-side)
+- [ ] Retry logic implemented for `429` rate limit responses
+- [ ] Error logging configured for API failures
+
+### Integration
+
+- [ ] Webhook sending configured with correct URL and API key
+- [ ] Customer lookup working for phone, email, and/or name search
+- [ ] Points display integrated (if showing points to customers)
+- [ ] OTP flow implemented (if required by your policy)
+- [ ] Idempotency tested — duplicate webhooks return `"status": "duplicate"`
+
+### Monitoring
+
+- [ ] API error rates tracked (401, 403, 429, 5xx)
+- [ ] Webhook delivery success rate monitored
+- [ ] Support contact established with Zupy team
+
+### Communication
+
+- [ ] Production API key received and deployed
+- [ ] Rate limit tier confirmed with Zupy
+- [ ] OTP policy confirmed with Zupy
+- [ ] Support escalation path established (both sides)
+
+<Warning>
+  **Do not go live without completing the testing checklist.** Untested integrations risk awarding incorrect points, failing silently on errors, or creating duplicate customer records.
+</Warning>
+
+## Rate Limit Tiers
+
+| Tier | Requests/min | Assigned To |
+|------|-------------|-------------|
+| **Free** | 60 | Default for new integrations |
+| **Standard** | 300 | Active partners (Repediu, Saipos) |
+| **Enterprise** | 3,000 | High-volume partners |
+
+Your tier is assigned during onboarding. Contact Zupy to request a tier upgrade.
+
+<Tip>
+  **Webhook batching reduces API calls.** A single webhook with 100 orders counts as 1 request. Batch your orders to stay well within limits.
+</Tip>
+
+## Support
+
+| Channel | Contact |
+|---------|---------|
+| **Technical support** | [webmaster@zupy.com.br](mailto:webmaster@zupy.com.br) |
+| **API status** | [status.zupy.com](https://status.zupy.com) |
+| **Documentation** | This portal |
+
+## Next Steps
+
+<Card title="Getting Started" icon="rocket" href="/guides/getting-started">
+  Make your first API call in under 15 minutes
+</Card>
+
+<Card title="Webhook Setup" icon="webhook" href="/guides/webhook-setup">
+  Configure webhooks for automatic order processing
+</Card>
+
+<Card title="OTP Flow" icon="lock" href="/guides/otp-flow">
+  Implement customer identity verification
+</Card>
+
+<Card title="API Reference" icon="code" href="/api-reference">
+  Browse all endpoints with request/response schemas
+</Card>

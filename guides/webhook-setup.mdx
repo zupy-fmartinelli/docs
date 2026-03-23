@@ -1,20 +1,414 @@
 ---
 title: "Webhook Setup"
-description: "Configure webhooks to receive real-time notifications from the Zupy platform"
+description: "Send order data to Zupy for automatic customer enrollment and points processing via webhooks"
 ---
 
+Send order and customer data to Zupy for automatic loyalty processing. Webhooks handle customer enrollment, points calculation, and deduplication — all asynchronously.
+
 <Note>
-  This guide is being written as part of the documentation portal launch.
-  In the meantime, refer to the [API Reference](/api-reference) for webhook endpoint details.
+  **Prerequisites**: Your API key (`zupy_pk_*`) and integration slug (e.g., `repediu`). See [Getting Started](/guides/getting-started) if you don't have these yet.
 </Note>
 
-## Overview
+## How It Works
 
-Webhooks allow your integration to receive real-time HTTP notifications when events occur in Zupy — such as new customer registrations, loyalty point changes, and coupon redemptions.
+Partners send order data to Zupy via a single webhook endpoint. Zupy processes each order asynchronously:
 
-## Coming Soon
+1. **Receive** — Zupy validates your API key, stores the raw payload, and returns immediately
+2. **Deduplicate** — SHA-256 hash of the request body prevents double-processing
+3. **Process** — A background worker identifies customers, calculates points, and enrolls new users
+4. **Enroll** — Customers not found by phone/email/CPF are automatically created and enrolled in the restaurant's loyalty program
 
-- Webhook event types and payloads
-- Signature verification with HMAC-SHA256
-- Retry policy and error handling
-- Testing webhooks locally
+## Endpoint
+
+```
+POST /api/v2/webhooks/integrations/{partner}/
+```
+
+- `{partner}` is your integration slug (e.g., `repediu`, `saipos`, `goomer`)
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `X-API-Key` | Yes | Your partner API key (`zupy_pk_*`) |
+| `Content-Type` | Yes | `application/json` |
+
+## Payload Format
+
+The webhook accepts **any JSON payload**. Zupy stores the raw payload and processes it using a partner-specific adapter.
+
+<Note>
+  Each partner has their own payload format. The adapter maps your fields to Zupy's internal data model. Below is the Repediu format as a reference — your format may differ.
+</Note>
+
+### Example: Repediu Payload (JSON Array of Orders)
+
+Send a **JSON array** of sale objects in a single POST:
+
+```json
+[
+  {
+    "cliente": "Maria Santos",
+    "Celular": "+55 11 98765-4321",
+    "Email": null,
+    "CpfCnpj": null,
+    "Valor": "89.90",
+    "id_venda": 123456789,
+    "DataVenda": "2026-03-22T14:30:00.000Z",
+    "loja_cnpj": "12.345.678/0001-90",
+    "loja_nome": "Pizzaria Exemplo"
+  },
+  {
+    "cliente": "João Silva",
+    "Celular": "+55 19 99228-5367",
+    "Email": null,
+    "CpfCnpj": null,
+    "Valor": "62.00",
+    "id_venda": 247346205,
+    "DataVenda": "2026-03-22T15:10:00.000Z",
+    "loja_cnpj": "12.345.678/0001-90",
+    "loja_nome": "Pizzaria Exemplo"
+  }
+]
+```
+
+### Repediu Field Reference
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `cliente` | string | Yes | Customer name |
+| `Celular` | string | No | Phone number (any format — Zupy normalizes to E.164) |
+| `Email` | string | No | Customer email |
+| `CpfCnpj` | string | No | CPF or CNPJ |
+| `Valor` | string | Yes | Order total in BRL (e.g., `"89.90"`) |
+| `id_venda` | integer | Yes | Unique sale ID (used for order-level deduplication) |
+| `DataVenda` | string | Yes | Sale timestamp (ISO 8601) |
+| `loja_cnpj` | string | Yes | Restaurant CNPJ |
+| `loja_nome` | string | Yes | Restaurant name |
+
+<Warning>
+  At least one customer identifier (`Celular`, `Email`, or `CpfCnpj`) must be present. Orders without any identifier are skipped during processing.
+</Warning>
+
+## Sending Webhooks
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/api/v2/webhooks/integrations/repediu/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "cliente": "Maria Santos",
+      "Celular": "+55 11 98765-4321",
+      "Email": null,
+      "CpfCnpj": null,
+      "Valor": "89.90",
+      "id_venda": 123456789,
+      "DataVenda": "2026-03-22T14:30:00.000Z",
+      "loja_cnpj": "12.345.678/0001-90",
+      "loja_nome": "Pizzaria Exemplo"
+    }
+  ]'
+```
+
+```python Python
+import requests
+
+BASE_URL = "https://api.zupy.com/api/v2"
+HEADERS = {"X-API-Key": "zupy_pk_your_api_key_here"}
+
+orders = [
+    {
+        "cliente": "Maria Santos",
+        "Celular": "+55 11 98765-4321",
+        "Email": None,
+        "CpfCnpj": None,
+        "Valor": "89.90",
+        "id_venda": 123456789,
+        "DataVenda": "2026-03-22T14:30:00.000Z",
+        "loja_cnpj": "12.345.678/0001-90",
+        "loja_nome": "Pizzaria Exemplo",
+    }
+]
+
+response = requests.post(
+    f"{BASE_URL}/webhooks/integrations/repediu/",
+    json=orders,
+    headers=HEADERS,
+)
+print(response.json())
+```
+
+```javascript JavaScript
+const BASE_URL = "https://api.zupy.com/api/v2";
+const API_KEY = "zupy_pk_your_api_key_here";
+
+const orders = [
+  {
+    cliente: "Maria Santos",
+    Celular: "+55 11 98765-4321",
+    Email: null,
+    CpfCnpj: null,
+    Valor: "89.90",
+    id_venda: 123456789,
+    DataVenda: "2026-03-22T14:30:00.000Z",
+    loja_cnpj: "12.345.678/0001-90",
+    loja_nome: "Pizzaria Exemplo",
+  },
+];
+
+const response = await fetch(
+  `${BASE_URL}/webhooks/integrations/repediu/`,
+  {
+    method: "POST",
+    headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify(orders),
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+</CodeGroup>
+
+## Response Format
+
+### New Webhook (200)
+
+```json
+{
+  "data": {
+    "status": "received",
+    "id": "2bxRKmpWJY8lHHqsGfsQQtwCDef"
+  },
+  "meta": {}
+}
+```
+
+### Duplicate Webhook (200)
+
+```json
+{
+  "data": {
+    "status": "duplicate",
+    "id": "2bxRKmpWJY8lHHqsGfsQQtwCDef"
+  },
+  "meta": {}
+}
+```
+
+<Tip>
+  Duplicates return HTTP 200 — not an error. Your integration does not need special error handling for re-sent payloads.
+</Tip>
+
+## Idempotency
+
+Zupy computes a **SHA-256 hash** of the raw request body for every webhook. If the same payload is sent twice:
+
+- The second request returns `"status": "duplicate"` with HTTP 200
+- No duplicate processing occurs
+- The original `id` is returned so you can reference it
+
+This means you can safely **retry failed sends** without worrying about double-processing.
+
+<Accordion title="How idempotency works internally">
+
+**Webhook-level deduplication (SHA-256):**
+- Every incoming request body is hashed with SHA-256
+- The hash is stored as `idempotency_key` in the `WebhookEvent` record
+- If a matching hash already exists, the request is treated as a duplicate
+
+**Order-level deduplication (per adapter):**
+- Each order's unique ID (e.g., Repediu's `id_venda`) is checked before awarding points
+- If points were already awarded for that order, the order is skipped silently
+- This protects against reprocessing if the same orders appear in different batches
+
+</Accordion>
+
+## Async Processing
+
+Webhooks are processed **asynchronously**:
+
+<Steps>
+  <Step title="Immediate Response">
+    The webhook endpoint validates your API key, stores the raw payload, and returns HTTP 200 immediately. No processing happens at this stage.
+  </Step>
+  <Step title="Background Queue">
+    A Celery worker picks up the stored event and processes it using the partner-specific adapter. This typically happens within seconds.
+  </Step>
+  <Step title="Per-Order Processing">
+    Each order in the batch is processed independently:
+    - Extract customer identifier (phone > email > CPF)
+    - Find or create the customer in Zupy
+    - Enroll in the restaurant's loyalty program (if new)
+    - Calculate and award points based on the order value
+  </Step>
+</Steps>
+
+<Note>
+  **One bad order does not block the batch.** Each order is processed independently. If one order fails (e.g., missing identifier), the rest continue normally.
+</Note>
+
+## Batch Processing
+
+Send multiple orders in a single request. Each order is processed independently:
+
+```json
+[
+  {"cliente": "Maria Santos", "Celular": "+55 11 98765-4321", "Valor": "89.90", "id_venda": 100, "DataVenda": "2026-03-22T14:30:00.000Z", "loja_cnpj": "12.345.678/0001-90", "loja_nome": "Pizzaria Exemplo", "Email": null, "CpfCnpj": null},
+  {"cliente": "João Silva", "Celular": "+55 19 99228-5367", "Valor": "62.00", "id_venda": 101, "DataVenda": "2026-03-22T15:10:00.000Z", "loja_cnpj": "12.345.678/0001-90", "loja_nome": "Pizzaria Exemplo", "Email": null, "CpfCnpj": null},
+  {"cliente": "Não Informado", "Celular": null, "Valor": "45.00", "id_venda": 102, "DataVenda": "2026-03-22T16:00:00.000Z", "loja_cnpj": "12.345.678/0001-90", "loja_nome": "Pizzaria Exemplo", "Email": null, "CpfCnpj": null}
+]
+```
+
+In this example:
+- **Order 100** (Maria): Processed — customer found/created, points awarded
+- **Order 101** (João): Processed — customer found/created, points awarded
+- **Order 102** (Não Informado): **Skipped** — no phone, email, or CPF to identify the customer
+
+## Error Handling
+
+| Status | Type | When | What to Do |
+|--------|------|------|------------|
+| 200 | — | Webhook received or duplicate | Success — no action needed |
+| 400 | `validation-error` | Invalid JSON body | Check your payload is valid JSON |
+| 401 | `authentication-required` | Missing or invalid `X-API-Key` | Verify your API key |
+| 429 | `rate-limit-exceeded` | Too many requests | Wait for `Retry-After` header, then retry |
+
+### Error Response Format (RFC 7807)
+
+```json
+{
+  "type": "https://api.zupy.com/errors/validation-error",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "JSON parse error - Expecting value: line 1 column 1 (char 0)"
+}
+```
+
+<Accordion title="Handling errors in your code">
+
+<CodeGroup>
+```python Python
+import time
+import requests
+
+def send_webhook(orders, max_retries=3):
+    """Send webhook with automatic retry on rate limit."""
+    url = f"{BASE_URL}/webhooks/integrations/repediu/"
+
+    for attempt in range(max_retries):
+        response = requests.post(url, json=orders, headers=HEADERS)
+
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 429:
+            retry_after = int(response.headers.get("Retry-After", 30))
+            print(f"Rate limited. Retrying in {retry_after}s...")
+            time.sleep(retry_after)
+            continue
+
+        # Non-retryable error
+        error = response.json()
+        raise Exception(f"Webhook error {error['status']}: {error['detail']}")
+
+    raise Exception("Max retries exceeded")
+```
+
+```javascript JavaScript
+async function sendWebhook(orders, maxRetries = 3) {
+  const url = `${BASE_URL}/webhooks/integrations/repediu/`;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify(orders),
+    });
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(
+        response.headers.get("Retry-After") || "30"
+      );
+      console.log(`Rate limited. Retrying in ${retryAfter}s...`);
+      await new Promise((r) => setTimeout(r, retryAfter * 1000));
+      continue;
+    }
+
+    const error = await response.json();
+    throw new Error(`Webhook error ${error.status}: ${error.detail}`);
+  }
+  throw new Error("Max retries exceeded");
+}
+```
+</CodeGroup>
+
+</Accordion>
+
+## Rate Limits
+
+Webhook requests are subject to **two rate-limiting layers**:
+
+**Gateway level** (per IP address, applied by APISIX):
+
+| Limit | Value |
+|-------|-------|
+| **Rate** | 100 requests/minute |
+| **Burst** | 150 requests |
+
+**Consumer level** (per API key, based on your tier):
+
+| Tier | Requests/min |
+|------|-------------|
+| Free | 60 |
+| Standard | 300 |
+| Enterprise | 3,000 |
+
+Both limits apply simultaneously. The lower of the two is your effective limit.
+
+<Tip>
+  **Best practice**: Send orders in batches (arrays) rather than one order per request. A single batch counts as one request regardless of how many orders it contains.
+</Tip>
+
+When rate-limited, you receive a `429` response with `X-RateLimit-Remaining` and `Retry-After` headers indicating your remaining quota and how many seconds to wait.
+
+## Best Practices
+
+<Accordion title="Batch your orders">
+Send multiple orders in a single array rather than one request per order. This reduces API calls and stays well within rate limits. A batch of 100 orders is a single request.
+</Accordion>
+
+<Accordion title="Retry safely">
+Webhooks are idempotent. If a request times out or fails, retry with the same payload. Zupy detects duplicates automatically — no risk of double-processing.
+</Accordion>
+
+<Accordion title="Include customer identifiers">
+Orders without any identifier (phone, email, or CPF) are skipped during processing. Ensure at least one identifier is present whenever possible.
+</Accordion>
+
+<Accordion title="Use your unique sale ID">
+Include a unique order ID in your payload (e.g., Repediu's `id_venda`). This enables order-level deduplication and makes debugging easier.
+</Accordion>
+
+<Accordion title="Don't wait for processing">
+The webhook returns immediately. Processing happens asynchronously in the background (typically within seconds). Don't poll for results — use the Customer API to verify data after a short delay.
+</Accordion>
+
+## Next Steps
+
+<Card title="OTP Flow" icon="lock" href="/guides/otp-flow">
+  Learn about customer identity verification for sensitive actions
+</Card>
+
+<Card title="Partner Onboarding" icon="clipboard-check" href="/guides/partner-onboarding">
+  Complete the onboarding checklist for production deployment
+</Card>
+
+<Card title="API Reference" icon="code" href="/api-reference">
+  Browse all endpoints with request/response schemas
+</Card>

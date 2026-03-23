@@ -1,20 +1,390 @@
 ---
 title: "OTP Verification Flow"
-description: "Verify customer identity using one-time passwords before sensitive operations"
+description: "Verify customer identity using one-time passwords before sensitive operations like reward redemption and coupon usage"
 ---
 
+OTP (One-Time Password) provides an extra layer of customer identity verification. **OTP is NOT required for all partners** — each integration has its own policy configured by Zupy during onboarding.
+
 <Note>
-  This guide is being written as part of the documentation portal launch.
-  In the meantime, refer to the [API Reference](/api-reference) for OTP endpoint details.
+  **Prerequisites**: Your API key (`zupy_pk_*`) and familiarity with the [Authentication](/authentication) page. OTP is an **additional** verification layer on top of API key auth.
 </Note>
 
-## Overview
+## OTP Policy Per Integration
 
-Some operations (e.g., coupon redemption, point adjustments) require customer identity verification via OTP. The flow sends a one-time code to the customer's phone or email, which must be verified before the operation proceeds.
+Each integration has its own OTP policy, configured by Zupy during onboarding. The policy determines which customer-facing actions require identity verification.
 
-## Coming Soon
+### Policy Settings
 
-- Step-by-step OTP request and verification flow
-- When OTP is required vs optional
-- Code examples in cURL, JavaScript, and Python
-- Error handling and retry logic
+| Setting | Description |
+|---------|-------------|
+| `require_otp_for_enrollment` | Verify identity before enrolling in loyalty program |
+| `require_otp_for_redemption` | Verify identity before redeeming rewards |
+| `require_otp_for_coupon_usage` | Verify identity before using coupons |
+| `trust_partner_validation` | Trust that the partner already verified the customer |
+
+### Trust Levels
+
+Zupy defines three trust level presets:
+
+| Level | Enrollment OTP | Redemption OTP | Coupon OTP | Trust Partner | Use Case |
+|-------|---------------|----------------|------------|--------------|----------|
+| **Strict** | Required | Required | Required | No | New or unknown partners (default) |
+| **Relaxed** | Not required | Required | Required | No | Tablet/kiosk integrations (e.g., Goomer) |
+| **Trusted** | Not required | Not required | Not required | Yes | Verified CRMs with existing identity checks (e.g., Repediu) |
+
+<Accordion title="Trust level examples by partner type">
+
+| Partner | Type | Trust Level | Rationale |
+|---------|------|-------------|-----------|
+| **Repediu** | CRM | Trusted | iFood/Rappi already verify customer identity — orders come from authenticated delivery platforms |
+| **Goomer** | Tablet | Relaxed | Open tablet in restaurant — customer types their phone number, no prior identity verification |
+| **Saipos** | POS | Relaxed | POS identifies customer by phone, but coupon usage at checkout needs confirmation |
+
+Your trust level is assigned during onboarding based on your integration type and how you verify customer identity.
+
+</Accordion>
+
+## When OTP Is Required vs. Not
+
+| Action | OTP Possible? | Depends On |
+|--------|--------------|------------|
+| Search customers | **Never** | — |
+| View points balance / history | **Never** | — |
+| Award points | **Never** | B2B operation, no customer interaction |
+| List rewards / coupons | **Never** | — |
+| View loyalty programs | **Never** | — |
+| Send webhook | **Never** | — |
+| **Redeem reward** | **Per config** | `require_otp_for_redemption` |
+| **Validate / use coupon** | **Per config** | `require_otp_for_coupon_usage` |
+| **Enroll customer** | **Per config** | `require_otp_for_enrollment` |
+
+<Tip>
+  **Most read operations never require OTP.** Only write operations that directly affect a customer's balance or benefits may require verification, depending on your policy.
+</Tip>
+
+## The OTP Flow
+
+When your integration requires OTP for an action, follow this 3-step flow:
+
+<Steps>
+  <Step title="Request OTP">
+    Send the customer's identifier (phone, email, or CPF) to request a verification code.
+
+    ```
+    POST /api/v2/auth/request-otp/
+    ```
+
+    Zupy sends a 6-digit code to the customer via WhatsApp (primary) or email (fallback). The code expires in **5 minutes**.
+  </Step>
+  <Step title="Verify OTP">
+    The customer provides the code. Send it back to Zupy for verification.
+
+    ```
+    POST /api/v2/auth/verify-otp/
+    ```
+
+    On success, you receive an `otp_session` token along with the customer's profile.
+  </Step>
+  <Step title="Use OTP Session">
+    Include the session token in subsequent requests that require OTP.
+
+    ```
+    X-OTP-Session: {otp_session_token}
+    ```
+
+    The session is valid for **30 minutes**. After expiry, request a new OTP.
+  </Step>
+</Steps>
+
+## Step 1: Request OTP
+
+```
+POST /api/v2/auth/request-otp/
+```
+
+**Auth:** API Key (`X-API-Key`)
+
+**Request Body**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `identifier` | string | Yes | Customer's phone (`+5511987654321`), email, or CPF |
+
+**Response — 200 OK**
+
+```json
+{
+  "data": {
+    "status": "sent",
+    "channel": "whatsapp",
+    "expires_in": 300
+  },
+  "meta": {}
+}
+```
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/api/v2/auth/request-otp/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "+5511987654321"}'
+```
+
+```python Python
+import requests
+
+BASE_URL = "https://api.zupy.com/api/v2"
+HEADERS = {"X-API-Key": "zupy_pk_your_api_key_here"}
+
+response = requests.post(
+    f"{BASE_URL}/auth/request-otp/",
+    json={"identifier": "+5511987654321"},
+    headers=HEADERS,
+)
+print(response.json())
+# {"data": {"status": "sent", "channel": "whatsapp", "expires_in": 300}, "meta": {}}
+```
+
+```javascript JavaScript
+const BASE_URL = "https://api.zupy.com/api/v2";
+const API_KEY = "zupy_pk_your_api_key_here";
+
+const response = await fetch(`${BASE_URL}/auth/request-otp/`, {
+  method: "POST",
+  headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+  body: JSON.stringify({ identifier: "+5511987654321" }),
+});
+console.log(await response.json());
+```
+</CodeGroup>
+
+## Step 2: Verify OTP
+
+```
+POST /api/v2/auth/verify-otp/
+```
+
+**Auth:** API Key (`X-API-Key`)
+
+**Request Body**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `identifier` | string | Yes | Same identifier used in Step 1 |
+| `otp_code` | string | Yes | 6-digit code the customer received |
+
+**Response — 200 OK**
+
+```json
+{
+  "data": {
+    "customer_id": "2awTHloSJX7kGGprFerOOsvABcd",
+    "is_new": false,
+    "otp_session": "abc123def456ghi789...",
+    "full_name": "Maria Santos",
+    "points_balance": 150,
+    "tier": "silver"
+  },
+  "meta": {}
+}
+```
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/api/v2/auth/verify-otp/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "+5511987654321", "otp_code": "123456"}'
+```
+
+```python Python
+response = requests.post(
+    f"{BASE_URL}/auth/verify-otp/",
+    json={"identifier": "+5511987654321", "otp_code": "123456"},
+    headers=HEADERS,
+)
+verify_data = response.json()["data"]
+otp_session = verify_data["otp_session"]
+customer_id = verify_data["customer_id"]
+```
+
+```javascript JavaScript
+const response = await fetch(`${BASE_URL}/auth/verify-otp/`, {
+  method: "POST",
+  headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+  body: JSON.stringify({ identifier: "+5511987654321", otp_code: "123456" }),
+});
+const { data: verifyData } = await response.json();
+const { otp_session: otpSession, customer_id: customerId } = verifyData;
+```
+</CodeGroup>
+
+### Verify OTP — Errors
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `validation-error` | Missing `identifier` or `otp_code` |
+| 401 | `authentication-required` | Invalid or expired OTP code |
+| 404 | `not-found` | OTP was not requested for this identifier |
+| 429 | `rate-limit-exceeded` | Maximum verification attempts reached |
+
+## Step 3: Use the OTP Session
+
+Include the `X-OTP-Session` header in requests that require OTP verification:
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/api/v2/customers/{id}/rewards/{rid}/redeem/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here" \
+  -H "X-OTP-Session: abc123def456ghi789..." \
+  -H "Content-Type: application/json" \
+  -d '{"use_z_tokens": false}'
+```
+
+```python Python
+response = requests.post(
+    f"{BASE_URL}/customers/{customer_id}/rewards/{reward_id}/redeem/",
+    json={"use_z_tokens": False},
+    headers={**HEADERS, "X-OTP-Session": otp_session},
+)
+coupon = response.json()["data"]
+print(f"Coupon code: {coupon['coupon_code']}")
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `${BASE_URL}/customers/${customerId}/rewards/${rewardId}/redeem/`,
+  {
+    method: "POST",
+    headers: {
+      "X-API-Key": API_KEY,
+      "X-OTP-Session": otpSession,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ use_z_tokens: false }),
+  }
+);
+const { data: coupon } = await response.json();
+```
+</CodeGroup>
+
+### Session Expiry
+
+The OTP session token is valid for **30 minutes** (cache-backed). After expiry:
+- Requests with the expired token return `403` with type `otp-required`
+- Request a new OTP to get a fresh session
+
+## What Happens Without OTP
+
+If your integration's OTP policy requires verification for an action and you **don't** provide a valid `X-OTP-Session` header, you receive a `403` error:
+
+```json
+{
+  "type": "https://api.zupy.com/errors/otp-required",
+  "title": "OTP Required",
+  "status": 403,
+  "detail": "Customer OTP verification required for this action"
+}
+```
+
+<Note>
+  This error only occurs when your specific integration's policy requires OTP for the attempted action. If your policy doesn't require OTP (e.g., trusted partners), you won't see this error.
+</Note>
+
+## Full OTP Example
+
+Complete end-to-end flow: request OTP, verify, then redeem a reward.
+
+<CodeGroup>
+```python Python
+import requests
+
+BASE_URL = "https://api.zupy.com/api/v2"
+HEADERS = {"X-API-Key": "zupy_pk_your_api_key_here"}
+
+# Step 1: Request OTP
+response = requests.post(
+    f"{BASE_URL}/auth/request-otp/",
+    json={"identifier": "+5511987654321"},
+    headers=HEADERS,
+)
+print(response.json())
+# {"data": {"status": "sent", "channel": "whatsapp", "expires_in": 300}, "meta": {}}
+
+# Step 2: Customer provides the code → Verify
+otp_code = input("Enter the code sent to customer: ")
+response = requests.post(
+    f"{BASE_URL}/auth/verify-otp/",
+    json={"identifier": "+5511987654321", "otp_code": otp_code},
+    headers=HEADERS,
+)
+verify_data = response.json()["data"]
+otp_session = verify_data["otp_session"]
+customer_id = verify_data["customer_id"]
+
+# Step 3: Redeem reward with OTP session
+reward_id = "2awTHnPw8X7kGGpr..."
+response = requests.post(
+    f"{BASE_URL}/customers/{customer_id}/rewards/{reward_id}/redeem/",
+    json={"use_z_tokens": False},
+    headers={**HEADERS, "X-OTP-Session": otp_session},
+)
+coupon = response.json()["data"]
+print(f"Coupon code: {coupon['coupon_code']}")
+```
+
+```javascript JavaScript
+const BASE_URL = "https://api.zupy.com/api/v2";
+const API_KEY = "zupy_pk_your_api_key_here";
+
+// Step 1: Request OTP
+let response = await fetch(`${BASE_URL}/auth/request-otp/`, {
+  method: "POST",
+  headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+  body: JSON.stringify({ identifier: "+5511987654321" }),
+});
+console.log(await response.json());
+
+// Step 2: Verify OTP (customer provides the code)
+const otpCode = "123456"; // from customer input
+response = await fetch(`${BASE_URL}/auth/verify-otp/`, {
+  method: "POST",
+  headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+  body: JSON.stringify({ identifier: "+5511987654321", otp_code: otpCode }),
+});
+const { data: verifyData } = await response.json();
+const { otp_session: otpSession, customer_id: customerId } = verifyData;
+
+// Step 3: Redeem reward with OTP session
+const rewardId = "2awTHnPw8X7kGGpr...";
+response = await fetch(
+  `${BASE_URL}/customers/${customerId}/rewards/${rewardId}/redeem/`,
+  {
+    method: "POST",
+    headers: {
+      "X-API-Key": API_KEY,
+      "X-OTP-Session": otpSession,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ use_z_tokens: false }),
+  }
+);
+const { data: coupon } = await response.json();
+console.log(`Coupon code: ${coupon.coupon_code}`);
+```
+</CodeGroup>
+
+## Next Steps
+
+<Card title="Webhook Setup" icon="webhook" href="/guides/webhook-setup">
+  Configure webhooks for automatic order processing
+</Card>
+
+<Card title="Partner Onboarding" icon="clipboard-check" href="/guides/partner-onboarding">
+  Complete the onboarding checklist for production deployment
+</Card>
+
+<Card title="API Reference" icon="code" href="/api-reference">
+  Browse all endpoints with request/response schemas
+</Card>
