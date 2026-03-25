@@ -145,7 +145,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": {\n        \"customer_id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n        \"is_new\": false,\n        \"otp_session\": \"abc123def456...\",\n        \"full_name\": \"Maria Santos\",\n        \"points_balance\": 150,\n        \"tier\": \"silver\"\n    },\n    \"meta\": {}\n}"
+                            "body": "{\n    \"data\": {\n        \"customer_id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n        \"is_new\": false,\n        \"otp_session\": \"abc123def456...\",\n        \"full_name\": \"Maria Santos\",\n        \"points_balance\": 89,\n        \"tier\": \"default\"\n    },\n    \"meta\": {}\n}"
                         }
                     ]
                 }
@@ -212,7 +212,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n            \"full_name\": \"Maria Santos\",\n            \"avatar_url\": null,\n            \"email\": \"maria@example.com\",\n            \"phone\": \"+5511987654321\",\n            \"cpf\": null,\n            \"birth_date\": null,\n            \"points_balance\": 89,\n            \"points_earned\": 89,\n            \"points_spent\": 0,\n            \"tier\": \"default\",\n            \"card_number\": \"ZP-ABC123\",\n            \"join_date\": \"2026-03-22T00:00:00Z\",\n            \"last_activity_date\": \"2026-03-22T14:30:00Z\",\n            \"is_active\": true,\n            \"zupy_balance\": \"0.00\",\n            \"program_id\": \"2awTHmNw8X7kGGpr...\",\n            \"program_name\": \"Clube Pizzaria Exemplo\",\n            \"rfm_segment\": \"new\",\n            \"company_id\": \"2awTHkVw8X7kGGpr...\",\n            \"created_at\": \"2026-03-22T14:00:00Z\",\n            \"updated_at\": \"2026-03-22T14:30:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n            \"full_name\": \"Maria Santos\",\n            \"avatar_url\": null,\n            \"email\": \"maria@example.com\",\n            \"phone\": \"+5511987654321\",\n            \"cpf\": null,\n            \"birth_date\": null,\n            \"points_balance\": 89,\n            \"points_earned\": 89,\n            \"points_spent\": 0,\n            \"tier\": \"default\",\n            \"card_number\": \"ZP-ABC123\",\n            \"join_date\": \"2026-03-22T00:00:00Z\",\n            \"last_activity_date\": \"2026-03-22T14:30:00Z\",\n            \"is_active\": true,\n            \"zupy_balance\": \"0.00\",\n            \"program_id\": \"2awTHmNw8X7kGGprFerQQsvCCfg\",\n            \"program_name\": \"Clube Pizzaria Exemplo\",\n            \"rfm_segment\": \"new\",\n            \"company_id\": \"2awTHkVw8X7kGGprFerQQsvBBef\",\n            \"created_at\": \"2026-03-22T14:00:00Z\",\n            \"updated_at\": \"2026-03-22T14:30:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
                         }
                     ]
                 },
@@ -243,7 +243,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": {\n        \"id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n        \"full_name\": \"Maria Santos\",\n        \"avatar_url\": null,\n        \"email\": \"maria@example.com\",\n        \"phone\": \"+5511987654321\",\n        \"cpf\": null,\n        \"birth_date\": null,\n        \"points_balance\": 89,\n        \"points_earned\": 89,\n        \"points_spent\": 0,\n        \"tier\": \"default\",\n        \"card_number\": \"ZP-ABC123\",\n        \"join_date\": \"2026-03-22T00:00:00Z\",\n        \"last_activity_date\": \"2026-03-22T14:30:00Z\",\n        \"is_active\": true,\n        \"zupy_balance\": \"0.00\",\n        \"program_id\": \"2awTHmNw8X7kGGpr...\",\n        \"program_name\": \"Clube Pizzaria Exemplo\",\n        \"rfm_segment\": \"new\",\n        \"company_id\": \"2awTHkVw8X7kGGpr...\",\n        \"created_at\": \"2026-03-22T14:00:00Z\",\n        \"updated_at\": \"2026-03-22T14:30:00Z\"\n    },\n    \"meta\": {}\n}"
+                            "body": "{\n    \"data\": {\n        \"id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n        \"full_name\": \"Maria Santos\",\n        \"avatar_url\": null,\n        \"email\": \"maria@example.com\",\n        \"phone\": \"+5511987654321\",\n        \"cpf\": null,\n        \"birth_date\": null,\n        \"points_balance\": 89,\n        \"points_earned\": 89,\n        \"points_spent\": 0,\n        \"tier\": \"default\",\n        \"card_number\": \"ZP-ABC123\",\n        \"join_date\": \"2026-03-22T00:00:00Z\",\n        \"last_activity_date\": \"2026-03-22T14:30:00Z\",\n        \"is_active\": true,\n        \"zupy_balance\": \"0.00\",\n        \"program_id\": \"2awTHmNw8X7kGGprFerQQsvCCfg\",\n        \"program_name\": \"Clube Pizzaria Exemplo\",\n        \"rfm_segment\": \"new\",\n        \"company_id\": \"2awTHkVw8X7kGGprFerQQsvBBef\",\n        \"created_at\": \"2026-03-22T14:00:00Z\",\n        \"updated_at\": \"2026-03-22T14:30:00Z\"\n    },\n    \"meta\": {}\n}"
                         }
                     ]
                 },
@@ -259,14 +259,14 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"points\": 100,\n    \"reason\": \"Purchase at store\",\n    \"order_amount\": \"89.90\"\n}"
+                            "raw": "{\n    \"amount\": 100,\n    \"reason\": \"Purchase at store\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/points/add/",
                             "host": ["{{base_url}}"],
                             "path": ["api", "v2", "customers", "{{customer_id}}", "points", "add", ""]
                         },
-                        "description": "Add loyalty points to a customer's balance. Triggers async side effects: Z$ distribution, RFM recalculation, and wallet push notification.\n\n**Path parameters:**\n- `customer_id` (required): Customer KSUID\n\n**Body parameters:**\n- `points` (required): Number of points to add\n- `reason` (optional): Description of the transaction\n- `order_amount` (optional): Purchase amount that generated the points"
+                        "description": "Add loyalty points to a customer's balance. Triggers async side effects: Z$ distribution, RFM recalculation, and wallet push notification.\n\n**Path parameters:**\n- `customer_id` (required): Customer KSUID\n\n**Body parameters:**\n- `amount` (required): Number of points to add\n- `reason` (optional): Description of the transaction"
                     },
                     "response": [
                         {
@@ -281,7 +281,7 @@
                                 ],
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"points\": 100,\n    \"reason\": \"Purchase at store\",\n    \"order_amount\": \"89.90\"\n}"
+                                    "raw": "{\n    \"amount\": 100,\n    \"reason\": \"Purchase at store\"\n}"
                                 },
                                 "url": {
                                     "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/points/add/",
@@ -292,7 +292,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": {\n        \"operation\": \"add\",\n        \"points\": 100,\n        \"new_balance\": 189,\n        \"customer_id\": \"2awTHloSJX7kGGprFerOOsvABcd\"\n    },\n    \"meta\": {}\n}"
+                            "body": "{\n    \"data\": {\n        \"customer_id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n        \"operation\": \"add\",\n        \"amount\": 100,\n        \"balance_before\": 89,\n        \"balance_after\": 189,\n        \"activity_id\": \"2bxRKmpWJY8lHHqsGfsQQtwCDef\",\n        \"created_at\": \"2026-03-22T15:00:00Z\"\n    },\n    \"meta\": {}\n}"
                         }
                     ]
                 },
@@ -323,7 +323,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2bxRKmpWJY8lHHqsGfsQQtwCDef\",\n            \"activity_type\": \"delivery\",\n            \"points\": 100,\n            \"balance_after\": 189,\n            \"description\": \"Purchase at store\",\n            \"created_at\": \"2026-03-22T15:00:00Z\"\n        },\n        {\n            \"id\": \"2awTHloSJX7kGGprFerOOsvABce\",\n            \"activity_type\": \"delivery\",\n            \"points\": 89,\n            \"balance_after\": 89,\n            \"description\": \"Order #123456789\",\n            \"created_at\": \"2026-03-22T14:30:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 2\n    }\n}"
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2bxRKmpWJY8lHHqsGfsQQtwCDef\",\n            \"activity_type\": \"delivery\",\n            \"activity_type_display\": \"Delivery\",\n            \"points_amount\": 100,\n            \"description\": \"Purchase at store\",\n            \"balance_before\": 89,\n            \"balance_after\": 189,\n            \"activity_date\": \"2026-03-22T15:00:00Z\",\n            \"created_at\": \"2026-03-22T15:00:00Z\"\n        },\n        {\n            \"id\": \"2awTHloSJX7kGGprFerOOsvABce\",\n            \"activity_type\": \"delivery\",\n            \"activity_type_display\": \"Delivery\",\n            \"points_amount\": 89,\n            \"description\": \"Order #123456789\",\n            \"balance_before\": 0,\n            \"balance_after\": 89,\n            \"activity_date\": \"2026-03-22T14:30:00Z\",\n            \"created_at\": \"2026-03-22T14:30:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 2\n    }\n}"
                         }
                     ]
                 }
@@ -377,7 +377,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2awTHmNw8X7kGGpr...\",\n            \"name\": \"Clube Pizzaria Exemplo\",\n            \"slug\": \"pizzaria-exemplo\",\n            \"enrollment_url\": \"https://zupy.com/@pizzaria-exemplo\",\n            \"description\": \"Earn points on every order\",\n            \"company_id\": \"2awTHkVw8X7kGGpr...\",\n            \"points_name\": \"Pontos\",\n            \"point_expiration_days\": 365,\n            \"points_per_currency\": \"1.00\",\n            \"minimum_points_redemption\": 50\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2awTHmNw8X7kGGprFerQQsvCCfg\",\n            \"name\": \"Clube Pizzaria Exemplo\",\n            \"slug\": \"pizzaria-exemplo\",\n            \"enrollment_url\": \"https://zupy.com/@pizzaria-exemplo\",\n            \"description\": \"Earn points on every order\",\n            \"company_id\": \"2awTHkVw8X7kGGprFerQQsvBBef\",\n            \"points_name\": \"Pontos\",\n            \"point_expiration_days\": 365,\n            \"points_per_currency\": \"1.00\",\n            \"minimum_points_redemption\": 50\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
                         }
                     ]
                 },
@@ -408,7 +408,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": {\n        \"id\": \"2awTHmNw8X7kGGpr...\",\n        \"name\": \"Clube Pizzaria Exemplo\",\n        \"slug\": \"pizzaria-exemplo\",\n        \"enrollment_url\": \"https://zupy.com/@pizzaria-exemplo\",\n        \"description\": \"Earn points on every order\",\n        \"company_id\": \"2awTHkVw8X7kGGpr...\",\n        \"points_name\": \"Pontos\",\n        \"point_expiration_days\": 365,\n        \"points_per_currency\": \"1.00\",\n        \"minimum_points_redemption\": 50\n    },\n    \"meta\": {}\n}"
+                            "body": "{\n    \"data\": {\n        \"id\": \"2awTHmNw8X7kGGprFerQQsvCCfg\",\n        \"name\": \"Clube Pizzaria Exemplo\",\n        \"slug\": \"pizzaria-exemplo\",\n        \"enrollment_url\": \"https://zupy.com/@pizzaria-exemplo\",\n        \"description\": \"Earn points on every order\",\n        \"company_id\": \"2awTHkVw8X7kGGprFerQQsvBBef\",\n        \"points_name\": \"Pontos\",\n        \"point_expiration_days\": 365,\n        \"points_per_currency\": \"1.00\",\n        \"minimum_points_redemption\": 50\n    },\n    \"meta\": {}\n}"
                         }
                     ]
                 }
@@ -475,7 +475,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfg\",\n            \"name\": \"Free Dessert\",\n            \"description\": \"Choose any dessert from the menu\",\n            \"points_cost\": 100,\n            \"image_url\": null,\n            \"is_active\": true,\n            \"already_redeemed\": false,\n            \"discount_type\": \"free_item\",\n            \"discount_value\": null,\n            \"max_redemptions_per_customer\": 0,\n            \"valid_days\": 30\n        },\n        {\n            \"id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfh\",\n            \"name\": \"10% Off Next Order\",\n            \"description\": \"Get 10% discount on your next order\",\n            \"points_cost\": 50,\n            \"image_url\": null,\n            \"is_active\": true,\n            \"already_redeemed\": false,\n            \"discount_type\": \"percentage\",\n            \"discount_value\": \"10.00\",\n            \"max_redemptions_per_customer\": 0,\n            \"valid_days\": 14\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 2\n    }\n}"
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfg\",\n            \"name\": \"Free Dessert\",\n            \"description\": \"Choose any dessert from the menu\",\n            \"reward_type\": \"coupon\",\n            \"points_required\": 100,\n            \"monetary_value\": null,\n            \"validity_days\": 30,\n            \"is_available\": true,\n            \"quantity_available\": 999,\n            \"quantity_redeemed\": 12,\n            \"discount_type\": \"free_item\",\n            \"discount_percentage\": null,\n            \"discount_fixed_amount\": null,\n            \"maximum_discount_value\": null,\n            \"image_url\": null,\n            \"program_id\": \"2awTHmNw8X7kGGprFerQQsvCCfg\",\n            \"program_name\": \"Clube Pizzaria Exemplo\",\n            \"is_active\": true,\n            \"already_redeemed\": false,\n            \"start_date\": null,\n            \"end_date\": null,\n            \"created_at\": \"2026-01-15T10:00:00Z\",\n            \"updated_at\": \"2026-03-20T12:00:00Z\"\n        },\n        {\n            \"id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfh\",\n            \"name\": \"10% Off Next Order\",\n            \"description\": \"Get 10% discount on your next order\",\n            \"reward_type\": \"coupon\",\n            \"points_required\": 50,\n            \"monetary_value\": null,\n            \"validity_days\": 14,\n            \"is_available\": true,\n            \"quantity_available\": 999,\n            \"quantity_redeemed\": 5,\n            \"discount_type\": \"percentage\",\n            \"discount_percentage\": \"10.00\",\n            \"discount_fixed_amount\": null,\n            \"maximum_discount_value\": null,\n            \"image_url\": null,\n            \"program_id\": \"2awTHmNw8X7kGGprFerQQsvCCfg\",\n            \"program_name\": \"Clube Pizzaria Exemplo\",\n            \"is_active\": true,\n            \"already_redeemed\": false,\n            \"start_date\": null,\n            \"end_date\": null,\n            \"created_at\": \"2026-01-15T10:00:00Z\",\n            \"updated_at\": \"2026-03-20T12:00:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 2\n    }\n}"
                         }
                     ]
                 },
@@ -528,7 +528,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfg\",\n            \"name\": \"Free Dessert\",\n            \"description\": \"Choose any dessert from the menu\",\n            \"points_cost\": 100,\n            \"image_url\": null,\n            \"is_active\": true,\n            \"already_redeemed\": false,\n            \"discount_type\": \"free_item\",\n            \"discount_value\": null,\n            \"max_redemptions_per_customer\": 0,\n            \"valid_days\": 30\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfg\",\n            \"name\": \"Free Dessert\",\n            \"description\": \"Choose any dessert from the menu\",\n            \"reward_type\": \"coupon\",\n            \"points_required\": 100,\n            \"monetary_value\": null,\n            \"validity_days\": 30,\n            \"is_available\": true,\n            \"quantity_available\": 999,\n            \"quantity_redeemed\": 12,\n            \"discount_type\": \"free_item\",\n            \"discount_percentage\": null,\n            \"discount_fixed_amount\": null,\n            \"maximum_discount_value\": null,\n            \"image_url\": null,\n            \"program_id\": \"2awTHmNw8X7kGGprFerQQsvCCfg\",\n            \"program_name\": \"Clube Pizzaria Exemplo\",\n            \"is_active\": true,\n            \"already_redeemed\": false,\n            \"start_date\": null,\n            \"end_date\": null,\n            \"created_at\": \"2026-01-15T10:00:00Z\",\n            \"updated_at\": \"2026-03-20T12:00:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
                         }
                     ]
                 },
@@ -594,7 +594,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": {\n        \"coupon_code\": \"ZUPY-ABC123\",\n        \"reward_name\": \"Free Dessert\",\n        \"points_spent\": 100,\n        \"new_points_balance\": 89,\n        \"valid_until\": \"2026-04-22T14:30:00Z\",\n        \"remaining_usages\": 1\n    },\n    \"meta\": {}\n}"
+                            "body": "{\n    \"data\": {\n        \"customer_id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n        \"coupon_code\": \"ZUPY-ABC123\",\n        \"points_used\": 100,\n        \"z_tokens_used\": null,\n        \"new_balance\": 89,\n        \"new_z_balance\": null,\n        \"valid_until\": \"2026-04-22T14:30:00Z\",\n        \"created_at\": \"2026-03-22T15:00:00Z\"\n    },\n    \"meta\": {}\n}"
                         }
                     ]
                 }
@@ -722,7 +722,12 @@
                     "name": "Validate (Use) Coupon",
                     "request": {
                         "method": "POST",
-                        "header": [],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "url": {
                             "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/coupons/{{coupon_id}}/validate/",
                             "host": ["{{base_url}}"],
@@ -735,7 +740,12 @@
                             "name": "Coupon Validated",
                             "originalRequest": {
                                 "method": "POST",
-                                "header": [],
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
                                 "url": {
                                     "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/coupons/{{coupon_id}}/validate/",
                                     "host": ["{{base_url}}"],
@@ -782,7 +792,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": {\n        \"balance\": \"25.50\",\n        \"mint\": \"ZUPYxKLjfRyRmoF6j8Su8D3aTDkB4k4uqXLqHn8wcao\",\n        \"wallet_address\": \"AZjCtbrNGsSztGyWcqKdyq4sP2FnH3ZQCMyCErUzwZH9\",\n        \"source\": \"photon\"\n    },\n    \"meta\": {}\n}"
+                            "body": "{\n    \"data\": {\n        \"z_balance\": \"25.500000\",\n        \"wallet_address\": \"AZjCtbrNGsSztGyWcqKdyq4sP2FnH3ZQCMyCErUzwZH9\",\n        \"has_wallet\": true,\n        \"error\": null\n    },\n    \"meta\": {}\n}"
                         }
                     ]
                 }
@@ -854,7 +864,7 @@
                             "status": "Created",
                             "code": 201,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": {\n        \"id\": \"2exRKmpWJY8lHHqsGfsQQtwFGhi\",\n        \"pass_url\": \"https://cdn.zupy.com/passes/abc123.pkpass\",\n        \"platform\": \"apple\",\n        \"customer_name\": \"Maria Santos\",\n        \"points_balance\": 89,\n        \"tier\": \"default\",\n        \"created_at\": \"2026-03-22T16:30:00Z\"\n    },\n    \"meta\": {}\n}"
+                            "body": "{\n    \"data\": {\n        \"id\": \"2exRKmpWJY8lHHqsGfsQQtwFGhi\",\n        \"pass_url\": \"https://cdn.zupy.com/passes/abc123.pkpass\",\n        \"platform\": \"apple\",\n        \"created_at\": \"2026-03-22T16:30:00Z\"\n    },\n    \"meta\": {}\n}"
                         }
                     ]
                 },
@@ -947,7 +957,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2exRKmpWJY8lHHqsGfsQQtwFGhi\",\n            \"type\": \"loyalty\",\n            \"platform\": \"apple\",\n            \"status\": \"active\",\n            \"pass_url\": \"https://cdn.zupy.com/passes/abc123.pkpass\",\n            \"created_at\": \"2026-03-22T16:30:00Z\"\n        },\n        {\n            \"id\": \"2fxRKmpWJY8lHHqsGfsQQtwGHij\",\n            \"type\": \"coupon\",\n            \"platform\": \"apple\",\n            \"status\": \"active\",\n            \"pass_url\": \"https://cdn.zupy.com/passes/def456.pkpass\",\n            \"created_at\": \"2026-03-22T16:35:00Z\"\n        }\n    ],\n    \"meta\": {}\n}"
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2exRKmpWJY8lHHqsGfsQQtwFGhi\",\n            \"pass_type\": \"loyalty\",\n            \"title\": \"Clube Pizzaria Exemplo\",\n            \"platform\": \"apple\",\n            \"status\": \"active\",\n            \"created_at\": \"2026-03-22T16:30:00Z\"\n        },\n        {\n            \"id\": \"2fxRKmpWJY8lHHqsGfsQQtwGHij\",\n            \"pass_type\": \"coupon\",\n            \"title\": \"Free Dessert\",\n            \"platform\": \"apple\",\n            \"status\": \"active\",\n            \"created_at\": \"2026-03-22T16:35:00Z\"\n        }\n    ],\n    \"meta\": {}\n}"
                         }
                     ]
                 },
@@ -978,7 +988,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": {\n        \"id\": \"2exRKmpWJY8lHHqsGfsQQtwFGhi\",\n        \"status\": \"active\",\n        \"platform\": \"apple\",\n        \"last_updated\": \"2026-03-22T16:30:00Z\"\n    },\n    \"meta\": {}\n}"
+                            "body": "{\n    \"data\": {\n        \"id\": \"2exRKmpWJY8lHHqsGfsQQtwFGhi\",\n        \"pass_type\": \"loyalty\",\n        \"platform\": \"apple\",\n        \"status\": \"active\",\n        \"customer_id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n        \"title\": \"Clube Pizzaria Exemplo\",\n        \"installed_devices\": 1,\n        \"last_updated\": \"2026-03-22T16:30:00Z\",\n        \"created_at\": \"2026-03-22T16:30:00Z\"\n    },\n    \"meta\": {}\n}"
                         }
                     ]
                 },
@@ -994,14 +1004,14 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"title\": \"Points Update\",\n    \"message\": \"You earned 100 points on your last purchase!\"\n}"
+                            "raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"type\": \"points_update\",\n    \"message\": \"You earned 100 points on your last purchase!\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/api/v2/wallet/notifications/",
                             "host": ["{{base_url}}"],
                             "path": ["api", "v2", "wallet", "notifications", ""]
                         },
-                        "description": "Send a push notification to the customer's device via an active wallet pass.\n\n**Body parameters:**\n- `customer_id` (required): Customer KSUID\n- `title` (required): Notification title\n- `message` (required): Notification body text"
+                        "description": "Send a push notification to the customer's device via an active wallet pass.\n\n**Body parameters:**\n- `customer_id` (required): Customer KSUID\n- `type` (required): Notification type (e.g., `points_update`)\n- `message` (required): Notification body text"
                     },
                     "response": [
                         {
@@ -1016,7 +1026,7 @@
                                 ],
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"title\": \"Points Update\",\n    \"message\": \"You earned 100 points on your last purchase!\"\n}"
+                                    "raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"type\": \"points_update\",\n    \"message\": \"You earned 100 points on your last purchase!\"\n}"
                                 },
                                 "url": {
                                     "raw": "{{base_url}}/api/v2/wallet/notifications/",
@@ -1027,7 +1037,7 @@
                             "status": "Accepted",
                             "code": 202,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": {\n        \"status\": \"queued\",\n        \"devices_targeted\": 1\n    },\n    \"meta\": {}\n}"
+                            "body": "{\n    \"data\": {\n        \"notification_id\": \"2gxRKmpWJY8lHHqsGfsQQtwHIjk\",\n        \"status\": \"queued\"\n    },\n    \"meta\": {}\n}"
                         }
                     ]
                 }
@@ -1144,7 +1154,7 @@
                             "status": "OK",
                             "code": 200,
                             "_postman_previewlanguage": "json",
-                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2awTHkVw8X7kGGpr...\",\n            \"name\": \"Pizzaria Exemplo Ltda\",\n            \"trading_name\": \"Pizzaria Exemplo\",\n            \"slug\": \"pizzaria-exemplo\",\n            \"email\": \"contato@pizzariaexemplo.com.br\",\n            \"phone\": \"+5511987654321\",\n            \"website\": \"https://pizzariaexemplo.com.br\",\n            \"logo_uuid\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n            \"primary_color\": \"#E53E3E\",\n            \"secondary_color\": \"#FFFFFF\",\n            \"social_links\": {\n                \"instagram\": \"https://instagram.com/pizzariaexemplo\"\n            },\n            \"instagram_url\": \"https://instagram.com/pizzariaexemplo\",\n            \"google_review_url\": null,\n            \"menu_url\": \"https://pizzariaexemplo.com.br/cardapio\",\n            \"survey_url\": null,\n            \"address\": \"Rua das Pizzas, 123\",\n            \"city\": \"Sao Paulo\",\n            \"state\": \"SP\",\n            \"zip_code\": \"01234-567\",\n            \"country\": \"BR\",\n            \"business_type\": \"restaurant\",\n            \"description\": \"The best pizza in town\",\n            \"currency\": \"BRL\",\n            \"subscription_tier\": \"connection\",\n            \"is_branch\": false,\n            \"branch_name\": null,\n            \"is_public\": true,\n            \"status\": \"active\",\n            \"is_active\": true,\n            \"loyalty_programs_count\": 1,\n            \"active_customers_count\": 342,\n            \"subscription_status\": \"active\",\n            \"created_at\": \"2025-06-15T10:00:00Z\",\n            \"updated_at\": \"2026-03-22T14:00:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2awTHkVw8X7kGGprFerQQsvBBef\",\n            \"name\": \"Pizzaria Exemplo Ltda\",\n            \"trading_name\": \"Pizzaria Exemplo\",\n            \"slug\": \"pizzaria-exemplo\",\n            \"email\": \"contato@pizzariaexemplo.com.br\",\n            \"phone\": \"+5511987654321\",\n            \"website\": \"https://pizzariaexemplo.com.br\",\n            \"logo_uuid\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n            \"primary_color\": \"#E53E3E\",\n            \"secondary_color\": \"#FFFFFF\",\n            \"social_links\": {\n                \"instagram\": \"https://instagram.com/pizzariaexemplo\"\n            },\n            \"instagram_url\": \"https://instagram.com/pizzariaexemplo\",\n            \"google_review_url\": null,\n            \"menu_url\": \"https://pizzariaexemplo.com.br/cardapio\",\n            \"survey_url\": null,\n            \"address\": \"Rua das Pizzas, 123\",\n            \"city\": \"Sao Paulo\",\n            \"state\": \"SP\",\n            \"zip_code\": \"01234-567\",\n            \"country\": \"BR\",\n            \"business_type\": \"restaurant\",\n            \"description\": \"The best pizza in town\",\n            \"currency\": \"BRL\",\n            \"subscription_tier\": \"connection\",\n            \"is_branch\": false,\n            \"branch_name\": null,\n            \"is_public\": true,\n            \"status\": \"active\",\n            \"is_active\": true,\n            \"loyalty_programs_count\": 1,\n            \"active_customers_count\": 342,\n            \"subscription_status\": \"active\",\n            \"created_at\": \"2025-06-15T10:00:00Z\",\n            \"updated_at\": \"2026-03-22T14:00:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
                         }
                     ]
                 }
