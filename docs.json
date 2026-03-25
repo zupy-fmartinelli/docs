@@ -39,11 +39,6 @@
     "global": {
       "anchors": [
         {
-          "anchor": "API Status",
-          "href": "https://status.zupy.com",
-          "icon": "signal"
-        },
-        {
           "anchor": "Support",
           "href": "mailto:webmaster@zupy.com.br",
           "icon": "envelope"

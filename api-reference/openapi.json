@@ -2102,7 +2102,7 @@
             },
             "CompanyProfile": {
                 "type": "object",
-                "description": "Company profile serializer for v2 API.\n\nAll fields are read-only. Computed counts use queryset annotations\n(not SerializerMethodField) to prevent N+1.",
+                "description": "Company profile with business details, loyalty program statistics, and configuration.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -2331,7 +2331,7 @@
             },
             "CouponInventory": {
                 "type": "object",
-                "description": "Coupon inventory serializer for v2 API.\n\nPII fields declared for audit logger (Story 3.5).\ncustomer_name is PII -- exposed only to authorized consumers.\nAll fields are read-only.",
+                "description": "Active coupon with usage tracking, expiration details, and associated reward information.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -2434,7 +2434,7 @@
             },
             "CouponPassRequest": {
                 "type": "object",
-                "description": "Request serializer for coupon pass generation.",
+                "description": "Coupon pass generation request parameters.",
                 "properties": {
                     "customer_id": {
                         "type": "string",
@@ -2456,7 +2456,7 @@
             },
             "CouponPassResponse": {
                 "type": "object",
-                "description": "Response serializer for coupon pass generation.",
+                "description": "Coupon pass generation result with pass URL and status.",
                 "properties": {
                     "id": {
                         "type": "string"
@@ -2492,7 +2492,7 @@
             },
             "CouponValidateResponse": {
                 "type": "object",
-                "description": "Response serializer for coupon validation (Story 1.2).",
+                "description": "Coupon validation result with current status and remaining usages.",
                 "properties": {
                     "coupon_code": {
                         "type": "string"
@@ -2521,7 +2521,7 @@
             },
             "Customer": {
                 "type": "object",
-                "description": "Customer profile serializer for v2 API.\n\nMaps LoyaltyUser + related User fields into a flat customer representation.\nPII fields declared for the audit logger middleware (Story 3.5).",
+                "description": "Customer profile with personal details, loyalty status, and contact information.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -2945,7 +2945,7 @@
             },
             "LoyaltyProgram": {
                 "type": "object",
-                "description": "Loyalty program serializer for v2 API.\n\nAll fields are read-only. Computed counts use queryset annotations\n(not SerializerMethodField) to prevent N+1.",
+                "description": "Loyalty program details including configuration, rewards catalog, and customer statistics.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -3404,7 +3404,7 @@
             },
             "PassListResponse": {
                 "type": "object",
-                "description": "Response serializer for customer pass list (Story 6.5).",
+                "description": "Customer wallet pass summary with type, platform, and status.",
                 "properties": {
                     "id": {
                         "type": "string"
@@ -3437,7 +3437,7 @@
             },
             "PassStatusResponse": {
                 "type": "object",
-                "description": "Response serializer for single pass status query (Story 6.5).",
+                "description": "Detailed wallet pass status for a specific pass.",
                 "properties": {
                     "id": {
                         "type": "string"
@@ -3492,7 +3492,7 @@
             },
             "PointsAddRequest": {
                 "type": "object",
-                "description": "Validates add-points request body. Points data is not PII.",
+                "description": "Request parameters for adding points to a customer's loyalty balance.",
                 "properties": {
                     "amount": {
                         "type": "integer",
@@ -3510,7 +3510,7 @@
             },
             "PointsBalance": {
                 "type": "object",
-                "description": "Computed summary of a customer's points balance.\n\nNOT a ModelSerializer -- this is a constructed dict, not a model instance.\nAC#8: No pii_fields -- points data is not PII.",
+                "description": "Summary of a customer's loyalty points balance, including earned, spent, and current tier.",
                 "properties": {
                     "customer_id": {
                         "type": "string"
@@ -3548,7 +3548,7 @@
             },
             "PointsHistory": {
                 "type": "object",
-                "description": "Serializer for LoyaltyActivityHistory records.\n\nExposes transaction data for the points history endpoint.\nAC#8: No pii_fields -- transaction data is not PII.",
+                "description": "Individual points transaction record with operation details, amounts, and timestamps.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -3614,7 +3614,7 @@
             },
             "PointsOperationResponse": {
                 "type": "object",
-                "description": "Points operation response (add/reduce). Points data is not PII.",
+                "description": "Result of a points operation (add or reduce) with updated balance.",
                 "properties": {
                     "customer_id": {
                         "type": "string",
@@ -3660,7 +3660,7 @@
             },
             "RewardCatalog": {
                 "type": "object",
-                "description": "Reward catalog serializer for v2 API.\n\nNo PII fields -- reward data is not personally identifiable.\nAll fields are read-only -- this is a read-only endpoint.",
+                "description": "Available reward in the loyalty program catalog with points cost and validity details.",
                 "properties": {
                     "id": {
                         "type": "string",
@@ -3824,7 +3824,7 @@
             },
             "RewardRedeemRequest": {
                 "type": "object",
-                "description": "Request serializer for reward redemption (Story 1.2).",
+                "description": "Reward redemption request parameters.",
                 "properties": {
                     "use_z_tokens": {
                         "type": "boolean",
@@ -3834,7 +3834,7 @@
             },
             "RewardRedeemResponse": {
                 "type": "object",
-                "description": "Response serializer for reward redemption (Story 1.2).",
+                "description": "Reward redemption result with generated coupon code and points/Z$ deducted.",
                 "properties": {
                     "customer_id": {
                         "type": "string"
@@ -3963,7 +3963,7 @@
             },
             "WalletNotificationRequest": {
                 "type": "object",
-                "description": "Request serializer for wallet push notification (Story 6.4).",
+                "description": "Wallet push notification request parameters.",
                 "properties": {
                     "customer_id": {
                         "type": "string",
@@ -3985,7 +3985,7 @@
             },
             "WalletNotificationResponse": {
                 "type": "object",
-                "description": "Response serializer for wallet push notification (Story 6.4).",
+                "description": "Wallet push notification result with notification ID and delivery status.",
                 "properties": {
                     "notification_id": {
                         "type": "string"
@@ -4001,7 +4001,7 @@
             },
             "WalletPassRequest": {
                 "type": "object",
-                "description": "Request serializer for wallet pass generation.",
+                "description": "Wallet pass generation request parameters.",
                 "properties": {
                     "customer_id": {
                         "type": "string",
@@ -4018,7 +4018,7 @@
             },
             "WalletPassResponse": {
                 "type": "object",
-                "description": "Response serializer for wallet pass generation.",
+                "description": "Wallet pass generation result with pass URL and status.",
                 "properties": {
                     "id": {
                         "type": "string"
@@ -4071,7 +4071,7 @@
             },
             "ZBalance": {
                 "type": "object",
-                "description": "Z$ on-chain balance response. NOT PII — wallet address is public on-chain data.",
+                "description": "Customer's Z$ token balance and associated wallet address.",
                 "properties": {
                     "z_balance": {
                         "type": "string",
