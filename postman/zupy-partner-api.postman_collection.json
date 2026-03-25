@@ -1,0 +1,1154 @@
+{
+    "info": {
+        "name": "Zupy Partner API v2",
+        "description": "Complete Postman collection for the Zupy Partner API v2. Organized by category with auto-capture test scripts.\n\n## Quick Start\n1. Import this collection\n2. Import the environment template (`zupy-production.postman_environment.json`)\n3. Set your `api_key` (format: `zupy_pk_*`)\n4. Run requests in order for an end-to-end flow\n\n## Authentication\nAll requests use the `X-API-Key` header, inherited from collection-level auth.\n\n## Response Format\nAll responses use the `{data, meta}` envelope format. Errors follow RFC 7807 Problem Details.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "zupy-partner-api"
+    },
+    "auth": {
+        "type": "apikey",
+        "apikey": [
+            {
+                "key": "key",
+                "value": "X-API-Key",
+                "type": "string"
+            },
+            {
+                "key": "value",
+                "value": "{{api_key}}",
+                "type": "string"
+            },
+            {
+                "key": "in",
+                "value": "header",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "Authentication (OTP)",
+            "description": "OTP-based customer identity verification. Use when your integration requires confirmed customer identity (e.g., sensitive operations, profile access).",
+            "item": [
+                {
+                    "name": "Request OTP",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"identifier\": \"+5511987654321\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/auth/request-otp/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "auth", "request-otp", ""]
+                        },
+                        "description": "Send an OTP code to a customer's phone via WhatsApp. The code is valid for 5 minutes.\n\n**Parameters:**\n- `identifier` (required): Customer phone number in E.164 format"
+                    },
+                    "response": [
+                        {
+                            "name": "OTP Sent",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"identifier\": \"+5511987654321\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/auth/request-otp/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "auth", "request-otp", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"status\": \"sent\",\n        \"channel\": \"whatsapp\",\n        \"expires_in\": 300\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Verify OTP",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var data = pm.response.json().data;",
+                                    "    if (data.otp_session) {",
+                                    "        pm.environment.set(\"otp_session\", data.otp_session);",
+                                    "        console.log(\"Auto-set otp_session: \" + data.otp_session);",
+                                    "    }",
+                                    "    if (data.customer_id) {",
+                                    "        pm.environment.set(\"customer_id\", data.customer_id);",
+                                    "        console.log(\"Auto-set customer_id: \" + data.customer_id);",
+                                    "    }",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"identifier\": \"+5511987654321\",\n    \"otp_code\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/auth/verify-otp/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "auth", "verify-otp", ""]
+                        },
+                        "description": "Verify an OTP code and receive a session token with customer data. Creates a new customer if the phone number is not registered.\n\n**Parameters:**\n- `identifier` (required): Same phone number used in Request OTP\n- `otp_code` (required): 6-digit code received via WhatsApp\n\n**Auto-captures:** `otp_session`, `customer_id`"
+                    },
+                    "response": [
+                        {
+                            "name": "OTP Verified — Existing Customer",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"identifier\": \"+5511987654321\",\n    \"otp_code\": \"123456\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/auth/verify-otp/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "auth", "verify-otp", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"customer_id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n        \"is_new\": false,\n        \"otp_session\": \"abc123def456...\",\n        \"full_name\": \"Maria Santos\",\n        \"points_balance\": 150,\n        \"tier\": \"silver\"\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Customers",
+            "description": "Customer search, profile retrieval, points management, and transaction history.",
+            "item": [
+                {
+                    "name": "Search Customers (by phone)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var data = pm.response.json().data;",
+                                    "    if (data && data.length > 0) {",
+                                    "        pm.environment.set(\"customer_id\", data[0].id);",
+                                    "        console.log(\"Auto-set customer_id: \" + data[0].id);",
+                                    "    }",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/customers/?phone={{phone}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "customers", ""],
+                            "query": [
+                                {
+                                    "key": "phone",
+                                    "value": "{{phone}}",
+                                    "description": "Phone number (digits only, e.g., 5511987654321)"
+                                }
+                            ]
+                        },
+                        "description": "Search for customers by phone number. Also supports filters: `name`, `email`, `card_code`, `tier`, `segment`, `search` (general text search).\n\n**Auto-captures:** `customer_id` from first result"
+                    },
+                    "response": [
+                        {
+                            "name": "Customer Found",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/customers/?phone=5511987654321",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "customers", ""],
+                                    "query": [
+                                        {
+                                            "key": "phone",
+                                            "value": "5511987654321"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n            \"full_name\": \"Maria Santos\",\n            \"avatar_url\": null,\n            \"email\": \"maria@example.com\",\n            \"phone\": \"+5511987654321\",\n            \"cpf\": null,\n            \"birth_date\": null,\n            \"points_balance\": 89,\n            \"points_earned\": 89,\n            \"points_spent\": 0,\n            \"tier\": \"default\",\n            \"card_number\": \"ZP-ABC123\",\n            \"join_date\": \"2026-03-22T00:00:00Z\",\n            \"last_activity_date\": \"2026-03-22T14:30:00Z\",\n            \"is_active\": true,\n            \"zupy_balance\": \"0.00\",\n            \"program_id\": \"2awTHmNw8X7kGGpr...\",\n            \"program_name\": \"Clube Pizzaria Exemplo\",\n            \"rfm_segment\": \"new\",\n            \"company_id\": \"2awTHkVw8X7kGGpr...\",\n            \"created_at\": \"2026-03-22T14:00:00Z\",\n            \"updated_at\": \"2026-03-22T14:30:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Customer Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "customers", "{{customer_id}}", ""]
+                        },
+                        "description": "Retrieve a single customer's full profile including contact details, loyalty tier, points balance, and RFM segment.\n\n**Path parameters:**\n- `customer_id` (required): Customer KSUID"
+                    },
+                    "response": [
+                        {
+                            "name": "Customer Profile",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "customers", "{{customer_id}}", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n        \"full_name\": \"Maria Santos\",\n        \"avatar_url\": null,\n        \"email\": \"maria@example.com\",\n        \"phone\": \"+5511987654321\",\n        \"cpf\": null,\n        \"birth_date\": null,\n        \"points_balance\": 89,\n        \"points_earned\": 89,\n        \"points_spent\": 0,\n        \"tier\": \"default\",\n        \"card_number\": \"ZP-ABC123\",\n        \"join_date\": \"2026-03-22T00:00:00Z\",\n        \"last_activity_date\": \"2026-03-22T14:30:00Z\",\n        \"is_active\": true,\n        \"zupy_balance\": \"0.00\",\n        \"program_id\": \"2awTHmNw8X7kGGpr...\",\n        \"program_name\": \"Clube Pizzaria Exemplo\",\n        \"rfm_segment\": \"new\",\n        \"company_id\": \"2awTHkVw8X7kGGpr...\",\n        \"created_at\": \"2026-03-22T14:00:00Z\",\n        \"updated_at\": \"2026-03-22T14:30:00Z\"\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Add Points",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"points\": 100,\n    \"reason\": \"Purchase at store\",\n    \"order_amount\": \"89.90\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/points/add/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "customers", "{{customer_id}}", "points", "add", ""]
+                        },
+                        "description": "Add loyalty points to a customer's balance. Triggers async side effects: Z$ distribution, RFM recalculation, and wallet push notification.\n\n**Path parameters:**\n- `customer_id` (required): Customer KSUID\n\n**Body parameters:**\n- `points` (required): Number of points to add\n- `reason` (optional): Description of the transaction\n- `order_amount` (optional): Purchase amount that generated the points"
+                    },
+                    "response": [
+                        {
+                            "name": "Points Added",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"points\": 100,\n    \"reason\": \"Purchase at store\",\n    \"order_amount\": \"89.90\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/points/add/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "customers", "{{customer_id}}", "points", "add", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"operation\": \"add\",\n        \"points\": 100,\n        \"new_balance\": 189,\n        \"customer_id\": \"2awTHloSJX7kGGprFerOOsvABcd\"\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Points History",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/points/history/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "customers", "{{customer_id}}", "points", "history", ""]
+                        },
+                        "description": "Get paginated points transaction history for a customer. Shows all point additions, deductions, and redemptions.\n\n**Path parameters:**\n- `customer_id` (required): Customer KSUID"
+                    },
+                    "response": [
+                        {
+                            "name": "Points History",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/points/history/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "customers", "{{customer_id}}", "points", "history", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2bxRKmpWJY8lHHqsGfsQQtwCDef\",\n            \"activity_type\": \"delivery\",\n            \"points\": 100,\n            \"balance_after\": 189,\n            \"description\": \"Purchase at store\",\n            \"created_at\": \"2026-03-22T15:00:00Z\"\n        },\n        {\n            \"id\": \"2awTHloSJX7kGGprFerOOsvABce\",\n            \"activity_type\": \"delivery\",\n            \"points\": 89,\n            \"balance_after\": 89,\n            \"description\": \"Order #123456789\",\n            \"created_at\": \"2026-03-22T14:30:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 2\n    }\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Loyalty Programs",
+            "description": "Manage and view loyalty program configurations.",
+            "item": [
+                {
+                    "name": "List Programs",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var data = pm.response.json().data;",
+                                    "    if (data && data.length > 0) {",
+                                    "        pm.environment.set(\"program_id\", data[0].id);",
+                                    "        console.log(\"Auto-set program_id: \" + data[0].id);",
+                                    "    }",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/loyalty/programs/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "loyalty", "programs", ""]
+                        },
+                        "description": "List all loyalty programs for the authenticated company. Most companies have a single program.\n\n**Auto-captures:** `program_id` from first result"
+                    },
+                    "response": [
+                        {
+                            "name": "Programs List",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/loyalty/programs/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "loyalty", "programs", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2awTHmNw8X7kGGpr...\",\n            \"name\": \"Clube Pizzaria Exemplo\",\n            \"slug\": \"pizzaria-exemplo\",\n            \"enrollment_url\": \"https://zupy.com/@pizzaria-exemplo\",\n            \"description\": \"Earn points on every order\",\n            \"company_id\": \"2awTHkVw8X7kGGpr...\",\n            \"points_name\": \"Pontos\",\n            \"point_expiration_days\": 365,\n            \"points_per_currency\": \"1.00\",\n            \"minimum_points_redemption\": 50\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Program Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/loyalty/programs/{{program_id}}/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "loyalty", "programs", "{{program_id}}", ""]
+                        },
+                        "description": "Retrieve a loyalty program's full configuration including tiers, points rules, and enrollment URL.\n\n**Path parameters:**\n- `program_id` (required): Loyalty program KSUID"
+                    },
+                    "response": [
+                        {
+                            "name": "Program Details",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/loyalty/programs/{{program_id}}/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "loyalty", "programs", "{{program_id}}", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"id\": \"2awTHmNw8X7kGGpr...\",\n        \"name\": \"Clube Pizzaria Exemplo\",\n        \"slug\": \"pizzaria-exemplo\",\n        \"enrollment_url\": \"https://zupy.com/@pizzaria-exemplo\",\n        \"description\": \"Earn points on every order\",\n        \"company_id\": \"2awTHkVw8X7kGGpr...\",\n        \"points_name\": \"Pontos\",\n        \"point_expiration_days\": 365,\n        \"points_per_currency\": \"1.00\",\n        \"minimum_points_redemption\": 50\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Rewards",
+            "description": "Browse the reward catalog, check redeemable rewards, and redeem rewards for coupons.",
+            "item": [
+                {
+                    "name": "Browse Reward Catalog",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var data = pm.response.json().data;",
+                                    "    if (data && data.length > 0) {",
+                                    "        pm.environment.set(\"reward_id\", data[0].id);",
+                                    "        console.log(\"Auto-set reward_id: \" + data[0].id);",
+                                    "    }",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/rewards/?customer_id={{customer_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "rewards", ""],
+                            "query": [
+                                {
+                                    "key": "customer_id",
+                                    "value": "{{customer_id}}",
+                                    "description": "Customer KSUID — annotates already_redeemed flag on each reward"
+                                }
+                            ]
+                        },
+                        "description": "List all available rewards in the company's catalog. Pass `customer_id` to see `already_redeemed` flags.\n\n**Auto-captures:** `reward_id` from first result"
+                    },
+                    "response": [
+                        {
+                            "name": "Reward Catalog",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/rewards/?customer_id={{customer_id}}",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "rewards", ""],
+                                    "query": [
+                                        {
+                                            "key": "customer_id",
+                                            "value": "{{customer_id}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfg\",\n            \"name\": \"Free Dessert\",\n            \"description\": \"Choose any dessert from the menu\",\n            \"points_cost\": 100,\n            \"image_url\": null,\n            \"is_active\": true,\n            \"already_redeemed\": false,\n            \"discount_type\": \"free_item\",\n            \"discount_value\": null,\n            \"max_redemptions_per_customer\": 0,\n            \"valid_days\": 30\n        },\n        {\n            \"id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfh\",\n            \"name\": \"10% Off Next Order\",\n            \"description\": \"Get 10% discount on your next order\",\n            \"points_cost\": 50,\n            \"image_url\": null,\n            \"is_active\": true,\n            \"already_redeemed\": false,\n            \"discount_type\": \"percentage\",\n            \"discount_value\": \"10.00\",\n            \"max_redemptions_per_customer\": 0,\n            \"valid_days\": 14\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 2\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Browse Redeemable Rewards",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/rewards/?customer_id={{customer_id}}&redeemable=true",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "rewards", ""],
+                            "query": [
+                                {
+                                    "key": "customer_id",
+                                    "value": "{{customer_id}}",
+                                    "description": "Customer KSUID (required for redeemable filter)"
+                                },
+                                {
+                                    "key": "redeemable",
+                                    "value": "true",
+                                    "description": "Filter to rewards the customer can afford and hasn't hit redemption limits"
+                                }
+                            ]
+                        },
+                        "description": "List only rewards the customer can currently redeem (has enough points and hasn't hit the redemption limit).\n\n**Query parameters:**\n- `customer_id` (required): Customer KSUID\n- `redeemable` (required): Set to `true`"
+                    },
+                    "response": [
+                        {
+                            "name": "Redeemable Rewards",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/rewards/?customer_id={{customer_id}}&redeemable=true",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "rewards", ""],
+                                    "query": [
+                                        {
+                                            "key": "customer_id",
+                                            "value": "{{customer_id}}"
+                                        },
+                                        {
+                                            "key": "redeemable",
+                                            "value": "true"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfg\",\n            \"name\": \"Free Dessert\",\n            \"description\": \"Choose any dessert from the menu\",\n            \"points_cost\": 100,\n            \"image_url\": null,\n            \"is_active\": true,\n            \"already_redeemed\": false,\n            \"discount_type\": \"free_item\",\n            \"discount_value\": null,\n            \"max_redemptions_per_customer\": 0,\n            \"valid_days\": 30\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Redeem Reward → Create Coupon",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var data = pm.response.json().data;",
+                                    "    if (data.coupon_code) {",
+                                    "        pm.environment.set(\"coupon_code\", data.coupon_code);",
+                                    "        console.log(\"Auto-set coupon_code: \" + data.coupon_code);",
+                                    "    }",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"use_z_tokens\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/rewards/{{reward_id}}/redeem/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "customers", "{{customer_id}}", "rewards", "{{reward_id}}", "redeem", ""]
+                        },
+                        "description": "Redeem a reward using points (default) or Z$ tokens (`use_z_tokens=true`). Creates a coupon that the customer can use at the store.\n\n**Path parameters:**\n- `customer_id` (required): Customer KSUID\n- `reward_id` (required): Reward KSUID\n\n**Body parameters:**\n- `use_z_tokens` (optional): Set to `true` to pay with Z$ tokens instead of points\n\n**Auto-captures:** `coupon_code`"
+                    },
+                    "response": [
+                        {
+                            "name": "Reward Redeemed",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"use_z_tokens\": false\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/rewards/{{reward_id}}/redeem/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "customers", "{{customer_id}}", "rewards", "{{reward_id}}", "redeem", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"coupon_code\": \"ZUPY-ABC123\",\n        \"reward_name\": \"Free Dessert\",\n        \"points_spent\": 100,\n        \"new_points_balance\": 89,\n        \"valid_until\": \"2026-04-22T14:30:00Z\",\n        \"remaining_usages\": 1\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Coupons",
+            "description": "List, filter, and validate (use) customer coupons.",
+            "item": [
+                {
+                    "name": "List Customer Coupons",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var data = pm.response.json().data;",
+                                    "    if (data && data.length > 0) {",
+                                    "        pm.environment.set(\"coupon_id\", data[0].id);",
+                                    "        console.log(\"Auto-set coupon_id: \" + data[0].id);",
+                                    "    }",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/rewards/coupons/?customer_id={{customer_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "rewards", "coupons", ""],
+                            "query": [
+                                {
+                                    "key": "customer_id",
+                                    "value": "{{customer_id}}",
+                                    "description": "Filter coupons for this customer"
+                                }
+                            ]
+                        },
+                        "description": "List all coupons for a customer (all statuses: active, used, expired).\n\n**Auto-captures:** `coupon_id` from first result"
+                    },
+                    "response": [
+                        {
+                            "name": "Coupons List",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/rewards/coupons/?customer_id={{customer_id}}",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "rewards", "coupons", ""],
+                                    "query": [
+                                        {
+                                            "key": "customer_id",
+                                            "value": "{{customer_id}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2dxRKmpWJY8lHHqsGfsQQtwEFgh\",\n            \"coupon_code\": \"ZUPY-ABC123\",\n            \"reward_name\": \"Free Dessert\",\n            \"reward_id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfg\",\n            \"customer_id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n            \"customer_name\": \"Maria Santos\",\n            \"status\": \"active\",\n            \"status_display\": \"Ativo\",\n            \"points_spent\": 100,\n            \"redemption_date\": \"2026-03-22T15:00:00Z\",\n            \"valid_until\": \"2026-04-22T15:00:00Z\",\n            \"remaining_usages\": 1,\n            \"total_usages_allowed\": 1,\n            \"created_at\": \"2026-03-22T15:00:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "List Active Coupons",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/rewards/coupons/?customer_id={{customer_id}}&status=active",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "rewards", "coupons", ""],
+                            "query": [
+                                {
+                                    "key": "customer_id",
+                                    "value": "{{customer_id}}",
+                                    "description": "Filter coupons for this customer"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "active",
+                                    "description": "Filter to active (unused, not expired) coupons only"
+                                }
+                            ]
+                        },
+                        "description": "List only active (unused, not expired) coupons for a customer.\n\n**Query parameters:**\n- `customer_id` (required): Customer KSUID\n- `status`: Set to `active`"
+                    },
+                    "response": [
+                        {
+                            "name": "Active Coupons",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/rewards/coupons/?customer_id={{customer_id}}&status=active",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "rewards", "coupons", ""],
+                                    "query": [
+                                        {
+                                            "key": "customer_id",
+                                            "value": "{{customer_id}}"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "active"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2dxRKmpWJY8lHHqsGfsQQtwEFgh\",\n            \"coupon_code\": \"ZUPY-ABC123\",\n            \"reward_name\": \"Free Dessert\",\n            \"reward_id\": \"2cxRKmpWJY8lHHqsGfsQQtwDEfg\",\n            \"customer_id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n            \"customer_name\": \"Maria Santos\",\n            \"status\": \"active\",\n            \"status_display\": \"Ativo\",\n            \"points_spent\": 100,\n            \"redemption_date\": \"2026-03-22T15:00:00Z\",\n            \"valid_until\": \"2026-04-22T15:00:00Z\",\n            \"remaining_usages\": 1,\n            \"total_usages_allowed\": 1,\n            \"created_at\": \"2026-03-22T15:00:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Validate (Use) Coupon",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/coupons/{{coupon_id}}/validate/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "customers", "{{customer_id}}", "coupons", "{{coupon_id}}", "validate", ""]
+                        },
+                        "description": "Atomically mark a coupon as used. Prevents double-usage via database locking. Auto-expires coupons past their `valid_until` date.\n\n**Path parameters:**\n- `customer_id` (required): Customer KSUID\n- `coupon_id` (required): Coupon KSUID\n\n**Error codes:**\n- `409 Conflict`: Coupon already used or expired"
+                    },
+                    "response": [
+                        {
+                            "name": "Coupon Validated",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/coupons/{{coupon_id}}/validate/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "customers", "{{customer_id}}", "coupons", "{{coupon_id}}", "validate", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"coupon_code\": \"ZUPY-ABC123\",\n        \"status\": \"used\",\n        \"remaining_usages\": 0,\n        \"total_usages_allowed\": 1,\n        \"validated_at\": \"2026-03-22T16:00:00Z\"\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Z$ Tokens",
+            "description": "Query on-chain Z$ (Zupy Dollar) compressed token balances via Solana.",
+            "item": [
+                {
+                    "name": "Get Z$ Balance",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/z-balance/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "customers", "{{customer_id}}", "z-balance", ""]
+                        },
+                        "description": "Query the customer's on-chain Z$ compressed token balance via the Photon API (Solana). Returns 200 with an `error` field on timeout/failure (graceful degradation).\n\n**Path parameters:**\n- `customer_id` (required): Customer KSUID"
+                    },
+                    "response": [
+                        {
+                            "name": "Z$ Balance",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/customers/{{customer_id}}/z-balance/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "customers", "{{customer_id}}", "z-balance", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"balance\": \"25.50\",\n        \"mint\": \"ZUPYxKLjfRyRmoF6j8Su8D3aTDkB4k4uqXLqHn8wcao\",\n        \"wallet_address\": \"AZjCtbrNGsSztGyWcqKdyq4sP2FnH3ZQCMyCErUzwZH9\",\n        \"source\": \"photon\"\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Wallet",
+            "description": "Generate Apple/Google wallet passes for loyalty cards and coupons, list passes, check status, and send push notifications.",
+            "item": [
+                {
+                    "name": "Create Loyalty Pass",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var data = pm.response.json().data;",
+                                    "    if (data.id) {",
+                                    "        pm.environment.set(\"pass_id\", data.id);",
+                                    "        console.log(\"Auto-set pass_id: \" + data.id);",
+                                    "    }",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"platform\": \"apple\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/wallet/passes/loyalty/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "wallet", "passes", "loyalty", ""]
+                        },
+                        "description": "Generate an Apple or Google wallet pass for a customer's loyalty card.\n\n**Body parameters:**\n- `customer_id` (required): Customer KSUID\n- `platform` (required): `apple` or `google`\n\n**Auto-captures:** `pass_id`"
+                    },
+                    "response": [
+                        {
+                            "name": "Loyalty Pass Created",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"platform\": \"apple\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/wallet/passes/loyalty/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "wallet", "passes", "loyalty", ""]
+                                }
+                            },
+                            "status": "Created",
+                            "code": 201,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"id\": \"2exRKmpWJY8lHHqsGfsQQtwFGhi\",\n        \"pass_url\": \"https://cdn.zupy.com/passes/abc123.pkpass\",\n        \"platform\": \"apple\",\n        \"customer_name\": \"Maria Santos\",\n        \"points_balance\": 89,\n        \"tier\": \"default\",\n        \"created_at\": \"2026-03-22T16:30:00Z\"\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Create Coupon Pass",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"coupon_id\": \"{{coupon_id}}\",\n    \"platform\": \"apple\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/wallet/passes/coupons/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "wallet", "passes", "coupons", ""]
+                        },
+                        "description": "Generate an Apple or Google wallet pass for a redeemed coupon.\n\n**Body parameters:**\n- `customer_id` (required): Customer KSUID\n- `coupon_id` (required): Coupon KSUID\n- `platform` (required): `apple` or `google`"
+                    },
+                    "response": [
+                        {
+                            "name": "Coupon Pass Created",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"coupon_id\": \"{{coupon_id}}\",\n    \"platform\": \"apple\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/wallet/passes/coupons/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "wallet", "passes", "coupons", ""]
+                                }
+                            },
+                            "status": "Created",
+                            "code": 201,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"id\": \"2fxRKmpWJY8lHHqsGfsQQtwGHij\",\n        \"pass_url\": \"https://cdn.zupy.com/passes/def456.pkpass\",\n        \"platform\": \"apple\",\n        \"coupon_title\": \"Free Dessert\",\n        \"expiry_date\": \"2026-04-22T15:00:00Z\",\n        \"created_at\": \"2026-03-22T16:35:00Z\"\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "List Customer Passes",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/wallet/passes/?customer_id={{customer_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "wallet", "passes", ""],
+                            "query": [
+                                {
+                                    "key": "customer_id",
+                                    "value": "{{customer_id}}",
+                                    "description": "Customer KSUID (required)"
+                                }
+                            ]
+                        },
+                        "description": "List all wallet passes (loyalty + coupon) issued to a specific customer.\n\n**Query parameters:**\n- `customer_id` (required): Customer KSUID"
+                    },
+                    "response": [
+                        {
+                            "name": "Customer Passes",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/wallet/passes/?customer_id={{customer_id}}",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "wallet", "passes", ""],
+                                    "query": [
+                                        {
+                                            "key": "customer_id",
+                                            "value": "{{customer_id}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2exRKmpWJY8lHHqsGfsQQtwFGhi\",\n            \"type\": \"loyalty\",\n            \"platform\": \"apple\",\n            \"status\": \"active\",\n            \"pass_url\": \"https://cdn.zupy.com/passes/abc123.pkpass\",\n            \"created_at\": \"2026-03-22T16:30:00Z\"\n        },\n        {\n            \"id\": \"2fxRKmpWJY8lHHqsGfsQQtwGHij\",\n            \"type\": \"coupon\",\n            \"platform\": \"apple\",\n            \"status\": \"active\",\n            \"pass_url\": \"https://cdn.zupy.com/passes/def456.pkpass\",\n            \"created_at\": \"2026-03-22T16:35:00Z\"\n        }\n    ],\n    \"meta\": {}\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Pass Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/wallet/passes/{{pass_id}}/status/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "wallet", "passes", "{{pass_id}}", "status", ""]
+                        },
+                        "description": "Check the current status of a wallet pass (active, expired, voided).\n\n**Path parameters:**\n- `pass_id` (required): Pass KSUID"
+                    },
+                    "response": [
+                        {
+                            "name": "Pass Status",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/wallet/passes/{{pass_id}}/status/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "wallet", "passes", "{{pass_id}}", "status", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"id\": \"2exRKmpWJY8lHHqsGfsQQtwFGhi\",\n        \"status\": \"active\",\n        \"platform\": \"apple\",\n        \"last_updated\": \"2026-03-22T16:30:00Z\"\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Send Push Notification",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"title\": \"Points Update\",\n    \"message\": \"You earned 100 points on your last purchase!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/wallet/notifications/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "wallet", "notifications", ""]
+                        },
+                        "description": "Send a push notification to the customer's device via an active wallet pass.\n\n**Body parameters:**\n- `customer_id` (required): Customer KSUID\n- `title` (required): Notification title\n- `message` (required): Notification body text"
+                    },
+                    "response": [
+                        {
+                            "name": "Notification Sent",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"title\": \"Points Update\",\n    \"message\": \"You earned 100 points on your last purchase!\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/wallet/notifications/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "wallet", "notifications", ""]
+                                }
+                            },
+                            "status": "Accepted",
+                            "code": 202,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"status\": \"queued\",\n        \"devices_targeted\": 1\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Webhooks",
+            "description": "Send order data to Zupy for automatic customer enrollment and points attribution.",
+            "item": [
+                {
+                    "name": "Send Order Data (webhook)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "[\n    {\n        \"customer_name\": \"Maria Santos\",\n        \"customer_phone\": \"+5511987654321\",\n        \"customer_email\": null,\n        \"customer_cpf\": null,\n        \"order_total\": \"89.90\",\n        \"order_id\": \"123456789\",\n        \"order_date\": \"2026-03-22T14:30:00.000Z\",\n        \"store_cnpj\": \"12.345.678/0001-90\",\n        \"store_name\": \"Pizzaria Exemplo\"\n    }\n]"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/webhooks/integrations/{{partner_slug}}/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "webhooks", "integrations", "{{partner_slug}}", ""]
+                        },
+                        "description": "Receives JSON data from integration partners. Authenticates via per-company API key, persists to WebhookEvent, and dispatches async processing.\n\n**Path parameters:**\n- `partner_slug` (required): Your integration slug (e.g., `repediu`, `saipos`)\n\n**Notes:**\n- Accepts **any JSON payload** — Zupy processes it using a partner-specific adapter\n- **Idempotent** — duplicate payloads return `\"status\": \"duplicate\"` (SHA-256 hash detection)\n- Processed asynchronously — you get an immediate `200` response"
+                    },
+                    "response": [
+                        {
+                            "name": "Webhook Received",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "[\n    {\n        \"customer_name\": \"Maria Santos\",\n        \"customer_phone\": \"+5511987654321\",\n        \"customer_email\": null,\n        \"customer_cpf\": null,\n        \"order_total\": \"89.90\",\n        \"order_id\": \"123456789\",\n        \"order_date\": \"2026-03-22T14:30:00.000Z\",\n        \"store_cnpj\": \"12.345.678/0001-90\",\n        \"store_name\": \"Pizzaria Exemplo\"\n    }\n]"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/webhooks/integrations/{{partner_slug}}/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "webhooks", "integrations", "{{partner_slug}}", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"status\": \"received\",\n        \"id\": \"2bxRKmpWJY8lHHqsGfsQQtwCDef\"\n    },\n    \"meta\": {}\n}"
+                        },
+                        {
+                            "name": "Webhook Duplicate",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "[\n    {\n        \"customer_name\": \"Maria Santos\",\n        \"customer_phone\": \"+5511987654321\",\n        \"order_total\": \"89.90\",\n        \"order_id\": \"123456789\"\n    }\n]"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/webhooks/integrations/{{partner_slug}}/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "webhooks", "integrations", "{{partner_slug}}", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"status\": \"duplicate\",\n        \"id\": \"2bxRKmpWJY8lHHqsGfsQQtwCDef\"\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Company",
+            "description": "Retrieve company profile and business details.",
+            "item": [
+                {
+                    "name": "Get Company Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/companies/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "companies", ""]
+                        },
+                        "description": "List companies accessible to the authenticated API key. Partner API keys typically have access to a single company.\n\nReturns business details, loyalty program statistics, subscription tier, and branding configuration."
+                    },
+                    "response": [
+                        {
+                            "name": "Company Profile",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/companies/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "companies", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": [\n        {\n            \"id\": \"2awTHkVw8X7kGGpr...\",\n            \"name\": \"Pizzaria Exemplo Ltda\",\n            \"trading_name\": \"Pizzaria Exemplo\",\n            \"slug\": \"pizzaria-exemplo\",\n            \"email\": \"contato@pizzariaexemplo.com.br\",\n            \"phone\": \"+5511987654321\",\n            \"website\": \"https://pizzariaexemplo.com.br\",\n            \"logo_uuid\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n            \"primary_color\": \"#E53E3E\",\n            \"secondary_color\": \"#FFFFFF\",\n            \"social_links\": {\n                \"instagram\": \"https://instagram.com/pizzariaexemplo\"\n            },\n            \"instagram_url\": \"https://instagram.com/pizzariaexemplo\",\n            \"google_review_url\": null,\n            \"menu_url\": \"https://pizzariaexemplo.com.br/cardapio\",\n            \"survey_url\": null,\n            \"address\": \"Rua das Pizzas, 123\",\n            \"city\": \"Sao Paulo\",\n            \"state\": \"SP\",\n            \"zip_code\": \"01234-567\",\n            \"country\": \"BR\",\n            \"business_type\": \"restaurant\",\n            \"description\": \"The best pizza in town\",\n            \"currency\": \"BRL\",\n            \"subscription_tier\": \"connection\",\n            \"is_branch\": false,\n            \"branch_name\": null,\n            \"is_public\": true,\n            \"status\": \"active\",\n            \"is_active\": true,\n            \"loyalty_programs_count\": 1,\n            \"active_customers_count\": 342,\n            \"subscription_status\": \"active\",\n            \"created_at\": \"2025-06-15T10:00:00Z\",\n            \"updated_at\": \"2026-03-22T14:00:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

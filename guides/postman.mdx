@@ -1,0 +1,124 @@
+---
+title: "Postman Collection"
+description: "Import the ready-made Postman collection to test all Zupy Partner API endpoints instantly"
+---
+
+Download our Postman collection and environment template to explore the entire Zupy Partner API v2 without writing any code.
+
+<Note>
+  **What's included**: 22 pre-configured requests across 8 categories, with example responses, auto-capture scripts, and an end-to-end test flow.
+</Note>
+
+## Download Files
+
+<CardGroup cols={2}>
+  <Card title="Postman Collection" icon="box-archive" href="/postman/zupy-partner-api.postman_collection.json">
+    All 22 partner API endpoints organized by category
+  </Card>
+  <Card title="Environment Template" icon="gear" href="/postman/zupy-production.postman_environment.json">
+    Pre-configured variables for the production environment
+  </Card>
+</CardGroup>
+
+## Setup Instructions
+
+<Steps>
+  <Step title="Import the collection">
+    Open Postman, click **Import**, and drag in `zupy-partner-api.postman_collection.json`.
+
+    You'll see the **Zupy Partner API v2** collection with 8 folders:
+    - Authentication (OTP)
+    - Customers
+    - Loyalty Programs
+    - Rewards
+    - Coupons
+    - Z$ Tokens
+    - Wallet
+    - Webhooks
+    - Company
+  </Step>
+
+  <Step title="Import the environment">
+    Click **Import** again and drag in `zupy-production.postman_environment.json`.
+
+    Select **Zupy Production** as your active environment in the top-right dropdown.
+  </Step>
+
+  <Step title="Set your API key">
+    Click the **eye icon** next to the environment selector, then click **Edit**.
+
+    Set the `api_key` variable to your actual API key (format: `zupy_pk_*`).
+
+    <Tip>
+      Don't have an API key yet? Contact [webmaster@zupy.com.br](mailto:webmaster@zupy.com.br) to start the onboarding process.
+    </Tip>
+  </Step>
+
+  <Step title="Start testing">
+    Run requests in order — the collection includes test scripts that auto-populate environment variables as you go.
+  </Step>
+</Steps>
+
+## Suggested Test Flow
+
+Run the requests in this order for a complete end-to-end test:
+
+| Step | Request | What Happens |
+|------|---------|-------------|
+| 1 | **Send Order Data** (Webhooks) | Creates a customer and assigns points |
+| 2 | **Search Customers** (Customers) | Finds the customer, auto-sets `customer_id` |
+| 3 | **Add Points** (Customers) | Manually adds extra points |
+| 4 | **List Programs** (Loyalty) | Gets program info, auto-sets `program_id` |
+| 5 | **Browse Reward Catalog** (Rewards) | Shows available rewards, auto-sets `reward_id` |
+| 6 | **Redeem Reward** (Rewards) | Creates a coupon, auto-sets `coupon_code` |
+| 7 | **List Customer Coupons** (Coupons) | Shows the new coupon, auto-sets `coupon_id` |
+| 8 | **Validate Coupon** (Coupons) | Marks the coupon as used |
+| 9 | **Get Z$ Balance** (Z$ Tokens) | Checks on-chain token balance |
+
+## Auto-Capture Scripts
+
+Key requests include test scripts that automatically save response values to your environment:
+
+| Request | Auto-Captured Variables |
+|---------|----------------------|
+| Verify OTP | `otp_session`, `customer_id` |
+| Search Customers | `customer_id` |
+| List Programs | `program_id` |
+| Browse Reward Catalog | `reward_id` |
+| Redeem Reward | `coupon_code` |
+| List Customer Coupons | `coupon_id` |
+| Create Loyalty Pass | `pass_id` |
+
+This means you can run requests sequentially without manually copying IDs between requests.
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `base_url` | `https://api.zupy.com` | API base URL |
+| `api_key` | `zupy_pk_YOUR_API_KEY_HERE` | Your partner API key |
+| `phone` | `5511987654321` | Test phone number |
+| `partner_slug` | `repediu` | Your integration partner slug |
+| `customer_id` | *(auto-populated)* | Customer KSUID |
+| `reward_id` | *(auto-populated)* | Reward KSUID |
+| `coupon_id` | *(auto-populated)* | Coupon KSUID |
+| `coupon_code` | *(auto-populated)* | Coupon code string |
+| `program_id` | *(auto-populated)* | Loyalty program KSUID |
+| `pass_id` | *(auto-populated)* | Wallet pass KSUID |
+| `otp_session` | *(auto-populated)* | OTP session token |
+
+## Collection Authentication
+
+All requests inherit the `X-API-Key` header from the collection-level authentication. You don't need to set the header on individual requests.
+
+For OTP-protected endpoints, add the `X-OTP-Session` header manually or use the auto-captured `otp_session` variable after verifying an OTP.
+
+## Next Steps
+
+<Card title="Getting Started" icon="rocket" href="/guides/getting-started">
+  Follow the quickstart guide with code examples in cURL, Python, and JavaScript
+</Card>
+
+<Card title="API Reference" icon="code" href="/api-reference">
+  Browse all endpoints with full request/response schemas
+</Card>
