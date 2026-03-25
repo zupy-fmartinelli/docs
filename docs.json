@@ -28,6 +28,7 @@
               "guides/otp-flow",
               "guides/coupon-lifecycle",
               "guides/z-dollar-tokens",
+              "guides/outbound-webhooks",
               "guides/postman",
               "guides/partner-onboarding"
             ]

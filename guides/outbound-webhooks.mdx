@@ -1,0 +1,526 @@
+---
+title: "Outbound Webhooks"
+description: "Receive real-time notifications when loyalty events occur — customer enrollments, points earned, reward redemptions, and coupon lifecycle events"
+---
+
+Receive real-time HTTP notifications when loyalty events occur in your customers' accounts. Stay in sync with customer activity on your platform.
+
+<Note>
+  **Prerequisites**: Your API key (`zupy_pk_*`). See [Getting Started](/guides/getting-started) if you don't have these yet.
+</Note>
+
+## How It Works
+
+Zupy sends an HTTP POST to your configured webhook URL whenever a loyalty event occurs:
+
+1. **Event Occurs** — Customer earns points, redeems a reward, coupon expires, etc.
+2. **Sign** — Event payload is signed with HMAC-SHA256 using your secret
+3. **Send** — HTTP POST to your `webhook_url` with signed payload
+4. **Retry** — If your server returns non-2xx, we retry with exponential backoff
+
+## Event Types
+
+| Event | Trigger | Key Data |
+|-------|---------|----------|
+| `customer.enrolled` | New customer joins loyalty program | `customer_id`, `program_id`, `name`, `phone` |
+| `points.earned` | Customer receives points | `customer_id`, `points_added`, `new_balance`, `source`, `reference_id`, `awarded_at` |
+| `reward.redeemed` | Customer redeems reward → coupon created | `customer_id`, `coupon_code`, `reward_name`, `points_spent`, `valid_until` |
+| `coupon.used` | Coupon validated/used at store | `customer_id`, `coupon_code`, `reward_name`, `used_at` |
+| `coupon.expiring` | Coupon expires in 3 days | `customer_id`, `coupon_code`, `reward_name`, `days_remaining`, `expires_at` |
+| `coupon.expired` | Coupon has expired | `customer_id`, `coupon_code`, `reward_name`, `expired_at` |
+
+## Setup
+
+<Steps>
+  <Step title="Configure your webhook URL">
+    Use the webhook management API to set your endpoint:
+
+    ```bash
+    curl -X PUT https://api.zupy.com/api/v2/integrations/webhooks/ \
+      -H "Content-Type: application/json" \
+      -H "X-API-Key: zupy_pk_your_key_here" \
+      -d '{
+        "webhook_url": "https://your-server.com/webhooks/zupy",
+        "webhook_events": ["customer.enrolled", "points.earned", "reward.redeemed", "coupon.used"]
+      }'
+    ```
+
+    The response includes your `webhook_secret` (masked). You'll need this for signature verification.
+  </Step>
+
+  <Step title="Select events to receive">
+    Choose which events trigger notifications. Leave empty to receive all events.
+
+    Available events:
+    - `customer.enrolled`
+    - `points.earned`
+    - `reward.redeemed`
+    - `coupon.used`
+    - `coupon.expiring`
+    - `coupon.expired`
+  </Step>
+
+  <Step title="Test your integration">
+    Send a test ping to verify connectivity:
+
+    ```bash
+    curl -X POST https://api.zupy.com/api/v2/integrations/webhooks/test/ \
+      -H "X-API-Key: zupy_pk_your_key_here"
+    ```
+
+    Response:
+    ```json
+    {
+      "data": {
+        "success": true,
+        "status_code": 200,
+        "error": null
+      },
+      "meta": {}
+    }
+    ```
+  </Step>
+
+  <Step title="Verify signatures">
+    Implement signature verification in your webhook handler (see below).
+  </Step>
+</Steps>
+
+## Payload Format
+
+Every webhook POST contains a JSON payload with this structure:
+
+```json
+{
+  "event": "customer.enrolled",
+  "webhook_id": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2026-03-25T14:30:00.930009+00:00",
+  "data": {
+    "customer_id": "1651c60abc123def456",
+    "program_id": "1651c60abcdef123456",
+    "name": "João Silva",
+    "phone": "+5514981242925",
+    "enrolled_at": "2026-03-25T14:30:00.930009+00:00"
+  }
+}
+```
+
+### Headers
+
+| Header | Description |
+|--------|-------------|
+| `Content-Type` | Always `application/json` |
+| `X-Webhook-Id` | Unique UUID for this delivery (use for idempotency) |
+| `X-Webhook-Signature` | HMAC-SHA256 signature: `sha256=<hex_digest>` |
+| `X-Webhook-Event` | Event type (e.g., `points.earned`) |
+| `User-Agent` | Always `Zupy-Webhook/1.0` |
+
+## Signature Verification
+
+Verify the payload authenticity using HMAC-SHA256. This prevents spoofed requests.
+
+<Note>
+  **Important**: Use the raw request body bytes for verification — not the parsed JSON. The signature is computed over the exact bytes received.
+</Note>
+
+<CodeGroup>
+
+```python Python
+import hmac
+import hashlib
+
+def verify_signature(body: bytes, signature_header: str, secret: str) -> bool:
+    """
+    Verify webhook signature from Zupy.
+    
+    Args:
+        body: Raw request body (bytes)
+        signature_header: Value of X-Webhook-Signature header (e.g., "sha256=abc123...")
+        secret: Your webhook_secret from GET /integrations/webhooks/
+    
+    Returns:
+        True if signature is valid
+    """
+    if not signature_header or not signature_header.startswith("sha256="):
+        return False
+    
+    expected = hmac.new(
+        secret.encode("utf-8"),
+        body,
+        hashlib.sha256
+    ).hexdigest()
+    
+    received = signature_header.replace("sha256=", "")
+    
+    return hmac.compare_digest(expected, received)
+
+
+# Flask example handler
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route("/webhooks/zupy", methods=["POST"])
+def handle_zupy_webhook():
+    body = request.get_data()
+    signature = request.headers.get("X-Webhook-Signature", "")
+    secret = "whsec_your_secret_here"  # From webhook config
+    
+    if not verify_signature(body, signature, secret):
+        return jsonify({"error": "Invalid signature"}), 401
+    
+    event = request.json
+    # Process the event...
+    
+    return jsonify({"status": "ok"}), 200
+```
+
+```javascript JavaScript
+const crypto = require('crypto');
+
+function verifySignature(body, signatureHeader, secret) {
+  if (!signatureHeader || !signatureHeader.startsWith('sha256=')) {
+    return false;
+  }
+  
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(body)
+    .digest('hex');
+  
+  const received = signatureHeader.replace('sha256=', '');
+  
+  // Use timingSafeEqual to prevent timing attacks
+  return crypto.timingSafeEqual(
+    Buffer.from(expected),
+    Buffer.from(received)
+  );
+}
+
+// Express.js example handler
+const express = require('express');
+const app = express();
+
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf; // Keep raw body for signature verification
+  }
+}));
+
+app.post('/webhooks/zupy', (req, res) => {
+  const signature = req.headers['x-webhook-signature'];
+  const secret = 'whsec_your_secret_here'; // From webhook config
+  
+  if (!verifySignature(req.rawBody, signature, secret)) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+  
+  const event = req.body;
+  // Process the event...
+  
+  res.status(200).json({ status: 'ok' });
+});
+
+app.listen(3000);
+```
+
+```bash cURL
+# Verify signature example (bash + openssl)
+# This is for testing - in production use the Python/JS implementations above
+
+# Extract signature and body, then verify
+SIGNATURE="sha256=abc123..."  # From X-Webhook-Signature header
+SECRET="whsec_your_secret"    # Your webhook secret
+BODY='{"event":"customer.enrolled",...}'  # Raw request body
+
+# Compute expected signature
+EXPECTED=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+
+# Compare (simplified - use constant-time comparison in production)
+if [ "$EXPECTED" = "${SIGNATURE#sha256=}" ]; then
+    echo "Signature valid"
+else
+    echo "Signature invalid"
+fi
+```
+
+</CodeGroup>
+
+## Retry Behavior
+
+If your server returns a non-2xx status code or times out, Zupy retries delivery:
+
+| Attempt | Delay | Description |
+|---------|-------|-------------|
+| 1 | Immediate | First delivery attempt |
+| 2 | 1 second | First retry (4^0) |
+| 3 | 4 seconds | Second retry (4^1) |
+| 4 | 16 seconds | Third retry (4^2) |
+
+- **Max delivery attempts**: 4 (1 initial + 3 retries)
+- **Timeout**: 10 seconds per attempt
+- **Backoff**: Exponential base-4 (1s, 4s, 16s)
+- **After exhaustion**: Event is marked as `exhausted` and not retried again
+
+<Warning>
+  Always respond with 2xx within 10 seconds. If you need longer processing, respond immediately and process asynchronously.
+</Warning>
+
+## Idempotency
+
+Use the `X-Webhook-Id` header to handle duplicate deliveries:
+
+```python
+# Example: Deduplicate using X-Webhook-Id
+def handle_webhook(request):
+    webhook_id = request.headers.get("X-Webhook-Id")
+    
+    # Check if already processed
+    if processed_ids.exists(webhook_id):
+        return Response(status=200)  # Already processed
+    
+    # Process the event
+    process_event(request.json)
+    
+    # Store the ID
+    processed_ids.add(webhook_id)
+    
+    return Response(status=200)
+```
+
+<Note>
+  The same event may be delivered multiple times (due to retries). Always check `X-Webhook-Id` before processing.
+</Note>
+
+## Event Payloads
+
+<Accordion title="customer.enrolled">
+
+Triggered when a new customer joins a loyalty program.
+
+```json
+{
+  "event": "customer.enrolled",
+  "webhook_id": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2026-03-25T14:30:00.930009+00:00",
+  "data": {
+    "customer_id": "1651c60abc123def456",
+    "program_id": "1651c60abcdef123456",
+    "name": "João Silva",
+    "phone": "+5514981242925",
+    "enrolled_at": "2026-03-25T14:30:00.930009+00:00"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="points.earned">
+
+Triggered when a customer's points balance increases.
+
+```json
+{
+  "event": "points.earned",
+  "webhook_id": "7a3b9c2d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+  "timestamp": "2026-03-25T14:35:00.123456+00:00",
+  "data": {
+    "customer_id": "1651c60abc123def456",
+    "points_added": 50,
+    "new_balance": 350,
+    "source": "integration:repediu",
+    "reference_id": "repediu:247346204",
+    "awarded_at": "2026-03-25T14:35:00.123456+00:00"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="reward.redeemed">
+
+Triggered when a customer redeems a reward (coupon created).
+
+```json
+{
+  "event": "reward.redeemed",
+  "webhook_id": "d35b1d07-884c-46b7-a502-cd014a31e360",
+  "timestamp": "2026-03-25T15:00:00.456789+00:00",
+  "data": {
+    "customer_id": "1651c60abc123def456",
+    "coupon_code": "REWARD-ABC123XYZ",
+    "reward_id": "1651c60abcdef789012",
+    "reward_name": "Pizza Média Grátis",
+    "points_spent": 200,
+    "valid_until": "2026-04-25T15:00:00.456789+00:00"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="coupon.used">
+
+Triggered when a coupon is validated or used at a store.
+
+```json
+{
+  "event": "coupon.used",
+  "webhook_id": "e46c2e18-995d-57c8-b613-de125b42f471",
+  "timestamp": "2026-03-25T16:00:00.789012+00:00",
+  "data": {
+    "customer_id": "1651c60abc123def456",
+    "coupon_code": "REWARD-ABC123XYZ",
+    "reward_name": "Pizza Média Grátis",
+    "used_at": "2026-03-25T16:00:00.789012+00:00"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="coupon.expiring">
+
+Triggered 3 days before a coupon expires.
+
+```json
+{
+  "event": "coupon.expiring",
+  "webhook_id": "f57d3f29-aa6e-68d9-c724-ef236c53g582",
+  "timestamp": "2026-03-22T08:00:00.345678+00:00",
+  "data": {
+    "customer_id": "1651c60abc123def456",
+    "coupon_code": "REWARD-ABC123XYZ",
+    "reward_name": "Pizza Média Grátis",
+    "days_remaining": 3,
+    "expires_at": "2026-03-25T23:59:59.000000+00:00"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="coupon.expired">
+
+Triggered when a coupon passes its expiration date.
+
+```json
+{
+  "event": "coupon.expired",
+  "webhook_id": "a68e4g3a-bb7f-79ea-d835-fg347d64h693",
+  "timestamp": "2026-03-26T08:00:00.567890+00:00",
+  "data": {
+    "customer_id": "1651c60abc123def456",
+    "coupon_code": "REWARD-ABC123XYZ",
+    "reward_name": "Pizza Média Grátis",
+    "expired_at": "2026-03-25T23:59:59.000000+00:00"
+  }
+}
+```
+
+</Accordion>
+
+## Best Practices
+
+<Accordion title="Best Practices & FAQ">
+
+### Respond quickly
+Always return 2xx within 10 seconds. If you need longer processing, respond immediately and process asynchronously.
+
+### Verify signatures
+Never process a webhook without verifying the signature first. This prevents spoofed requests.
+
+### Use X-Webhook-Id for deduplication
+Store processed webhook IDs and skip duplicates. Retries may send the same event multiple times.
+
+### Return 2xx even for async processing
+As long as you received the webhook, return 2xx. Don't wait for your downstream processing to complete.
+
+### Log failed verifications
+Keep logs of failed signature verifications for debugging security issues.
+
+</Accordion>
+
+## Webhook Management API Reference
+
+### Get Webhook Configuration
+
+```http
+GET /api/v2/integrations/webhooks/
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "webhook_url": "https://your-server.com/webhooks/zupy",
+    "webhook_events": ["customer.enrolled", "points.earned"],
+    "webhook_secret": "****5678",
+    "available_events": [
+      "customer.enrolled",
+      "points.earned",
+      "reward.redeemed",
+      "coupon.used",
+      "coupon.expiring",
+      "coupon.expired"
+    ]
+  },
+  "meta": {}
+}
+```
+
+### Update Webhook Configuration
+
+```http
+PUT /api/v2/integrations/webhooks/
+```
+
+**Request Body:**
+
+```json
+{
+  "webhook_url": "https://your-server.com/webhooks/zupy",
+  "webhook_events": ["customer.enrolled", "points.earned", "reward.redeemed"]
+}
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "webhook_url": "https://your-server.com/webhooks/zupy",
+    "webhook_events": ["customer.enrolled", "points.earned", "reward.redeemed"],
+    "webhook_secret": "****5678",
+    "available_events": [
+      "customer.enrolled",
+      "points.earned",
+      "reward.redeemed",
+      "coupon.used",
+      "coupon.expiring",
+      "coupon.expired"
+    ]
+  },
+  "meta": {}
+}
+```
+
+### Test Webhook Delivery
+
+```http
+POST /api/v2/integrations/webhooks/test/
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "success": true,
+    "status_code": 200,
+    "error": null
+  },
+  "meta": {}
+}
+```

@@ -2064,6 +2064,177 @@
                     }
                 ]
             }
+        },
+        "/api/v2/integrations/webhooks/": {
+            "get": {
+                "operationId": "integrations_webhooks_retrieve",
+                "description": "Retrieve current webhook configuration for the authenticated partner. Returns webhook_url, selected events, masked webhook_secret, and available events.",
+                "summary": "Get webhook configuration",
+                "parameters": [
+                    {
+                        "in": "header",
+                        "name": "X-API-Key",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Per-company API key",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "Webhook Management"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WebhookConfigResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                },
+                "security": [
+                    {
+                        "apiKeyAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "integrations_webhooks_update",
+                "description": "Update webhook configuration for the authenticated partner. If webhook_signature_secret is not set, it will be auto-generated. Pass webhook_url as null/empty string to disable webhooks.",
+                "summary": "Update webhook configuration",
+                "parameters": [
+                    {
+                        "in": "header",
+                        "name": "X-API-Key",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Per-company API key",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "Webhook Management"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WebhookConfigRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WebhookConfigResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                },
+                "security": [
+                    {
+                        "apiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v2/integrations/webhooks/test/": {
+            "post": {
+                "operationId": "integrations_webhooks_test",
+                "description": "Send a test ping event to the configured webhook URL. Returns the delivery status and any error message.",
+                "summary": "Test webhook delivery",
+                "parameters": [
+                    {
+                        "in": "header",
+                        "name": "X-API-Key",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Per-company API key",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "Webhook Management"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WebhookTestResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                },
+                "security": [
+                    {
+                        "apiKeyAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -4060,6 +4231,71 @@
                     "status"
                 ]
             },
+            "WebhookConfigResponse": {
+                "type": "object",
+                "properties": {
+                    "webhook_url": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Partner's webhook endpoint URL"
+                    },
+                    "webhook_events": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of events to receive"
+                    },
+                    "webhook_secret": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Masked webhook signature secret (last 4 chars visible)"
+                    },
+                    "available_events": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of available webhook event types"
+                    }
+                }
+            },
+            "WebhookConfigRequest": {
+                "type": "object",
+                "properties": {
+                    "webhook_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "Partner's webhook endpoint URL"
+                    },
+                    "webhook_events": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of events to receive"
+                    }
+                }
+            },
+            "WebhookTestResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the test webhook was delivered successfully"
+                    },
+                    "status_code": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "HTTP status code from the webhook endpoint"
+                    },
+                    "error": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Error message if delivery failed"
+                    }
+                }
+            },
             "WelcomeRewardTypeEnum": {
                 "enum": [
                     "none",
@@ -4139,6 +4375,10 @@
         {
             "name": "Webhooks",
             "description": "Partner integration webhook endpoints"
+        },
+        {
+            "name": "Webhook Management",
+            "description": "Configure and test outbound webhook delivery"
         }
     ]
 }

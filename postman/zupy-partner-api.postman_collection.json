@@ -1124,6 +1124,139 @@
             ]
         },
         {
+            "name": "Webhook Management",
+            "description": "Configure and test outbound webhook delivery for loyalty events.",
+            "item": [
+                {
+                    "name": "Get Webhook Config",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/integrations/webhooks/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "integrations", "webhooks", ""]
+                        },
+                        "description": "Retrieve current webhook configuration. Returns webhook_url, selected events, masked webhook_secret, and available events."
+                    },
+                    "response": [
+                        {
+                            "name": "Webhook Config",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/integrations/webhooks/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "integrations", "webhooks", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"webhook_url\": \"https://your-server.com/webhooks/zupy\",\n        \"webhook_events\": [\"customer.enrolled\", \"points.earned\"],\n        \"webhook_secret\": \"****5678\",\n        \"available_events\": [\n            \"customer.enrolled\",\n            \"points.earned\",\n            \"reward.redeemed\",\n            \"coupon.used\",\n            \"coupon.expiring\",\n            \"coupon.expired\"\n        ]\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Update Webhook Config",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"webhook_url\": \"https://your-server.com/webhooks/zupy\",\n    \"webhook_events\": [\"customer.enrolled\", \"points.earned\", \"reward.redeemed\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/integrations/webhooks/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "integrations", "webhooks", ""]
+                        },
+                        "description": "Update webhook configuration. If webhook_signature_secret is not set, it will be auto-generated. Pass empty webhook_url to disable webhooks."
+                    },
+                    "response": [
+                        {
+                            "name": "Webhook Config Updated",
+                            "originalRequest": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"webhook_url\": \"https://your-server.com/webhooks/zupy\",\n    \"webhook_events\": [\"customer.enrolled\", \"points.earned\", \"reward.redeemed\"]\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/integrations/webhooks/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "integrations", "webhooks", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"webhook_url\": \"https://your-server.com/webhooks/zupy\",\n        \"webhook_events\": [\"customer.enrolled\", \"points.earned\", \"reward.redeemed\"],\n        \"webhook_secret\": \"****5678\",\n        \"available_events\": [\n            \"customer.enrolled\",\n            \"points.earned\",\n            \"reward.redeemed\",\n            \"coupon.used\",\n            \"coupon.expiring\",\n            \"coupon.expired\"\n        ]\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Test Webhook Delivery",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v2/integrations/webhooks/test/",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "v2", "integrations", "webhooks", "test", ""]
+                        },
+                        "description": "Send a test ping event to the configured webhook URL. Returns delivery status and any error message."
+                    },
+                    "response": [
+                        {
+                            "name": "Test Success",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/integrations/webhooks/test/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "integrations", "webhooks", "test", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"success\": true,\n        \"status_code\": 200,\n        \"error\": null\n    },\n    \"meta\": {}\n}"
+                        },
+                        {
+                            "name": "Test Failed",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/api/v2/integrations/webhooks/test/",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "v2", "integrations", "webhooks", "test", ""]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "body": "{\n    \"data\": {\n        \"success\": false,\n        \"status_code\": 500,\n        \"error\": \"Internal Server Error\"\n    },\n    \"meta\": {}\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "name": "Company",
             "description": "Retrieve company profile and business details.",
             "item": [
