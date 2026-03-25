@@ -55,6 +55,7 @@ GET /api/v2/rewards/?customer_id={id}
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Reward KSUID (use in redeem URL) |
 | `name` | string | Reward display name |
 | `points_required` | integer | Points needed to redeem |
 | `is_available` | boolean | Whether the reward is currently active |
@@ -154,11 +155,14 @@ POST /api/v2/customers/{id}/rewards/{reward_id}/redeem/
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `customer_id` | string | Customer KSUID |
 | `coupon_code` | string | Unique coupon code (format: `CZ-XXXXXXXX`) |
 | `points_used` | integer | Points deducted from balance |
-| `z_tokens_used` | string | Z$ tokens used (if `use_z_tokens: true`) |
+| `z_tokens_used` | string | Z$ tokens used (null if `use_z_tokens: false`) |
 | `new_balance` | integer | Customer's remaining points balance |
+| `new_z_balance` | string | Customer's remaining Z$ balance (null if `use_z_tokens: false`) |
 | `valid_until` | string | ISO 8601 expiration date |
+| `created_at` | string | ISO 8601 coupon creation timestamp |
 
 <CodeGroup>
 ```bash cURL
@@ -205,11 +209,14 @@ console.log(`Valid until: ${coupon.valid_until}`);
 ```json
 {
   "data": {
+    "customer_id": "2awTHloSJX7kGGprFerOOsvABcd",
     "coupon_code": "CZ-A1B2C3D4",
     "points_used": 200,
     "z_tokens_used": "0.000000",
     "new_balance": 350,
-    "valid_until": "2026-04-25T00:00:00Z"
+    "new_z_balance": null,
+    "valid_until": "2026-04-25T00:00:00Z",
+    "created_at": "2026-03-25T14:30:00Z"
   },
   "meta": {}
 }
@@ -223,10 +230,9 @@ console.log(`Valid until: ${coupon.valid_until}`);
 
 | Status | Type | When |
 |--------|------|------|
-| 400 | `validation-error` | Customer doesn't have enough points (and `use_z_tokens` is `false`) |
 | 403 | `otp-required` | OTP verification required but `X-OTP-Session` not provided |
 | 404 | `not-found` | Customer or reward not found |
-| 409 | `conflict` | Reward already redeemed by this customer (single-redemption rewards) |
+| 422 | `validation-error` | Customer doesn't have enough points, or reward already redeemed by this customer |
 
 ## Step 3: List Customer's Coupons
 
@@ -247,6 +253,7 @@ GET /api/v2/rewards/coupons/?customer_id={id}
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `id` | string | Coupon KSUID (use in validate URL) |
 | `coupon_code` | string | Unique coupon code (`CZ-XXXXXXXX`) |
 | `status` | string | `active`, `used`, `expired`, or `cancelled` |
 | `remaining_usages` | integer | How many times the coupon can still be used |
@@ -349,12 +356,13 @@ Send an **empty POST body** (no JSON needed).
 | Field | Type | Description |
 |-------|------|-------------|
 | `coupon_code` | string | The validated coupon code |
-| `status` | string | New status (typically `used` for single-use) |
+| `status` | string | `"validated"` — confirms the coupon was successfully used |
 | `remaining_usages` | integer | Remaining uses after validation |
+| `total_usages_allowed` | integer | Total uses allowed for this coupon |
 | `validated_at` | string | ISO 8601 timestamp of validation |
 
 <Warning>
-  This is an **atomic, idempotent** operation. The backend uses `select_for_update()` to prevent race conditions. Concurrent validate calls on the same coupon are safe — only one will succeed.
+  This is an **atomic** operation. The backend uses `select_for_update()` to prevent race conditions. If two concurrent validate calls hit the same coupon, only one will succeed — the other returns `409 Conflict`.
 </Warning>
 
 <CodeGroup>
@@ -399,8 +407,9 @@ console.log(`Remaining uses: ${result.remaining_usages}`);
 {
   "data": {
     "coupon_code": "CZ-A1B2C3D4",
-    "status": "used",
+    "status": "validated",
     "remaining_usages": 0,
+    "total_usages_allowed": 1,
     "validated_at": "2026-03-25T14:30:00Z"
   },
   "meta": {}

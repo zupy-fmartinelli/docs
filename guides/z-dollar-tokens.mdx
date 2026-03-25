@@ -49,7 +49,7 @@ POST /api/v2/customers/{id}/points/add/   →   Points added
 curl -X POST "https://api.zupy.com/api/v2/customers/2awTHloSJX7kGGprFerOOsvABcd/points/add/" \
   -H "X-API-Key: zupy_pk_your_api_key_here" \
   -H "Content-Type: application/json" \
-  -d '{"points": 50, "description": "Order #12345"}'
+  -d '{"amount": 50, "reason": "Order #12345"}'
 ```
 
 ```python Python
@@ -61,11 +61,11 @@ HEADERS = {"X-API-Key": "zupy_pk_your_api_key_here"}
 # Adding points — Z$ bonus is distributed automatically
 response = requests.post(
     f"{BASE_URL}/customers/2awTHloSJX7kGGprFerOOsvABcd/points/add/",
-    json={"points": 50, "description": "Order #12345"},
+    json={"amount": 50, "reason": "Order #12345"},
     headers=HEADERS,
 )
 result = response.json()["data"]
-print(f"Points added: {result['points_added']}")
+print(f"Points added: {result['amount']}")
 # Z$ distribution happens asynchronously in the background
 ```
 
@@ -79,11 +79,11 @@ const response = await fetch(
   {
     method: "POST",
     headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ points: 50, description: "Order #12345" }),
+    body: JSON.stringify({ amount: 50, reason: "Order #12345" }),
   }
 );
 const { data: result } = await response.json();
-console.log(`Points added: ${result.points_added}`);
+console.log(`Points added: ${result.amount}`);
 // Z$ distribution happens asynchronously in the background
 ```
 </CodeGroup>
@@ -169,7 +169,7 @@ if (balance.error) {
 ```
 
 <Warning>
-  **Graceful degradation**: If the Solana network is slow or unreachable, the endpoint returns HTTP 200 with `"error": "timeout"` and `z_balance` may be `null`. Your integration should handle this gracefully — show a "balance unavailable" message rather than failing.
+  **Graceful degradation**: If the Solana network is slow or unreachable, the endpoint returns HTTP 200 with `"error": "timeout"` or `"error": "unavailable"` and `z_balance` may be `null`. Your integration should handle this gracefully — show a "balance unavailable" message rather than failing.
 </Warning>
 
 ### Cached Balance (Customer Profile)
@@ -201,8 +201,8 @@ The response includes a `zupy_balance` field:
 
 | Method | Endpoint | Freshness | Use When |
 |--------|----------|-----------|----------|
-| Real-time | `GET /customers/{id}/z-balance/` | Live on-chain query | Displaying balance before redemption, showing wallet details |
-| Cached | `GET /customers/{id}/` → `zupy_balance` | May lag a few minutes | Showing balance in a list view, non-critical display |
+| Real-time | `GET /api/v2/customers/{id}/z-balance/` | Live on-chain query | Displaying balance before redemption, showing wallet details |
+| Cached | `GET /api/v2/customers/{id}/` → `zupy_balance` | May lag a few minutes | Showing balance in a list view, non-critical display |
 
 ## Using Z$ in Reward Redemption (Top-Up)
 
@@ -221,9 +221,9 @@ POST /api/v2/customers/{id}/rewards/{reward_id}/redeem/
 ### How Top-Up Works
 
 1. Customer wants a reward that costs **500 points**
-2. Customer only has **300 points**
-3. With `use_z_tokens: true`, Z$ covers the **200-point gap**
-4. A **20% markup** is applied to the Z$ portion (configurable per company)
+2. Customer only has **450 points**
+3. With `use_z_tokens: true`, Z$ covers the **50-point gap** (up to 20% of the reward cost)
+4. A **20% markup** is applied to the Z$ portion
 
 **Response includes additional Z$ fields:**
 
@@ -282,10 +282,10 @@ console.log(`Remaining Z$: ${coupon.new_z_balance}`);
 {
   "data": {
     "coupon_code": "CZ-X9Y8Z7W6",
-    "points_used": 300,
-    "z_tokens_used": "240.000000",
+    "points_used": 450,
+    "z_tokens_used": "60.000000",
     "new_balance": 0,
-    "new_z_balance": "910.000000",
+    "new_z_balance": "1090.000000",
     "valid_until": "2026-04-25T00:00:00Z"
   },
   "meta": {}
@@ -296,15 +296,16 @@ console.log(`Remaining Z$: ${coupon.new_z_balance}`);
 
 In the example above:
 - **Reward cost**: 500 points
-- **Customer has**: 300 points + 1,150 Z$
-- **Points used**: 300 (all available points)
-- **Points gap**: 200 points
-- **Z$ equivalent**: 200 points = 200 Z$
-- **20% markup**: 200 Z$ × 1.20 = **240 Z$**
-- **Z$ used**: 240.000000
-- **Remaining Z$**: 1,150 - 240 = **910.000000**
+- **Customer has**: 450 points + 1,150 Z$
+- **Points used**: 450 (all available points)
+- **Points gap**: 50 points
+- **Z$ cap**: max 20% of reward cost = 100 points coverable by Z$ (50 is within cap)
+- **Z$ equivalent**: 50 points = 50 Z$
+- **20% markup**: 50 Z$ × 1.20 = **60 Z$**
+- **Z$ used**: 60.000000
+- **Remaining Z$**: 1,150 - 60 = **1,090.000000**
 
-The markup percentage is configured by Zupy ops per company and is not visible to partners via the API.
+The Z$ top-up can cover at most **20% of the reward's point cost**. If the points gap exceeds this limit, the redemption will fail with a `422` error. The markup percentage is configured globally by Zupy and is not visible to partners via the API.
 
 </Accordion>
 
