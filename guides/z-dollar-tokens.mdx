@@ -1,0 +1,349 @@
+---
+title: "Z$ Tokens"
+description: "Understand how Z$ (Zupy Dollar) blockchain tokens work — earning, checking balance, and using them in reward redemptions"
+---
+
+Z$ (Zupy Dollar) is a blockchain-backed loyalty token on the Solana network. Customers earn Z$ automatically when they accumulate points, and can use Z$ to "top up" reward redemptions when they don't have enough points.
+
+<Note>
+  **Prerequisites**: Your API key (`zupy_pk_*`) and familiarity with the [Authentication](/authentication) page. Z$ distribution is automatic — partners do NOT need to call a separate endpoint to award Z$.
+</Note>
+
+## What Are Z$ Tokens?
+
+| Property | Detail |
+|----------|--------|
+| **Full name** | Zupy Dollar (Z$) |
+| **Blockchain** | Solana mainnet |
+| **Token type** | Compressed SPL token (Merkle tree) |
+| **Precision** | 6 decimal places |
+| **Earning** | Automatic — triggered when points are added |
+| **Usage** | Top up reward redemptions when points are insufficient |
+| **Transferability** | Not transferable between customers via API |
+
+Each customer has a Z$ wallet (compressed token account on Solana). The wallet is created automatically on the customer's first Z$ distribution — no setup needed from partners.
+
+## How Customers Earn Z$
+
+Z$ tokens are distributed **automatically** when a partner adds points to a customer. There is no separate endpoint to call.
+
+```
+POST /api/v2/customers/{id}/points/add/   →   Points added
+                                           →   Z$ bonus distributed (async)
+```
+
+<Tip>
+  Partners do NOT need to call a separate endpoint to award Z$. When you call `POST /api/v2/customers/{id}/points/add/`, the Z$ bonus is distributed automatically as a background task.
+</Tip>
+
+### Key Details
+
+- **Automatic**: Z$ distribution is a side effect of points addition
+- **Async**: Distribution happens via a background worker (Celery task) — not instant
+- **Configured by Zupy**: The Z$ bonus amount per points addition is configured by Zupy ops per company, not by partners
+- **Wallet creation**: If the customer doesn't have a wallet yet, one is created on first distribution
+
+<CodeGroup>
+```bash cURL
+# Adding points also triggers Z$ distribution automatically
+curl -X POST "https://api.zupy.com/api/v2/customers/2awTHloSJX7kGGprFerOOsvABcd/points/add/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"points": 50, "description": "Order #12345"}'
+```
+
+```python Python
+import requests
+
+BASE_URL = "https://api.zupy.com/api/v2"
+HEADERS = {"X-API-Key": "zupy_pk_your_api_key_here"}
+
+# Adding points — Z$ bonus is distributed automatically
+response = requests.post(
+    f"{BASE_URL}/customers/2awTHloSJX7kGGprFerOOsvABcd/points/add/",
+    json={"points": 50, "description": "Order #12345"},
+    headers=HEADERS,
+)
+result = response.json()["data"]
+print(f"Points added: {result['points_added']}")
+# Z$ distribution happens asynchronously in the background
+```
+
+```javascript JavaScript
+const BASE_URL = "https://api.zupy.com/api/v2";
+const API_KEY = "zupy_pk_your_api_key_here";
+
+// Adding points — Z$ bonus is distributed automatically
+const response = await fetch(
+  `${BASE_URL}/customers/2awTHloSJX7kGGprFerOOsvABcd/points/add/`,
+  {
+    method: "POST",
+    headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ points: 50, description: "Order #12345" }),
+  }
+);
+const { data: result } = await response.json();
+console.log(`Points added: ${result.points_added}`);
+// Z$ distribution happens asynchronously in the background
+```
+</CodeGroup>
+
+## Checking Z$ Balance
+
+### Real-Time On-Chain Balance
+
+Query the customer's real-time Z$ balance directly from the Solana blockchain:
+
+```
+GET /api/v2/customers/{id}/z-balance/
+```
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `z_balance` | string | Z$ balance with 6 decimal places (e.g., `"150.000000"`) |
+| `wallet_address` | string | Solana wallet address (compressed token account) |
+| `has_wallet` | boolean | Whether the customer has a Z$ wallet |
+| `error` | string \| null | Error message if Solana query failed (e.g., `"timeout"`) |
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.zupy.com/api/v2/customers/2awTHloSJX7kGGprFerOOsvABcd/z-balance/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here"
+```
+
+```python Python
+customer_id = "2awTHloSJX7kGGprFerOOsvABcd"
+
+response = requests.get(
+    f"{BASE_URL}/customers/{customer_id}/z-balance/",
+    headers=HEADERS,
+)
+balance = response.json()["data"]
+
+if balance["has_wallet"]:
+    print(f"Z$ Balance: {balance['z_balance']}")
+    print(f"Wallet: {balance['wallet_address']}")
+else:
+    print("Customer has no Z$ wallet yet")
+
+if balance.get("error"):
+    print(f"Warning: {balance['error']}")
+```
+
+```javascript JavaScript
+const customerId = "2awTHloSJX7kGGprFerOOsvABcd";
+
+const response = await fetch(
+  `${BASE_URL}/customers/${customerId}/z-balance/`,
+  { headers: { "X-API-Key": API_KEY } }
+);
+const { data: balance } = await response.json();
+
+if (balance.has_wallet) {
+  console.log(`Z$ Balance: ${balance.z_balance}`);
+  console.log(`Wallet: ${balance.wallet_address}`);
+} else {
+  console.log("Customer has no Z$ wallet yet");
+}
+
+if (balance.error) {
+  console.warn(`Warning: ${balance.error}`);
+}
+```
+</CodeGroup>
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "z_balance": "150.000000",
+    "wallet_address": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+    "has_wallet": true,
+    "error": null
+  },
+  "meta": {}
+}
+```
+
+<Warning>
+  **Graceful degradation**: If the Solana network is slow or unreachable, the endpoint returns HTTP 200 with `"error": "timeout"` and `z_balance` may be `null`. Your integration should handle this gracefully — show a "balance unavailable" message rather than failing.
+</Warning>
+
+### Cached Balance (Customer Profile)
+
+The customer profile also includes a cached Z$ balance:
+
+```
+GET /api/v2/customers/{id}/
+```
+
+The response includes a `zupy_balance` field:
+
+```json
+{
+  "data": {
+    "id": "2awTHloSJX7kGGprFerOOsvABcd",
+    "full_name": "Maria Santos",
+    "points_balance": 350,
+    "zupy_balance": "150.000000",
+    ...
+  },
+  "meta": {}
+}
+```
+
+<Note>
+  `zupy_balance` in the customer profile is a **cached off-chain value**. It may lag behind the actual on-chain balance by a few minutes. For real-time balance, use the `/z-balance/` endpoint.
+</Note>
+
+| Method | Endpoint | Freshness | Use When |
+|--------|----------|-----------|----------|
+| Real-time | `GET /customers/{id}/z-balance/` | Live on-chain query | Displaying balance before redemption, showing wallet details |
+| Cached | `GET /customers/{id}/` → `zupy_balance` | May lag a few minutes | Showing balance in a list view, non-critical display |
+
+## Using Z$ in Reward Redemption (Top-Up)
+
+When a customer doesn't have enough points for a reward, Z$ tokens can cover the gap. This is called a **top-up**.
+
+```
+POST /api/v2/customers/{id}/rewards/{reward_id}/redeem/
+```
+
+**Request body:**
+
+```json
+{ "use_z_tokens": true }
+```
+
+### How Top-Up Works
+
+1. Customer wants a reward that costs **500 points**
+2. Customer only has **300 points**
+3. With `use_z_tokens: true`, Z$ covers the **200-point gap**
+4. A **20% markup** is applied to the Z$ portion (configurable per company)
+
+**Response includes additional Z$ fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `z_tokens_used` | string | Z$ tokens spent on this redemption |
+| `new_z_balance` | string | Customer's remaining Z$ balance after redemption |
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/api/v2/customers/2awTHloSJX7kGGprFerOOsvABcd/rewards/2bxRKmpWJY8lHHqsGfsQQtwCDef/redeem/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"use_z_tokens": true}'
+```
+
+```python Python
+customer_id = "2awTHloSJX7kGGprFerOOsvABcd"
+reward_id = "2bxRKmpWJY8lHHqsGfsQQtwCDef"
+
+response = requests.post(
+    f"{BASE_URL}/customers/{customer_id}/rewards/{reward_id}/redeem/",
+    json={"use_z_tokens": True},
+    headers=HEADERS,
+)
+coupon = response.json()["data"]
+print(f"Coupon: {coupon['coupon_code']}")
+print(f"Points used: {coupon['points_used']}")
+print(f"Z$ used: {coupon['z_tokens_used']}")
+print(f"Remaining Z$: {coupon['new_z_balance']}")
+```
+
+```javascript JavaScript
+const customerId = "2awTHloSJX7kGGprFerOOsvABcd";
+const rewardId = "2bxRKmpWJY8lHHqsGfsQQtwCDef";
+
+const response = await fetch(
+  `${BASE_URL}/customers/${customerId}/rewards/${rewardId}/redeem/`,
+  {
+    method: "POST",
+    headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ use_z_tokens: true }),
+  }
+);
+const { data: coupon } = await response.json();
+console.log(`Coupon: ${coupon.coupon_code}`);
+console.log(`Points used: ${coupon.points_used}`);
+console.log(`Z$ used: ${coupon.z_tokens_used}`);
+console.log(`Remaining Z$: ${coupon.new_z_balance}`);
+```
+</CodeGroup>
+
+**Example response (top-up scenario):**
+
+```json
+{
+  "data": {
+    "coupon_code": "CZ-X9Y8Z7W6",
+    "points_used": 300,
+    "z_tokens_used": "240.000000",
+    "new_balance": 0,
+    "new_z_balance": "910.000000",
+    "valid_until": "2026-04-25T00:00:00Z"
+  },
+  "meta": {}
+}
+```
+
+<Accordion title="Top-up calculation breakdown">
+
+In the example above:
+- **Reward cost**: 500 points
+- **Customer has**: 300 points + 1,150 Z$
+- **Points used**: 300 (all available points)
+- **Points gap**: 200 points
+- **Z$ equivalent**: 200 points = 200 Z$
+- **20% markup**: 200 Z$ × 1.20 = **240 Z$**
+- **Z$ used**: 240.000000
+- **Remaining Z$**: 1,150 - 240 = **910.000000**
+
+The markup percentage is configured by Zupy ops per company and is not visible to partners via the API.
+
+</Accordion>
+
+## Important Notes & FAQ
+
+<Accordion title="Can Z$ be transferred between customers?">
+No. Z$ tokens cannot be transferred between customers via the API. Each customer's Z$ balance is tied to their individual compressed token account on Solana.
+</Accordion>
+
+<Accordion title="Can partners configure the Z$ bonus amount?">
+No. The Z$ distribution amount per points addition is configured by Zupy ops, not by partners. Contact Zupy support if you need to discuss bonus amounts for your company.
+</Accordion>
+
+<Accordion title="Are Z$ real blockchain tokens?">
+Yes. Z$ tokens exist on Solana mainnet as compressed SPL tokens stored in a Merkle tree. They are real blockchain assets, not just database entries. The `/z-balance/` endpoint queries the Solana blockchain in real time.
+</Accordion>
+
+<Accordion title="What if the customer has no wallet?">
+If a customer has never received Z$ tokens, `has_wallet` will be `false` in the `/z-balance/` response. A wallet is automatically created when the customer first receives Z$ (triggered by a points addition). No action is needed from the partner.
+</Accordion>
+
+<Accordion title="What if the Solana network is slow?">
+The `/z-balance/` endpoint has a timeout. If Solana is slow or unreachable, the response returns HTTP 200 with `"error": "timeout"` and the balance may be unavailable. Use the cached `zupy_balance` from the customer profile as a fallback.
+</Accordion>
+
+<Accordion title="Does the customer need to know about blockchain?">
+No. Z$ is designed to be transparent to customers. They see a "Z$ balance" in their loyalty interface — the blockchain implementation is an internal detail. Partners should present Z$ as a supplementary loyalty currency, not a crypto token.
+</Accordion>
+
+## Next Steps
+
+<Card title="Coupon Lifecycle" icon="ticket" href="/guides/coupon-lifecycle">
+  Learn the complete coupon flow from reward browsing to validation
+</Card>
+
+<Card title="OTP Flow" icon="lock" href="/guides/otp-flow">
+  Set up customer identity verification for sensitive operations
+</Card>
+
+<Card title="API Reference" icon="code" href="/api-reference">
+  Browse all endpoints with request/response schemas
+</Card>

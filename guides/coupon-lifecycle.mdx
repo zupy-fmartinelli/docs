@@ -1,0 +1,577 @@
+---
+title: "Coupon Lifecycle"
+description: "Browse rewards, redeem coupons, list customer coupons, and validate (use) coupons via the Zupy API"
+---
+
+Coupons are the core reward delivery mechanism in Zupy. When a customer redeems a reward, a coupon is created with a unique code (`CZ-XXXXXXXX`). The partner can then list, display, and validate (use) that coupon at the point of sale.
+
+<Note>
+  **Prerequisites**: Your API key (`zupy_pk_*`) and familiarity with the [Authentication](/authentication) page. If your integration requires OTP for redemption or coupon usage, see the [OTP Flow](/guides/otp-flow) guide first.
+</Note>
+
+## Coupon Lifecycle Overview
+
+Every coupon follows this flow:
+
+```
+Browse Rewards → Redeem Reward → Coupon Created (CZ-XXXXXXXX)
+                                       ↓
+                  List Customer Coupons (active/used/expired)
+                                       ↓
+                  Validate Coupon (atomically mark as used)
+```
+
+<Steps>
+  <Step title="Browse Available Rewards">
+    Query the reward catalog to see what the customer can redeem.
+  </Step>
+  <Step title="Redeem Reward">
+    Create a coupon by redeeming a reward for a specific customer.
+  </Step>
+  <Step title="List Coupons">
+    View the customer's coupons, filtered by status.
+  </Step>
+  <Step title="Validate (Use) Coupon">
+    Atomically mark the coupon as used at the point of sale.
+  </Step>
+</Steps>
+
+## Step 1: Browse Available Rewards
+
+Query the reward catalog to see what rewards are available for a customer. The `customer_id` parameter enriches each reward with the customer's redemption status.
+
+```
+GET /api/v2/rewards/?customer_id={id}
+```
+
+**Key query parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `customer_id` | string | Customer KSUID — enriches response with `already_redeemed` flag |
+| `redeemable` | boolean | If `true`, only returns rewards the customer can currently afford |
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Reward display name |
+| `points_required` | integer | Points needed to redeem |
+| `is_available` | boolean | Whether the reward is currently active |
+| `already_redeemed` | boolean | Whether this customer already redeemed this reward |
+| `validity_days` | integer | Days the coupon remains valid after redemption |
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.zupy.com/api/v2/rewards/?customer_id=2awTHloSJX7kGGprFerOOsvABcd" \
+  -H "X-API-Key: zupy_pk_your_api_key_here"
+```
+
+```python Python
+import requests
+
+BASE_URL = "https://api.zupy.com/api/v2"
+HEADERS = {"X-API-Key": "zupy_pk_your_api_key_here"}
+
+# All rewards with customer context
+response = requests.get(
+    f"{BASE_URL}/rewards/",
+    params={"customer_id": "2awTHloSJX7kGGprFerOOsvABcd"},
+    headers=HEADERS,
+)
+rewards = response.json()["data"]
+
+# Only rewards the customer can afford
+response = requests.get(
+    f"{BASE_URL}/rewards/",
+    params={"customer_id": "2awTHloSJX7kGGprFerOOsvABcd", "redeemable": True},
+    headers=HEADERS,
+)
+affordable_rewards = response.json()["data"]
+```
+
+```javascript JavaScript
+const BASE_URL = "https://api.zupy.com/api/v2";
+const API_KEY = "zupy_pk_your_api_key_here";
+
+// All rewards with customer context
+let response = await fetch(
+  `${BASE_URL}/rewards/?customer_id=2awTHloSJX7kGGprFerOOsvABcd`,
+  { headers: { "X-API-Key": API_KEY } }
+);
+const { data: rewards } = await response.json();
+
+// Only rewards the customer can afford
+response = await fetch(
+  `${BASE_URL}/rewards/?customer_id=2awTHloSJX7kGGprFerOOsvABcd&redeemable=true`,
+  { headers: { "X-API-Key": API_KEY } }
+);
+const { data: affordableRewards } = await response.json();
+```
+</CodeGroup>
+
+**Example response:**
+
+```json
+{
+  "data": [
+    {
+      "id": "2bxRKmpWJY8lHHqsGfsQQtwCDef",
+      "name": "Free Dessert",
+      "points_required": 200,
+      "is_available": true,
+      "already_redeemed": false,
+      "validity_days": 30
+    },
+    {
+      "id": "2bxRKnqXKZ9mIIrtHgtRRuxEFgh",
+      "name": "10% Off Next Order",
+      "points_required": 500,
+      "is_available": true,
+      "already_redeemed": true,
+      "validity_days": 15
+    }
+  ],
+  "meta": {}
+}
+```
+
+## Step 2: Redeem Reward (Create Coupon)
+
+Redeem a reward for a customer. This creates a coupon with a unique code and deducts points from the customer's balance.
+
+```
+POST /api/v2/customers/{id}/rewards/{reward_id}/redeem/
+```
+
+**Request body:**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `use_z_tokens` | boolean | `false` | If `true`, Z$ tokens cover any points gap. See [Z$ Tokens guide](/guides/z-dollar-tokens) |
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `coupon_code` | string | Unique coupon code (format: `CZ-XXXXXXXX`) |
+| `points_used` | integer | Points deducted from balance |
+| `z_tokens_used` | string | Z$ tokens used (if `use_z_tokens: true`) |
+| `new_balance` | integer | Customer's remaining points balance |
+| `valid_until` | string | ISO 8601 expiration date |
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/api/v2/customers/2awTHloSJX7kGGprFerOOsvABcd/rewards/2bxRKmpWJY8lHHqsGfsQQtwCDef/redeem/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"use_z_tokens": false}'
+```
+
+```python Python
+customer_id = "2awTHloSJX7kGGprFerOOsvABcd"
+reward_id = "2bxRKmpWJY8lHHqsGfsQQtwCDef"
+
+response = requests.post(
+    f"{BASE_URL}/customers/{customer_id}/rewards/{reward_id}/redeem/",
+    json={"use_z_tokens": False},
+    headers=HEADERS,
+)
+coupon = response.json()["data"]
+print(f"Coupon code: {coupon['coupon_code']}")
+print(f"Valid until: {coupon['valid_until']}")
+```
+
+```javascript JavaScript
+const customerId = "2awTHloSJX7kGGprFerOOsvABcd";
+const rewardId = "2bxRKmpWJY8lHHqsGfsQQtwCDef";
+
+const response = await fetch(
+  `${BASE_URL}/customers/${customerId}/rewards/${rewardId}/redeem/`,
+  {
+    method: "POST",
+    headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ use_z_tokens: false }),
+  }
+);
+const { data: coupon } = await response.json();
+console.log(`Coupon code: ${coupon.coupon_code}`);
+console.log(`Valid until: ${coupon.valid_until}`);
+```
+</CodeGroup>
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "coupon_code": "CZ-A1B2C3D4",
+    "points_used": 200,
+    "z_tokens_used": "0.000000",
+    "new_balance": 350,
+    "valid_until": "2026-04-25T00:00:00Z"
+  },
+  "meta": {}
+}
+```
+
+<Tip>
+  If your integration's OTP policy requires verification for redemption, include the `X-OTP-Session` header. See the [OTP Flow](/guides/otp-flow) guide.
+</Tip>
+
+### Redemption Errors
+
+| Status | Type | When |
+|--------|------|------|
+| 400 | `validation-error` | Customer doesn't have enough points (and `use_z_tokens` is `false`) |
+| 403 | `otp-required` | OTP verification required but `X-OTP-Session` not provided |
+| 404 | `not-found` | Customer or reward not found |
+| 409 | `conflict` | Reward already redeemed by this customer (single-redemption rewards) |
+
+## Step 3: List Customer's Coupons
+
+Retrieve all coupons for a customer, optionally filtered by status.
+
+```
+GET /api/v2/rewards/coupons/?customer_id={id}
+```
+
+**Key query parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `customer_id` | string | **Required.** Customer KSUID |
+| `status` | string | Filter by status: `active`, `used`, `expired`, `cancelled` |
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `coupon_code` | string | Unique coupon code (`CZ-XXXXXXXX`) |
+| `status` | string | `active`, `used`, `expired`, or `cancelled` |
+| `remaining_usages` | integer | How many times the coupon can still be used |
+| `total_usages_allowed` | integer | Total uses allowed (1 for single-use coupons) |
+| `valid_until` | string | ISO 8601 expiration date |
+| `reward_name` | string | Name of the redeemed reward |
+
+<CodeGroup>
+```bash cURL
+# All coupons for a customer
+curl -X GET "https://api.zupy.com/api/v2/rewards/coupons/?customer_id=2awTHloSJX7kGGprFerOOsvABcd" \
+  -H "X-API-Key: zupy_pk_your_api_key_here"
+
+# Only active coupons
+curl -X GET "https://api.zupy.com/api/v2/rewards/coupons/?customer_id=2awTHloSJX7kGGprFerOOsvABcd&status=active" \
+  -H "X-API-Key: zupy_pk_your_api_key_here"
+```
+
+```python Python
+customer_id = "2awTHloSJX7kGGprFerOOsvABcd"
+
+# All coupons
+response = requests.get(
+    f"{BASE_URL}/rewards/coupons/",
+    params={"customer_id": customer_id},
+    headers=HEADERS,
+)
+all_coupons = response.json()["data"]
+
+# Only active coupons
+response = requests.get(
+    f"{BASE_URL}/rewards/coupons/",
+    params={"customer_id": customer_id, "status": "active"},
+    headers=HEADERS,
+)
+active_coupons = response.json()["data"]
+print(f"{len(active_coupons)} active coupons")
+```
+
+```javascript JavaScript
+const customerId = "2awTHloSJX7kGGprFerOOsvABcd";
+
+// All coupons
+let response = await fetch(
+  `${BASE_URL}/rewards/coupons/?customer_id=${customerId}`,
+  { headers: { "X-API-Key": API_KEY } }
+);
+const { data: allCoupons } = await response.json();
+
+// Only active coupons
+response = await fetch(
+  `${BASE_URL}/rewards/coupons/?customer_id=${customerId}&status=active`,
+  { headers: { "X-API-Key": API_KEY } }
+);
+const { data: activeCoupons } = await response.json();
+console.log(`${activeCoupons.length} active coupons`);
+```
+</CodeGroup>
+
+**Example response:**
+
+```json
+{
+  "data": [
+    {
+      "id": "2cxSLnqYLZ0nJJsuIhuSSvyFGij",
+      "coupon_code": "CZ-A1B2C3D4",
+      "status": "active",
+      "remaining_usages": 1,
+      "total_usages_allowed": 1,
+      "valid_until": "2026-04-25T00:00:00Z",
+      "reward_name": "Free Dessert"
+    },
+    {
+      "id": "2cxSLoRZMA1oKKtvJivTTwzGHjk",
+      "coupon_code": "CZ-E5F6G7H8",
+      "status": "used",
+      "remaining_usages": 0,
+      "total_usages_allowed": 1,
+      "valid_until": "2026-04-20T00:00:00Z",
+      "reward_name": "10% Off Next Order"
+    }
+  ],
+  "meta": {}
+}
+```
+
+## Step 4: Validate (Use) Coupon
+
+Validate a coupon to mark it as used. This is an **atomic operation** — concurrent validate calls are race-safe (uses database-level locking).
+
+```
+POST /api/v2/customers/{id}/coupons/{coupon_id}/validate/
+```
+
+Send an **empty POST body** (no JSON needed).
+
+**Response fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `coupon_code` | string | The validated coupon code |
+| `status` | string | New status (typically `used` for single-use) |
+| `remaining_usages` | integer | Remaining uses after validation |
+| `validated_at` | string | ISO 8601 timestamp of validation |
+
+<Warning>
+  This is an **atomic, idempotent** operation. The backend uses `select_for_update()` to prevent race conditions. Concurrent validate calls on the same coupon are safe — only one will succeed.
+</Warning>
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/api/v2/customers/2awTHloSJX7kGGprFerOOsvABcd/coupons/2cxSLnqYLZ0nJJsuIhuSSvyFGij/validate/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here"
+```
+
+```python Python
+customer_id = "2awTHloSJX7kGGprFerOOsvABcd"
+coupon_id = "2cxSLnqYLZ0nJJsuIhuSSvyFGij"
+
+response = requests.post(
+    f"{BASE_URL}/customers/{customer_id}/coupons/{coupon_id}/validate/",
+    headers=HEADERS,
+)
+result = response.json()["data"]
+print(f"Coupon {result['coupon_code']} validated at {result['validated_at']}")
+print(f"Remaining uses: {result['remaining_usages']}")
+```
+
+```javascript JavaScript
+const customerId = "2awTHloSJX7kGGprFerOOsvABcd";
+const couponId = "2cxSLnqYLZ0nJJsuIhuSSvyFGij";
+
+const response = await fetch(
+  `${BASE_URL}/customers/${customerId}/coupons/${couponId}/validate/`,
+  {
+    method: "POST",
+    headers: { "X-API-Key": API_KEY },
+  }
+);
+const { data: result } = await response.json();
+console.log(`Coupon ${result.coupon_code} validated at ${result.validated_at}`);
+console.log(`Remaining uses: ${result.remaining_usages}`);
+```
+</CodeGroup>
+
+**Example response:**
+
+```json
+{
+  "data": {
+    "coupon_code": "CZ-A1B2C3D4",
+    "status": "used",
+    "remaining_usages": 0,
+    "validated_at": "2026-03-25T14:30:00Z"
+  },
+  "meta": {}
+}
+```
+
+<Tip>
+  If your integration's OTP policy requires verification for coupon usage, include the `X-OTP-Session` header. See the [OTP Flow](/guides/otp-flow) guide.
+</Tip>
+
+### Validation Errors
+
+| Status | Type | When |
+|--------|------|------|
+| 403 | `otp-required` | OTP verification required but `X-OTP-Session` not provided |
+| 404 | `not-found` | Coupon not found or doesn't belong to this customer |
+| 409 | `conflict` | Coupon already fully used or expired |
+
+## Multi-Use Coupons
+
+Some rewards create coupons that can be used more than once. The `remaining_usages` and `total_usages_allowed` fields track usage:
+
+| Coupon Type | `total_usages_allowed` | Behavior |
+|-------------|----------------------|----------|
+| **Single-use** | 1 | After one validate call, `remaining_usages` becomes `0` and status becomes `used` |
+| **Multi-use** | 2+ | Each validate call decrements `remaining_usages`. Status stays `active` until the last use, then becomes `used` |
+
+<Accordion title="Multi-use coupon example">
+
+A "3x Free Coffee" reward creates a coupon with `total_usages_allowed: 3`:
+
+```json
+// After redemption
+{ "remaining_usages": 3, "total_usages_allowed": 3, "status": "active" }
+
+// After 1st validate
+{ "remaining_usages": 2, "total_usages_allowed": 3, "status": "active" }
+
+// After 2nd validate
+{ "remaining_usages": 1, "total_usages_allowed": 3, "status": "active" }
+
+// After 3rd validate (final use)
+{ "remaining_usages": 0, "total_usages_allowed": 3, "status": "used" }
+```
+
+</Accordion>
+
+## Coupon Expiration
+
+Coupons have a `valid_until` date set at redemption time, calculated as:
+
+```
+valid_until = redemption_time + reward.validity_days
+```
+
+- **Auto-expires**: a validate call on an expired coupon returns `409 Conflict`
+- **Check before displaying**: partners should compare `valid_until` with the current time before showing a coupon to the customer
+- **Expired status**: coupons past their `valid_until` date will show `status: "expired"` in list responses
+
+<Note>
+  Expired coupons cannot be reactivated. The customer must redeem the reward again to get a new coupon (if the reward allows re-redemption).
+</Note>
+
+## Full Example: Complete Coupon Flow
+
+End-to-end flow: browse rewards, redeem, list coupons, and validate.
+
+<CodeGroup>
+```python Python
+import requests
+
+BASE_URL = "https://api.zupy.com/api/v2"
+HEADERS = {"X-API-Key": "zupy_pk_your_api_key_here"}
+customer_id = "2awTHloSJX7kGGprFerOOsvABcd"
+
+# Step 1: Browse rewards the customer can afford
+response = requests.get(
+    f"{BASE_URL}/rewards/",
+    params={"customer_id": customer_id, "redeemable": True},
+    headers=HEADERS,
+)
+rewards = response.json()["data"]
+print(f"Found {len(rewards)} redeemable rewards")
+
+# Step 2: Redeem the first available reward
+reward_id = rewards[0]["id"]
+response = requests.post(
+    f"{BASE_URL}/customers/{customer_id}/rewards/{reward_id}/redeem/",
+    json={"use_z_tokens": False},
+    headers=HEADERS,
+)
+coupon = response.json()["data"]
+print(f"Coupon created: {coupon['coupon_code']}, valid until {coupon['valid_until']}")
+
+# Step 3: List active coupons
+response = requests.get(
+    f"{BASE_URL}/rewards/coupons/",
+    params={"customer_id": customer_id, "status": "active"},
+    headers=HEADERS,
+)
+active_coupons = response.json()["data"]
+print(f"{len(active_coupons)} active coupons")
+
+# Step 4: Validate the coupon at the point of sale
+coupon_id = active_coupons[0]["id"]
+response = requests.post(
+    f"{BASE_URL}/customers/{customer_id}/coupons/{coupon_id}/validate/",
+    headers=HEADERS,
+)
+result = response.json()["data"]
+print(f"Coupon {result['coupon_code']} used at {result['validated_at']}")
+```
+
+```javascript JavaScript
+const BASE_URL = "https://api.zupy.com/api/v2";
+const API_KEY = "zupy_pk_your_api_key_here";
+const customerId = "2awTHloSJX7kGGprFerOOsvABcd";
+
+// Step 1: Browse rewards the customer can afford
+let response = await fetch(
+  `${BASE_URL}/rewards/?customer_id=${customerId}&redeemable=true`,
+  { headers: { "X-API-Key": API_KEY } }
+);
+const { data: rewards } = await response.json();
+console.log(`Found ${rewards.length} redeemable rewards`);
+
+// Step 2: Redeem the first available reward
+const rewardId = rewards[0].id;
+response = await fetch(
+  `${BASE_URL}/customers/${customerId}/rewards/${rewardId}/redeem/`,
+  {
+    method: "POST",
+    headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ use_z_tokens: false }),
+  }
+);
+const { data: coupon } = await response.json();
+console.log(`Coupon created: ${coupon.coupon_code}, valid until ${coupon.valid_until}`);
+
+// Step 3: List active coupons
+response = await fetch(
+  `${BASE_URL}/rewards/coupons/?customer_id=${customerId}&status=active`,
+  { headers: { "X-API-Key": API_KEY } }
+);
+const { data: activeCoupons } = await response.json();
+console.log(`${activeCoupons.length} active coupons`);
+
+// Step 4: Validate the coupon at the point of sale
+const couponId = activeCoupons[0].id;
+response = await fetch(
+  `${BASE_URL}/customers/${customerId}/coupons/${couponId}/validate/`,
+  {
+    method: "POST",
+    headers: { "X-API-Key": API_KEY },
+  }
+);
+const { data: result } = await response.json();
+console.log(`Coupon ${result.coupon_code} used at ${result.validated_at}`);
+```
+</CodeGroup>
+
+## Next Steps
+
+<Card title="Z$ Tokens" icon="coins" href="/guides/z-dollar-tokens">
+  Learn how Z$ tokens work and how they can cover points gaps in reward redemption
+</Card>
+
+<Card title="OTP Flow" icon="lock" href="/guides/otp-flow">
+  Set up customer identity verification for sensitive operations
+</Card>
+
+<Card title="API Reference" icon="code" href="/api-reference">
+  Browse all endpoints with request/response schemas
+</Card>
