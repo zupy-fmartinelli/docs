@@ -92,6 +92,24 @@ API keys have two access levels, configured by Zupy during onboarding:
 
 If you attempt a write operation with a read-only key, you receive a `403 Forbidden` error.
 
+## Endpoint allowlist
+
+Your partner API key can only reach the endpoints documented in this reference — the
+partner contract. Any other v2 endpoint (consumer, scanner, or internal endpoints) returns
+`403 Forbidden` for a partner key, even though the same path may exist for the dashboard or
+mobile apps. This is a deliberate, fail-secure default: the partner surface equals exactly
+what is documented here, and new internal endpoints are never exposed to partner keys by
+accident.
+
+```json 403 — Endpoint not available to partner keys
+{
+  "type": "https://api.zupy.com/errors/permission-denied",
+  "title": "Permission Denied",
+  "status": 403,
+  "detail": "This endpoint is not available to partner API keys."
+}
+```
+
 ## Error Handling
 
 All authentication errors follow the [RFC 7807](https://tools.ietf.org/html/rfc7807) Problem Details format.
