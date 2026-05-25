@@ -4441,11 +4441,15 @@
     },
     {
       "name": "Rewards",
-      "description": "Rewards catalog and coupon management"
+      "description": "Loyalty reward catalog (definitions redeemed with points)"
     },
     {
       "name": "Companies",
       "description": "Company information and loyalty configuration"
+    },
+    {
+      "name": "Coupons",
+      "description": "Issued coupons (RewardRedemption) — both loyalty-reward redemptions and marketing claims"
     },
     {
       "name": "Wallet",
