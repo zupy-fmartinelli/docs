@@ -188,6 +188,43 @@
       "description": "Customer search, profile retrieval, points management, and transaction history.",
       "item": [
         {
+          "name": "List Customers (all, simplified)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var data = pm.response.json().data;",
+                  "    if (data && data.length > 0) {",
+                  "        pm.environment.set(\"customer_id\", data[0].id);",
+                  "        console.log(\"Auto-set customer_id: \" + data[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/customers/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "customers",
+                ""
+              ]
+            },
+            "description": "List all loyalty users (cursor-paginated). Returns the SIMPLIFIED summary: id, full_name, avatar_url, email, is_email_verified, phone, card_number, points_balance, zupy_balance, tier, rfm_segment, join_date, last_activity_date, is_active. The FULL profile (cpf, birth_date, points_earned/spent, timestamps...) is on GET /customers/{id}/. Filters: ?search= ?name= ?email= ?phone= ?card_code= ?tier= ?segment=. Pagination: ?cursor= (see meta.cursor / meta.has_next)."
+          }
+        },
+        {
           "name": "Search Customers (by phone)",
           "event": [
             {
@@ -261,6 +298,50 @@
               "body": "{\n    \"data\": [\n        {\n            \"id\": \"2awTHloSJX7kGGprFerOOsvABcd\",\n            \"full_name\": \"Maria Santos\",\n            \"avatar_url\": null,\n            \"email\": \"maria@example.com\",\n            \"phone\": \"+5511987654321\",\n            \"cpf\": null,\n            \"birth_date\": null,\n            \"points_balance\": 89,\n            \"points_earned\": 89,\n            \"points_spent\": 0,\n            \"tier\": \"default\",\n            \"card_number\": \"ZP-ABC123\",\n            \"join_date\": \"2026-03-22T00:00:00Z\",\n            \"last_activity_date\": \"2026-03-22T14:30:00Z\",\n            \"is_active\": true,\n            \"zupy_balance\": \"0.00\",\n            \"program_id\": \"2awTHmNw8X7kGGprFerQQsvCCfg\",\n            \"program_name\": \"Clube Pizzaria Exemplo\",\n            \"rfm_segment\": \"new\",\n            \"company_id\": \"2awTHkVw8X7kGGprFerQQsvBBef\",\n            \"created_at\": \"2026-03-22T14:00:00Z\",\n            \"updated_at\": \"2026-03-22T14:30:00Z\"\n        }\n    ],\n    \"meta\": {\n        \"cursor\": null,\n        \"has_next\": false,\n        \"count\": 1\n    }\n}"
             }
           ]
+        },
+        {
+          "name": "Register Customer (enroll)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if ([200,201].includes(pm.response.code)) {",
+                  "    var d = pm.response.json().data;",
+                  "    if (d && d.id) { pm.environment.set(\"customer_id\", d.id); }",
+                  "    console.log(\"enroll: created=\" + (d && d.created) + \" matched_on=\" + (d && d.matched_on));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"name\": \"New Customer\",\n  \"email\": \"\",\n  \"cpf\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/customers/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "customers",
+                ""
+              ]
+            },
+            "description": "Enroll a customer (find-or-create User + LoyaltyUser + card). Body: phone (required, E.164), name/email/cpf (optional), program_id (optional → company's active program). **Idempotent / duplicate-safe** — matches existing user by phone → CPF → email before creating. **201** = new enrollment, **200** = already enrolled; body has `created` + `matched_on`. No OTP."
+          }
         },
         {
           "name": "Get Customer Profile",
