@@ -900,15 +900,15 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v2/rewards/coupons/?customer_id={{customer_id}}",
+              "raw": "{{base_url}}/api/v2/coupons/issued/?customer_id={{customer_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v2",
-                "rewards",
                 "coupons",
+                "issued",
                 ""
               ],
               "query": [
@@ -928,15 +928,15 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/api/v2/rewards/coupons/?customer_id={{customer_id}}",
+                  "raw": "{{base_url}}/api/v2/coupons/issued/?customer_id={{customer_id}}",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
                     "api",
                     "v2",
-                    "rewards",
                     "coupons",
+                    "issued",
                     ""
                   ],
                   "query": [
@@ -960,15 +960,15 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v2/rewards/coupons/?customer_id={{customer_id}}&status=active",
+              "raw": "{{base_url}}/api/v2/coupons/issued/?customer_id={{customer_id}}&status=active",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "v2",
-                "rewards",
                 "coupons",
+                "issued",
                 ""
               ],
               "query": [
@@ -993,15 +993,15 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/api/v2/rewards/coupons/?customer_id={{customer_id}}&status=active",
+                  "raw": "{{base_url}}/api/v2/coupons/issued/?customer_id={{customer_id}}&status=active",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
                     "api",
                     "v2",
-                    "rewards",
                     "coupons",
+                    "issued",
                     ""
                   ],
                   "query": [
