@@ -1015,7 +1015,7 @@
     },
     {
       "name": "Z$ Tokens",
-      "description": "Query on-chain Z$ (Zupy Dollar) compressed token balances via Solana.",
+      "description": "Query on-chain Z$ ($ZUPY, units: ZUPYies) compressed token balances via Solana.",
       "item": [
         {
           "name": "Get Z$ Balance",

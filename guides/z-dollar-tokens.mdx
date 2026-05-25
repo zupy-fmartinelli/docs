@@ -1,19 +1,19 @@
 ---
 title: "Z$ Tokens"
-description: "Understand how Z$ (Zupy Dollar) blockchain tokens work — earning, checking balance, and using them in reward redemptions"
+description: "Understand how ZUPYies — the Zupy loyalty token — work: earning, checking balance, and using them in reward redemptions"
 ---
 
-Z$ (Zupy Dollar) is a blockchain-backed loyalty token on the Solana network. Customers earn Z$ automatically when they accumulate points, and can use Z$ to "top up" reward redemptions when they don't have enough points.
+\$ZUPY (abbreviated Z\$) is a blockchain-backed loyalty token on the Solana network — its units are called ZUPYies. Customers earn Z\$ automatically when they accumulate points, and can use Z\$ to "top up" reward redemptions when they don't have enough points.
 
 <Note>
-  **Prerequisites**: Your API key (`zupy_pk_*`) and familiarity with the [Authentication](/authentication) page. Z$ distribution is automatic — partners do NOT need to call a separate endpoint to award Z$.
+  **Prerequisites**: Your API key (`zupy_pk_*`) and familiarity with the [Authentication](/authentication) page. Z\$ distribution is automatic — partners do NOT need to call a separate endpoint to award Z\$.
 </Note>
 
-## What Are Z$ Tokens?
+## What Are Z\$ Tokens?
 
 | Property | Detail |
 |----------|--------|
-| **Full name** | Zupy Dollar (Z$) |
+| **Full name** | \$ZUPY (abbreviated Z\$; units: ZUPYies) |
 | **Blockchain** | Solana mainnet |
 | **Token type** | Compressed SPL token (Merkle tree) |
 | **Precision** | 6 decimal places |
@@ -21,11 +21,11 @@ Z$ (Zupy Dollar) is a blockchain-backed loyalty token on the Solana network. Cus
 | **Usage** | Top up reward redemptions when points are insufficient |
 | **Transferability** | Not transferable between customers via API |
 
-Each customer has a Z$ wallet (compressed token account on Solana). The wallet is created automatically on the customer's first Z$ distribution — no setup needed from partners.
+Each customer has a Z\$ wallet (compressed token account on Solana). The wallet is created automatically on the customer's first Z\$ distribution — no setup needed from partners.
 
-## How Customers Earn Z$
+## How Customers Earn Z\$
 
-Z$ tokens are distributed **automatically** when a partner adds points to a customer. There is no separate endpoint to call.
+Z\$ tokens are distributed **automatically** when a partner adds points to a customer. There is no separate endpoint to call.
 
 ```
 POST /api/v2/customers/{id}/points/add/   →   Points added
@@ -33,14 +33,14 @@ POST /api/v2/customers/{id}/points/add/   →   Points added
 ```
 
 <Tip>
-  Partners do NOT need to call a separate endpoint to award Z$. When you call `POST /api/v2/customers/{id}/points/add/`, the Z$ bonus is distributed automatically as a background task.
+  Partners do NOT need to call a separate endpoint to award Z\$. When you call `POST /api/v2/customers/{id}/points/add/`, the Z\$ bonus is distributed automatically as a background task.
 </Tip>
 
 ### Key Details
 
-- **Automatic**: Z$ distribution is a side effect of points addition
+- **Automatic**: Z\$ distribution is a side effect of points addition
 - **Async**: Distribution happens via a background worker (Celery task) — not instant
-- **Configured by Zupy**: The Z$ bonus amount per points addition is configured by Zupy ops per company, not by partners
+- **Configured by Zupy**: The Z\$ bonus amount per points addition is configured by Zupy ops per company, not by partners
 - **Wallet creation**: If the customer doesn't have a wallet yet, one is created on first distribution
 
 <CodeGroup>
@@ -88,11 +88,11 @@ console.log(`Points added: ${result.amount}`);
 ```
 </CodeGroup>
 
-## Checking Z$ Balance
+## Checking Z\$ Balance
 
 ### Real-Time On-Chain Balance
 
-Query the customer's real-time Z$ balance directly from the Solana blockchain:
+Query the customer's real-time Z\$ balance directly from the Solana blockchain:
 
 ```
 GET /api/v2/customers/{id}/z-balance/
@@ -102,9 +102,9 @@ GET /api/v2/customers/{id}/z-balance/
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `z_balance` | string | Z$ balance with 6 decimal places (e.g., `"150.000000"`) |
+| `z_balance` | string | Z\$ balance with 6 decimal places (e.g., `"150.000000"`) |
 | `wallet_address` | string | Solana wallet address (compressed token account) |
-| `has_wallet` | boolean | Whether the customer has a Z$ wallet |
+| `has_wallet` | boolean | Whether the customer has a Z\$ wallet |
 | `error` | string \| null | Error message if Solana query failed (e.g., `"timeout"`) |
 
 <CodeGroup>
@@ -174,7 +174,7 @@ if (balance.error) {
 
 ### Cached Balance (Customer Profile)
 
-The customer profile also includes a cached Z$ balance:
+The customer profile also includes a cached Z\$ balance:
 
 ```
 GET /api/v2/customers/{id}/
@@ -204,9 +204,9 @@ The response includes a `zupy_balance` field:
 | Real-time | `GET /api/v2/customers/{id}/z-balance/` | Live on-chain query | Displaying balance before redemption, showing wallet details |
 | Cached | `GET /api/v2/customers/{id}/` → `zupy_balance` | May lag a few minutes | Showing balance in a list view, non-critical display |
 
-## Using Z$ in Reward Redemption (Top-Up)
+## Using Z\$ in Reward Redemption (Top-Up)
 
-When a customer doesn't have enough points for a reward, Z$ tokens can cover the gap. This is called a **top-up**.
+When a customer doesn't have enough points for a reward, Z\$ tokens can cover the gap. This is called a **top-up**.
 
 ```
 POST /api/v2/customers/{id}/rewards/{reward_id}/redeem/
@@ -222,15 +222,15 @@ POST /api/v2/customers/{id}/rewards/{reward_id}/redeem/
 
 1. Customer wants a reward that costs **500 points**
 2. Customer only has **450 points**
-3. With `use_z_tokens: true`, Z$ covers the **50-point gap** (up to 20% of the reward cost)
-4. A **20% markup** is applied to the Z$ portion
+3. With `use_z_tokens: true`, Z\$ covers the **50-point gap** (up to 20% of the reward cost)
+4. A **20% markup** is applied to the Z\$ portion
 
-**Response includes additional Z$ fields:**
+**Response includes additional Z\$ fields:**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `z_tokens_used` | string | Z$ tokens spent on this redemption |
-| `new_z_balance` | string | Customer's remaining Z$ balance after redemption |
+| `z_tokens_used` | string | Z\$ tokens spent on this redemption |
+| `new_z_balance` | string | Customer's remaining Z\$ balance after redemption |
 
 <CodeGroup>
 ```bash cURL
@@ -296,35 +296,35 @@ console.log(`Remaining Z$: ${coupon.new_z_balance}`);
 
 In the example above:
 - **Reward cost**: 500 points
-- **Customer has**: 450 points + 1,150 Z$
+- **Customer has**: 450 points + 1,150 Z\$
 - **Points used**: 450 (all available points)
 - **Points gap**: 50 points
-- **Z$ cap**: max 20% of reward cost = 100 points coverable by Z$ (50 is within cap)
-- **Z$ equivalent**: 50 points = 50 Z$
-- **20% markup**: 50 Z$ × 1.20 = **60 Z$**
-- **Z$ used**: 60.000000
-- **Remaining Z$**: 1,150 - 60 = **1,090.000000**
+- **Z\$ cap**: max 20% of reward cost = 100 points coverable by Z\$ (50 is within cap)
+- **Z\$ equivalent**: 50 points = 50 Z\$
+- **20% markup**: 50 Z\$ × 1.20 = **60 Z\$**
+- **Z\$ used**: 60.000000
+- **Remaining Z\$**: 1,150 - 60 = **1,090.000000**
 
-The Z$ top-up can cover at most **20% of the reward's point cost**. If the points gap exceeds this limit, the redemption will fail with a `422` error. The markup percentage is configured globally by Zupy and is not visible to partners via the API.
+The Z\$ top-up can cover at most **20% of the reward's point cost**. If the points gap exceeds this limit, the redemption will fail with a `422` error. The markup percentage is configured globally by Zupy and is not visible to partners via the API.
 
 </Accordion>
 
 ## Important Notes & FAQ
 
-<Accordion title="Can Z$ be transferred between customers?">
-No. Z$ tokens cannot be transferred between customers via the API. Each customer's Z$ balance is tied to their individual compressed token account on Solana.
+<Accordion title="Can Z\$ be transferred between customers?">
+No. Z\$ tokens cannot be transferred between customers via the API. Each customer's Z\$ balance is tied to their individual compressed token account on Solana.
 </Accordion>
 
-<Accordion title="Can partners configure the Z$ bonus amount?">
-No. The Z$ distribution amount per points addition is configured by Zupy ops, not by partners. Contact Zupy support if you need to discuss bonus amounts for your company.
+<Accordion title="Can partners configure the Z\$ bonus amount?">
+No. The Z\$ distribution amount per points addition is configured by Zupy ops, not by partners. Contact Zupy support if you need to discuss bonus amounts for your company.
 </Accordion>
 
-<Accordion title="Are Z$ real blockchain tokens?">
-Yes. Z$ tokens exist on Solana mainnet as compressed SPL tokens stored in a Merkle tree. They are real blockchain assets, not just database entries. The `/z-balance/` endpoint queries the Solana blockchain in real time.
+<Accordion title="Are Z\$ real blockchain tokens?">
+Yes. Z\$ tokens exist on Solana mainnet as compressed SPL tokens stored in a Merkle tree. They are real blockchain assets, not just database entries. The `/z-balance/` endpoint queries the Solana blockchain in real time.
 </Accordion>
 
 <Accordion title="What if the customer has no wallet?">
-If a customer has never received Z$ tokens, `has_wallet` will be `false` in the `/z-balance/` response. A wallet is automatically created when the customer first receives Z$ (triggered by a points addition). No action is needed from the partner.
+If a customer has never received Z\$ tokens, `has_wallet` will be `false` in the `/z-balance/` response. A wallet is automatically created when the customer first receives Z\$ (triggered by a points addition). No action is needed from the partner.
 </Accordion>
 
 <Accordion title="What if the Solana network is slow?">
@@ -332,7 +332,7 @@ The `/z-balance/` endpoint has a timeout. If Solana is slow or unreachable, the 
 </Accordion>
 
 <Accordion title="Does the customer need to know about blockchain?">
-No. Z$ is designed to be transparent to customers. They see a "Z$ balance" in their loyalty interface — the blockchain implementation is an internal detail. Partners should present Z$ as a supplementary loyalty currency, not a crypto token.
+No. Z\$ is designed to be transparent to customers. They see a "Z\$ balance" in their loyalty interface — the blockchain implementation is an internal detail. Partners should present Z\$ as a supplementary loyalty currency, not a crypto token.
 </Accordion>
 
 ## Next Steps
