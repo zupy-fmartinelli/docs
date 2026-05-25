@@ -1505,83 +1505,6 @@
         }
       }
     },
-    "/api/v2/rewards/coupons/": {
-      "get": {
-        "operationId": "rewards_coupons_list",
-        "description": "List active coupons with remaining usage counts and expiry dates.",
-        "summary": "List coupon inventory",
-        "parameters": [
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "Pagination cursor value from previous response.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page_size",
-            "required": false,
-            "in": "query",
-            "description": "Number of results to return per page.",
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "tags": [
-          "Rewards"
-        ],
-        "security": [
-          {
-            "apiKeyAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedCouponInventoryList"
-                }
-              }
-            },
-            "description": ""
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": ""
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": ""
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/v2/wallet/notifications/": {
       "post": {
         "operationId": "wallet_notifications_create",
@@ -2253,6 +2176,132 @@
           }
         ]
       }
+    },
+    "/api/v2/coupons/issued/": {
+      "get": {
+        "operationId": "coupons_issued_list",
+        "description": "List issued coupons (RewardRedemption instances) for the company — both loyalty-reward redemptions (origin_type=loyalty_reward, customer spent points) and marketing claims (origin_type=marketing, no points spent). Filter by status, customer_id, origin_type, reward_id, or coupon code.",
+        "summary": "List issued coupons",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Pagination cursor value from previous response.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "required": false,
+            "in": "query",
+            "description": "Number of results to return per page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status: active | used | expired | cancelled.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customer_id",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to one customer (LoyaltyUser id).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "origin_type",
+            "required": false,
+            "in": "query",
+            "description": "Coupon provenance: loyalty_reward | marketing.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "loyalty_reward",
+                "marketing"
+              ]
+            }
+          },
+          {
+            "name": "reward_id",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to coupons issued from one reward.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "required": false,
+            "in": "query",
+            "description": "Exact coupon_code lookup (case-insensitive).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedCouponInventoryList"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2587,6 +2636,18 @@
             "type": "string",
             "format": "date-time",
             "readOnly": true
+          },
+          "usage_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "readOnly": true,
+            "description": "When the coupon was used/validated (null while active)."
+          },
+          "origin_type": {
+            "type": "string",
+            "readOnly": true,
+            "description": "loyalty_reward (redeemed with points) or marketing (claimed without points)."
           }
         },
         "required": [

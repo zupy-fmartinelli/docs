@@ -239,15 +239,18 @@ console.log(`Valid until: ${coupon.valid_until}`);
 Retrieve all coupons for a customer, optionally filtered by status.
 
 ```
-GET /api/v2/rewards/coupons/?customer_id={id}
+GET /api/v2/coupons/issued/?customer_id={id}
 ```
 
 **Key query parameters:**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `customer_id` | string | **Required.** Customer KSUID |
+| `customer_id` | string | Filter to one customer (KSUID). Omit to list all issued coupons for the company |
 | `status` | string | Filter by status: `active`, `used`, `expired`, `cancelled` |
+| `origin_type` | string | Filter by provenance: `loyalty_reward` (redeemed with points) or `marketing` (claimed without points) |
+| `reward_id` | string | Filter to coupons issued from one reward |
+| `code` | string | Exact `coupon_code` lookup (case-insensitive) |
 
 **Response fields:**
 
@@ -256,6 +259,8 @@ GET /api/v2/rewards/coupons/?customer_id={id}
 | `id` | string | Coupon KSUID (use in validate URL) |
 | `coupon_code` | string | Unique coupon code (`CZ-XXXXXXXX`) |
 | `status` | string | `active`, `used`, `expired`, or `cancelled` |
+| `origin_type` | string | `loyalty_reward` (redeemed by spending points) or `marketing` (claimed without points) |
+| `usage_date` | string | ISO 8601 timestamp when the coupon was used/validated (`null` while still active) |
 | `remaining_usages` | integer | How many times the coupon can still be used |
 | `total_usages_allowed` | integer | Total uses allowed (1 for single-use coupons) |
 | `valid_until` | string | ISO 8601 expiration date |
@@ -264,11 +269,11 @@ GET /api/v2/rewards/coupons/?customer_id={id}
 <CodeGroup>
 ```bash cURL
 # All coupons for a customer
-curl -X GET "https://api.zupy.com/api/v2/rewards/coupons/?customer_id=2awTHloSJX7kGGprFerOOsvABcd" \
+curl -X GET "https://api.zupy.com/api/v2/coupons/issued/?customer_id=2awTHloSJX7kGGprFerOOsvABcd" \
   -H "X-API-Key: zupy_pk_your_api_key_here"
 
 # Only active coupons
-curl -X GET "https://api.zupy.com/api/v2/rewards/coupons/?customer_id=2awTHloSJX7kGGprFerOOsvABcd&status=active" \
+curl -X GET "https://api.zupy.com/api/v2/coupons/issued/?customer_id=2awTHloSJX7kGGprFerOOsvABcd&status=active" \
   -H "X-API-Key: zupy_pk_your_api_key_here"
 ```
 
@@ -277,7 +282,7 @@ customer_id = "2awTHloSJX7kGGprFerOOsvABcd"
 
 # All coupons
 response = requests.get(
-    f"{BASE_URL}/rewards/coupons/",
+    f"{BASE_URL}/coupons/issued/",
     params={"customer_id": customer_id},
     headers=HEADERS,
 )
@@ -285,7 +290,7 @@ all_coupons = response.json()["data"]
 
 # Only active coupons
 response = requests.get(
-    f"{BASE_URL}/rewards/coupons/",
+    f"{BASE_URL}/coupons/issued/",
     params={"customer_id": customer_id, "status": "active"},
     headers=HEADERS,
 )
@@ -298,14 +303,14 @@ const customerId = "2awTHloSJX7kGGprFerOOsvABcd";
 
 // All coupons
 let response = await fetch(
-  `${BASE_URL}/rewards/coupons/?customer_id=${customerId}`,
+  `${BASE_URL}/coupons/issued/?customer_id=${customerId}`,
   { headers: { "X-API-Key": API_KEY } }
 );
 const { data: allCoupons } = await response.json();
 
 // Only active coupons
 response = await fetch(
-  `${BASE_URL}/rewards/coupons/?customer_id=${customerId}&status=active`,
+  `${BASE_URL}/coupons/issued/?customer_id=${customerId}&status=active`,
   { headers: { "X-API-Key": API_KEY } }
 );
 const { data: activeCoupons } = await response.json();
@@ -322,6 +327,8 @@ console.log(`${activeCoupons.length} active coupons`);
       "id": "2cxSLnqYLZ0nJJsuIhuSSvyFGij",
       "coupon_code": "CZ-A1B2C3D4",
       "status": "active",
+      "origin_type": "loyalty_reward",
+      "usage_date": null,
       "remaining_usages": 1,
       "total_usages_allowed": 1,
       "valid_until": "2026-04-25T00:00:00Z",
@@ -331,6 +338,8 @@ console.log(`${activeCoupons.length} active coupons`);
       "id": "2cxSLoRZMA1oKKtvJivTTwzGHjk",
       "coupon_code": "CZ-E5F6G7H8",
       "status": "used",
+      "origin_type": "marketing",
+      "usage_date": "2026-04-18T14:32:00Z",
       "remaining_usages": 0,
       "total_usages_allowed": 1,
       "valid_until": "2026-04-20T00:00:00Z",
@@ -506,7 +515,7 @@ print(f"Coupon created: {coupon['coupon_code']}, valid until {coupon['valid_unti
 
 # Step 3: List active coupons
 response = requests.get(
-    f"{BASE_URL}/rewards/coupons/",
+    f"{BASE_URL}/coupons/issued/",
     params={"customer_id": customer_id, "status": "active"},
     headers=HEADERS,
 )
@@ -551,7 +560,7 @@ console.log(`Coupon created: ${coupon.coupon_code}, valid until ${coupon.valid_u
 
 // Step 3: List active coupons
 response = await fetch(
-  `${BASE_URL}/rewards/coupons/?customer_id=${customerId}&status=active`,
+  `${BASE_URL}/coupons/issued/?customer_id=${customerId}&status=active`,
   { headers: { "X-API-Key": API_KEY } }
 );
 const { data: activeCoupons } = await response.json();
