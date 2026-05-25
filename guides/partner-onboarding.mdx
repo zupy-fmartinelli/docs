@@ -23,6 +23,18 @@ When your partnership is activated, the Zupy team provides:
   Credentials are shared via a secure channel (encrypted email or password manager). **Never** share API keys via plain text chat (Slack, WhatsApp, etc.).
 </Note>
 
+<Warning>
+  **Your API key is shown only once**, at creation. Zupy stores only a hash of it — we cannot
+  retrieve the full key later, so save it immediately in your secrets manager. If it is lost or
+  compromised, it can be **rotated** (the old key stops working instantly and a new one is issued).
+  Each company has exactly one active `zupy_pk_` key.
+</Warning>
+
+<Note>
+  Your key reaches only the endpoints in this documentation (the partner contract). Every other v2
+  endpoint returns `403` for a partner key — see [Authentication → Endpoint allowlist](/authentication#endpoint-allowlist).
+</Note>
+
 ## What You Configure
 
 After receiving your credentials, set up your integration:
