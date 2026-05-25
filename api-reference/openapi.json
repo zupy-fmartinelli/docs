@@ -2452,19 +2452,6 @@
             "readOnly": true,
             "description": "Default currency (e.g., BRL, USD, EUR)"
           },
-          "subscription_tier": {
-            "readOnly": true,
-            "nullable": true,
-            "description": "Current subscription tier from Stripe product metadata\n\n* `essential` - Essential\n* `connection` - Connection\n* `engagement` - Engagement\n* `alliance` - Alliance",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/SubscriptionTierEnum"
-              },
-              {
-                "$ref": "#/components/schemas/NullEnum"
-              }
-            ]
-          },
           "is_branch": {
             "type": "boolean",
             "readOnly": true,
@@ -2505,11 +2492,6 @@
             "type": "integer",
             "readOnly": true
           },
-          "subscription_status": {
-            "type": "string",
-            "readOnly": true,
-            "nullable": true
-          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2519,6 +2501,12 @@
             "type": "string",
             "format": "date-time",
             "readOnly": true
+          },
+          "zupy_balance": {
+            "type": "string",
+            "format": "decimal",
+            "readOnly": true,
+            "description": "Company Z$ (ZUPYies) balance — usable as marketing-campaign budget."
           }
         },
         "required": [
@@ -2549,8 +2537,6 @@
           "social_links",
           "state",
           "status",
-          "subscription_status",
-          "subscription_tier",
           "survey_url",
           "trading_name",
           "updated_at",
