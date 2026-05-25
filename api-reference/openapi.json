@@ -2302,6 +2302,113 @@
           }
         }
       }
+    },
+    "/api/v2/coupons/issued/stats/": {
+      "get": {
+        "operationId": "coupons_issued_stats",
+        "summary": "Issued-coupon stats",
+        "description": "Aggregate stats for issued coupons. total_issued = rewards redeemed (became coupons); used = coupons validated. Use reward_id for per-reward stats. A status filter is ignored so the breakdown spans all statuses.",
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to one customer (LoyaltyUser id)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "origin_type",
+            "required": false,
+            "in": "query",
+            "description": "Coupon provenance",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "loyalty_reward",
+                "marketing"
+              ]
+            }
+          },
+          {
+            "name": "reward_id",
+            "required": false,
+            "in": "query",
+            "description": "Per-reward stats: restrict to one reward",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "required": false,
+            "in": "query",
+            "description": "Exact coupon_code lookup (case-insensitive)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CouponStats"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4395,6 +4502,41 @@
           "wallet_address",
           "z_balance"
         ]
+      },
+      "CouponStats": {
+        "type": "object",
+        "properties": {
+          "total_issued": {
+            "type": "integer",
+            "readOnly": true,
+            "description": "Rewards redeemed = coupons issued"
+          },
+          "used": {
+            "type": "integer",
+            "readOnly": true,
+            "description": "Coupons validated/consumed"
+          },
+          "usage_rate": {
+            "type": "number",
+            "format": "float",
+            "readOnly": true,
+            "description": "used / total_issued * 100"
+          },
+          "by_status": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Count per status (active/used/expired/cancelled)"
+          },
+          "by_origin": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Count per origin (loyalty_reward/marketing)"
+          }
+        }
       }
     },
     "securitySchemes": {

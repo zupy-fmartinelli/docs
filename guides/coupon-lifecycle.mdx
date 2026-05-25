@@ -482,6 +482,59 @@ valid_until = redemption_time + reward.validity_days
   Expired coupons cannot be reactivated. The customer must redeem the reward again to get a new coupon (if the reward allows re-redemption).
 </Note>
 
+## Reward & Coupon Stats
+
+Aggregate how many coupons were issued (rewards redeemed) and how many were used —
+company-wide or per reward.
+
+```
+GET /api/v2/coupons/issued/stats/
+```
+
+**Query parameters** (same filters as the list):
+
+| Parameter | Description |
+|-----------|-------------|
+| `reward_id` | **Per-reward stats** — issued/used for one reward |
+| `origin_type` | `loyalty_reward` or `marketing` |
+| `customer_id` | Restrict to one customer |
+| `code` | Exact coupon code |
+
+A `status` filter is ignored here so the breakdown always spans every status.
+
+<CodeGroup>
+```bash cURL
+# Company-wide
+curl -X GET "https://api.zupy.com/api/v2/coupons/issued/stats/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here"
+
+# Per reward
+curl -X GET "https://api.zupy.com/api/v2/coupons/issued/stats/?reward_id=2cx...reward" \
+  -H "X-API-Key: zupy_pk_your_api_key_here"
+```
+</CodeGroup>
+
+```json Response
+{
+  "data": {
+    "total_issued": 120,
+    "used": 80,
+    "usage_rate": 66.67,
+    "by_status": { "active": 30, "used": 80, "expired": 8, "cancelled": 2 },
+    "by_origin": { "loyalty_reward": 90, "marketing": 30 }
+  },
+  "meta": {}
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `total_issued` | Rewards redeemed = coupons issued |
+| `used` | Coupons validated/consumed |
+| `usage_rate` | `used / total_issued * 100` |
+| `by_status` | Count per status |
+| `by_origin` | Count per provenance (loyalty vs marketing) |
+
 ## Full Example: Complete Coupon Flow
 
 End-to-end flow: browse rewards, redeem, list coupons, and validate.

@@ -1091,6 +1091,48 @@
               "body": "{\n    \"data\": {\n        \"coupon_code\": \"ZUPY-ABC123\",\n        \"status\": \"used\",\n        \"remaining_usages\": 0,\n        \"total_usages_allowed\": 1,\n        \"validated_at\": \"2026-03-22T16:00:00Z\"\n    },\n    \"meta\": {}\n}"
             }
           ]
+        },
+        {
+          "name": "Coupon Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/coupons/issued/stats/?reward_id={{reward_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "coupons",
+                "issued",
+                "stats",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "reward_id",
+                  "value": "{{reward_id}}",
+                  "description": "Per-reward stats. Remove for company-wide totals."
+                },
+                {
+                  "key": "origin_type",
+                  "value": "marketing",
+                  "disabled": true,
+                  "description": "loyalty_reward | marketing"
+                }
+              ]
+            },
+            "description": "Aggregate issued-coupon stats: total_issued (rewards redeemed = coupons), used (validated), usage_rate, and breakdowns by status + origin. Use reward_id for per-reward stats; omit for company-wide."
+          },
+          "response": []
         }
       ]
     },
