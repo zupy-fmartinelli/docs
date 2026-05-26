@@ -43,14 +43,22 @@ Browse Rewards → Redeem Reward → Coupon Created (CZ-XXXXXXXX)
 
 ### Two identifiers, one coupon
 
-Every coupon carries two identifiers — distinct on purpose:
+Every coupon carries two identifiers:
 
-| Identifier | Format | Used for |
-|------------|--------|----------|
-| `id` | KSUID (e.g. `16a33f27fbbc1801d63d56d2027`) | **API operations** — the path parameter on `POST /customers/{id}/coupons/{id}/validate/`. Stable, opaque, never shown to customers. |
-| `coupon_code` | `CZ-XXXXXXXX` (e.g. `CZ-914F15F3`) | **Customer-facing display** — printed on receipts, shown in wallet passes, spoken by the cashier. Human-friendly but never used as an API key. |
+| Identifier | Format | Where it comes from |
+|------------|--------|---------------------|
+| `id` | KSUID (e.g. `16a33f27fbbc1801d63d56d2027`) | Returned by `GET /coupons/issued/` and `POST /rewards/{id}/redeem/`. Stable, opaque, never shown to customers. |
+| `coupon_code` | `CZ-XXXXXXXX` (e.g. `CZ-914F15F3`) | Customer-facing — printed on receipts, shown in wallet passes, spoken by the cashier. |
 
-Mixing them up is the most common partner-integration bug. Validating with the `CZ-` code returns `404 not-found`.
+**Both work as the `{coupon_id}` path parameter on the validate endpoint** (case-insensitive on the `CZ-`/`CP-` form). When a customer hands you a receipt at the POS, you can validate directly with the printed code — no extra lookup needed.
+
+To go from `CZ-` code → full coupon record (for example, to check status before validating), use the dedicated lookup:
+
+```
+GET /api/v2/coupons/issued/?code=CZ-914F15F3
+```
+
+Returns the matching coupon (or an empty `data` array if not found) with its `id`, `customer_id`, `status`, `valid_until`, etc.
 
 ## Step 1: Browse Available Rewards
 
@@ -375,9 +383,16 @@ Validate a coupon to mark it as used. This is an **atomic operation** — concur
 POST /api/v2/customers/{id}/coupons/{coupon_id}/validate/
 ```
 
-<Warning>
-  **Important**: the `{coupon_id}` path parameter is the **`id`** field returned by `GET /coupons/issued/` (a KSUID, e.g. `16a33f27fbbc1801d63d56d2027`) — **not** the human-readable `coupon_code` like `CZ-914F15F3`. The KSUID is the canonical key; the `CZ-` code is the customer-facing display string only.
-</Warning>
+<Tip>
+  **POS ergonomics**: `{coupon_id}` accepts **both** identifier formats — pass whichever you have:
+
+  - **KSUID `id`** (e.g. `16a33f27fbbc1801d63d56d2027`) — returned by `GET /coupons/issued/`
+  - **`coupon_code`** (e.g. `CZ-914F15F3` or `CP-LEGACY01`) — printed on the customer's receipt or wallet pass
+
+  Lookup is case-insensitive on the code path, so `cz-914f15f3` resolves the same as `CZ-914F15F3`. The response always echoes the canonical upper-case form.
+
+  Use the `CZ-` code when a cashier types it from a receipt; use the KSUID when you already obtained it from a previous `redeem` or `coupons/issued/` call.
+</Tip>
 
 Send an **empty POST body** (no JSON needed).
 
@@ -455,8 +470,36 @@ console.log(`Remaining uses: ${result.remaining_usages}`);
 | Status | Type | When |
 |--------|------|------|
 | 403 | `otp-required` | OTP verification required but `X-OTP-Session` not provided. See [OTP Flow](/guides/otp-flow). |
-| 404 | `not-found` | Coupon `id` not found or doesn't belong to this customer. Confirm you're passing the KSUID `id` field, not the `CZ-` code. |
+| 404 | `not-found` | Coupon not found under this customer. Confirm: (a) the coupon belongs to the `customer_id` in the path, (b) the `CZ-`/`CP-` code (if you used one) is spelled correctly. |
 | 409 | `conflict` | Coupon already fully consumed. `detail`: `"Cupom já Used"` (or `"Expired"` / `"Cancelled"`). Re-validating an already-used coupon is **safe and idempotent** — it returns 409, never double-applies the side effect. |
+
+### POS Quick Lookup — validate by receipt code
+
+When a customer hands you a printed coupon code at the point of sale, you have two equivalent ways to validate it. **Use whichever fits your flow.**
+
+<CodeGroup>
+```bash One-shot validate
+# Pass the CZ-code directly in the path — no GET needed.
+curl -X POST "https://api.zupy.com/api/v2/customers/{customer_id}/coupons/CZ-914F15F3/validate/" \
+  -H "X-API-Key: zupy_pk_..." \
+  -H "X-OTP-Session: ..."
+```
+
+```bash Look up first, then validate
+# Useful when you need to confirm status / customer / expiry before validating.
+curl "https://api.zupy.com/api/v2/coupons/issued/?code=CZ-914F15F3" \
+  -H "X-API-Key: zupy_pk_..."
+# → { "data": [ { "id": "16a33f27...", "customer_id": "...", "status": "active", ... } ] }
+
+curl -X POST "https://api.zupy.com/api/v2/customers/{customer_id}/coupons/16a33f27.../validate/" \
+  -H "X-API-Key: zupy_pk_..." \
+  -H "X-OTP-Session: ..."
+```
+</CodeGroup>
+
+<Note>
+  If you don't know the `customer_id` ahead of time (cashier scanning a printed code from a customer they don't recognize), the **lookup-first** path tells you both `customer_id` and `status` so you can decide whether to proceed and which OTP session to attach.
+</Note>
 
 ## Multi-Use Coupons
 

@@ -853,7 +853,8 @@
             "schema": {
               "type": "string"
             },
-            "required": true
+            "required": true,
+            "description": "Accepts EITHER the RewardRedemption KSUID (e.g. `16a33f27fbbc1801d63d56d2027`) OR the customer-facing coupon_code (e.g. `CZ-914F15F3` or `CP-LEGACY01`). Lookup by code is case-insensitive — both `CZ-914F15F3` and `cz-914f15f3` resolve to the same coupon. The response always echoes the canonical upper-case form."
           },
           {
             "in": "path",
