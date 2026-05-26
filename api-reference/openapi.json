@@ -397,6 +397,239 @@
         }
       }
     },
+    "/api/v2/coupons/issued/": {
+      "get": {
+        "operationId": "coupons_issued_list",
+        "description": "List issued coupons (RewardRedemption instances) for the company — both loyalty-reward redemptions (origin_type=loyalty_reward, customer spent points) and marketing claims (origin_type=marketing, no points spent). Filter by status, customer_id, origin_type, reward_id, or coupon code.",
+        "summary": "List issued coupons",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Pagination cursor value from previous response.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "required": false,
+            "in": "query",
+            "description": "Number of results to return per page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status: active | used | expired | cancelled.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customer_id",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to one customer (LoyaltyUser id).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "origin_type",
+            "required": false,
+            "in": "query",
+            "description": "Coupon provenance: loyalty_reward | marketing.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "loyalty_reward",
+                "marketing"
+              ]
+            }
+          },
+          {
+            "name": "reward_id",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to coupons issued from one reward.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "required": false,
+            "in": "query",
+            "description": "Exact coupon_code lookup (case-insensitive).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedCouponInventoryList"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v2/coupons/issued/stats/": {
+      "get": {
+        "operationId": "coupons_issued_stats",
+        "summary": "Issued-coupon stats",
+        "description": "Aggregate stats for issued coupons. total_issued = rewards redeemed (became coupons); used = coupons validated. Use reward_id for per-reward stats. A status filter is ignored so the breakdown spans all statuses.",
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to one customer (LoyaltyUser id)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "origin_type",
+            "required": false,
+            "in": "query",
+            "description": "Coupon provenance",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "loyalty_reward",
+                "marketing"
+              ]
+            }
+          },
+          {
+            "name": "reward_id",
+            "required": false,
+            "in": "query",
+            "description": "Per-reward stats: restrict to one reward",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "required": false,
+            "in": "query",
+            "description": "Exact coupon_code lookup (case-insensitive)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CouponStats"
+                    },
+                    "meta": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/customers/": {
       "get": {
         "operationId": "customers_list",
@@ -2175,239 +2408,6 @@
             "apiKeyAuth": []
           }
         ]
-      }
-    },
-    "/api/v2/coupons/issued/": {
-      "get": {
-        "operationId": "coupons_issued_list",
-        "description": "List issued coupons (RewardRedemption instances) for the company — both loyalty-reward redemptions (origin_type=loyalty_reward, customer spent points) and marketing claims (origin_type=marketing, no points spent). Filter by status, customer_id, origin_type, reward_id, or coupon code.",
-        "summary": "List issued coupons",
-        "parameters": [
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "Pagination cursor value from previous response.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page_size",
-            "required": false,
-            "in": "query",
-            "description": "Number of results to return per page.",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by status: active | used | expired | cancelled.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "customer_id",
-            "required": false,
-            "in": "query",
-            "description": "Restrict to one customer (LoyaltyUser id).",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "origin_type",
-            "required": false,
-            "in": "query",
-            "description": "Coupon provenance: loyalty_reward | marketing.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "loyalty_reward",
-                "marketing"
-              ]
-            }
-          },
-          {
-            "name": "reward_id",
-            "required": false,
-            "in": "query",
-            "description": "Restrict to coupons issued from one reward.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "code",
-            "required": false,
-            "in": "query",
-            "description": "Exact coupon_code lookup (case-insensitive).",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "tags": [
-          "Coupons"
-        ],
-        "security": [
-          {
-            "apiKeyAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedCouponInventoryList"
-                }
-              }
-            },
-            "description": ""
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": ""
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": ""
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/v2/coupons/issued/stats/": {
-      "get": {
-        "operationId": "coupons_issued_stats",
-        "summary": "Issued-coupon stats",
-        "description": "Aggregate stats for issued coupons. total_issued = rewards redeemed (became coupons); used = coupons validated. Use reward_id for per-reward stats. A status filter is ignored so the breakdown spans all statuses.",
-        "tags": [
-          "Coupons"
-        ],
-        "security": [
-          {
-            "apiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "customer_id",
-            "required": false,
-            "in": "query",
-            "description": "Restrict to one customer (LoyaltyUser id)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "origin_type",
-            "required": false,
-            "in": "query",
-            "description": "Coupon provenance",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "loyalty_reward",
-                "marketing"
-              ]
-            }
-          },
-          {
-            "name": "reward_id",
-            "required": false,
-            "in": "query",
-            "description": "Per-reward stats: restrict to one reward",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "code",
-            "required": false,
-            "in": "query",
-            "description": "Exact coupon_code lookup (case-insensitive)",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/CouponStats"
-                    },
-                    "meta": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
       }
     }
   },
