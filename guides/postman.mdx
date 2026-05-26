@@ -1,19 +1,27 @@
 ---
 title: "Postman Collection"
-description: "Import the ready-made Postman collection to test all Zupy Partner API endpoints instantly"
+description: "One-click import the ready-made Postman collection — or download the JSON files manually"
 ---
 
-Download our Postman collection and environment template to explore the entire Zupy Partner API v2 without writing any code.
+Explore the entire Zupy Partner API v2 in Postman without writing any code.
 
 <Note>
-  **What's included**: 22 pre-configured requests across 8 categories, with example responses, auto-capture scripts, and an end-to-end test flow.
+  **What's included**: 29 pre-configured requests across 10 folders, with example responses and an end-to-end test flow that walks request-otp → verify-otp → redeem → list → validate.
 </Note>
+
+## Quick import (recommended — 1 click)
+
+Click the button below to fork the collection into your Postman workspace. If you don't have Postman installed, you'll be prompted to use the web app.
+
+[![Run In Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/?action=collection%2Fimport&collection-url=https%3A%2F%2Fdocs.zupy.com%2Fpostman%2Fzupy-partner-api.postman_collection.json)
+
+After the collection imports, separately import the environment template (next section), select **Zupy Production** as your active environment, and set `api_key` to your real `zupy_pk_*` key.
 
 ## Download Files
 
 <CardGroup cols={2}>
   <Card title="Postman Collection" icon="box-archive" href="/postman/zupy-partner-api.postman_collection.json">
-    All 22 partner API endpoints organized by category
+    All 29 partner API endpoints organized by category
   </Card>
   <Card title="Environment Template" icon="gear" href="/postman/zupy-production.postman_environment.json">
     Pre-configured variables for the production environment
@@ -26,7 +34,7 @@ Download our Postman collection and environment template to explore the entire Z
   <Step title="Import the collection">
     Open Postman, click **Import**, and drag in `zupy-partner-api.postman_collection.json`.
 
-    You'll see the **Zupy Partner API v2** collection with 9 folders:
+    You'll see the **Zupy Partner API v2** collection with 10 folders:
     - Authentication (OTP)
     - Customers
     - Loyalty Programs
@@ -34,7 +42,8 @@ Download our Postman collection and environment template to explore the entire Z
     - Coupons
     - Z\$ Tokens
     - Wallet
-    - Webhooks
+    - Webhooks (inbound — partner → Zupy)
+    - Webhook Management (outbound config — Zupy → partner)
     - Company
   </Step>
 

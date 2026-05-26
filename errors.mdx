@@ -1,0 +1,217 @@
+---
+title: "Error Reference"
+description: "Every error response the Zupy Partner API can return — keyed by the type URI you receive in the 'type' field"
+---
+
+All Zupy Partner API errors follow [RFC 7807 Problem Details](https://datatracker.ietf.org/doc/html/rfc7807). The `type` field in every error response is a URL that resolves to this page, anchored to the specific error explanation.
+
+```json
+{
+  "type": "https://docs.zupy.com/errors#otp-required",
+  "title": "Permission Denied",
+  "status": 403,
+  "detail": "OTP verification required",
+  "instance": "/api/v2/customers/.../coupons/.../validate/"
+}
+```
+
+When you see one of these, click the `type` URL — it lands you exactly on the section that explains it, with the cause, the partner-side fix, and (when applicable) a link to the relevant guide.
+
+---
+
+## not-found
+
+**HTTP status:** `404 Not Found`
+
+**Causes:**
+- The resource (customer, reward, coupon, program) doesn't exist.
+- The resource exists in another company and your API key can't see it (multi-tenancy boundary — we deliberately return 404 not 403 here so we don't leak existence).
+- For `/coupons/{coupon_id}/validate/`: the `coupon_id` doesn't match either a KSUID OR a `CZ-`/`CP-` code on a coupon owned by the `{customer_id}` in the path.
+
+**Partner-side fix:**
+- Double-check the IDs you're passing — KSUIDs are 27 chars, lowercase alphanumeric.
+- For coupon validate, confirm `customer_id` is correct AND the coupon belongs to that customer.
+- If you're a multi-merchant integrator, verify your API key is for the right company.
+
+---
+
+## validation-error
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Causes:**
+- Required body field missing (e.g. `amount` on `/points/add/`).
+- Field present but invalid (out of range, wrong type, fails regex).
+- Domain rule violated (e.g. customer has 50 pts, reward costs 100 pts).
+- Marketing reward already redeemed by this customer (free rewards have a 1-per-customer limit).
+
+The response includes an `errors[]` array with per-field `field` + `detail`:
+
+```json
+{
+  "type": "https://docs.zupy.com/errors#validation-error",
+  "title": "Validation Error",
+  "status": 422,
+  "detail": "One or more fields failed validation.",
+  "errors": [
+    { "field": "amount", "detail": "Este campo é obrigatório." }
+  ]
+}
+```
+
+**Partner-side fix:** read `errors[].detail` first, `errors[].field` second. Don't infer from `detail` at the top level — that's the summary, not the actionable list.
+
+---
+
+## authentication-required
+
+**HTTP status:** `401 Unauthorized`
+
+**Causes:**
+- No `X-API-Key` header on the request.
+- Header present but key is malformed (doesn't start with `zupy_pk_`).
+- Header present but key was revoked.
+
+**Partner-side fix:**
+- Verify the header name is exactly `X-API-Key` (case-sensitive on some gateways).
+- Confirm the key is active in `https://app.zupy.com/integrations/api`.
+- Don't put the key in a query parameter — only the header is accepted.
+
+---
+
+## permission-denied
+
+**HTTP status:** `403 Forbidden`
+
+**Causes:**
+- Your API key is authenticated but the endpoint isn't in the partner allowlist (admin-only).
+- Your key is read-only and you're attempting a write.
+- You're attempting an action gated by `OTP-Required` policy without an OTP session (see [`otp-required`](#otp-required) below for that specific case).
+
+**Partner-side fix:**
+- Check the endpoint's docs — partner-allowed endpoints have an `X-API-Key` parameter listed.
+- If you need write access, request a read-write key from the merchant who issued yours.
+
+---
+
+## otp-required
+
+**HTTP status:** `403 Forbidden`
+
+**Causes:** The merchant's integration enables `require_otp_for_redemption` or `require_otp_for_coupon_usage`, and your request didn't include a valid `X-OTP-Session` header.
+
+This is the most common 403 a partner will hit — it's deliberately secure-by-default.
+
+**Partner-side fix:** trigger the OTP flow before retrying. See [OTP Flow](/guides/otp-flow):
+
+1. `POST /api/v2/auth/request-otp/` with `{ "identifier": "+5511..." }` — Zupy sends a 6-digit code via WhatsApp or Email.
+2. Customer reads the code, gives it to you.
+3. `POST /api/v2/auth/verify-otp/` with `{ "identifier": "...", "otp_code": "123456" }` — returns `otp_session` string.
+4. Include `X-OTP-Session: <that_string>` on the redeem/validate call. Retry succeeds.
+
+The session is valid for ~30 min per Zupy's default. After expiry, restart the dance.
+
+---
+
+## integration-not-found
+
+**HTTP status:** `403 Forbidden`
+
+**Causes:** Your API key is authenticated, but the company has no active `CompanyIntegration` row — meaning OTP policy can't be resolved.
+
+This is rare in production (every active partner key implies an integration), and usually points at a misconfiguration on Zupy's side.
+
+**Partner-side fix:** open a ticket — this needs human review on our side.
+
+---
+
+## insufficient-balance
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Causes:** Customer has fewer points than the reward requires, **and** `use_z_tokens` was either false or the Z\$ balance also wasn't enough to cover the gap.
+
+**Partner-side fix:**
+- Check the customer's `points_balance` via `GET /customers/{id}/points/` before initiating a redeem.
+- If supporting partial Z\$ payment, set `use_z_tokens: true` in the redeem body.
+
+---
+
+## conflict
+
+**HTTP status:** `409 Conflict`
+
+**Causes:**
+- Coupon already validated (re-calling `/coupons/{id}/validate/` on a coupon with status `used`).
+- Coupon expired (auto-transitioned to `expired` status).
+- Coupon cancelled by the merchant.
+- Concurrent validate calls hit the same coupon — only one wins; the other gets this error.
+
+The `detail` field tells you which case:
+- `"Cupom já Used"` — already validated.
+- `"Cupom já Expired"` — expired.
+- `"Cupom já Cancelled"` — cancelled.
+
+**Partner-side fix:** treat 409 as **idempotent**. The state is settled — don't retry. If the customer disputes "but it shows used and I never used it!", fetch the redemption from `/coupons/issued/?code={code}` and show them the `usage_date` field.
+
+---
+
+## rate-limit-exceeded
+
+**HTTP status:** `429 Too Many Requests`
+
+**Causes:** Your API key exceeded its rate limit. The current default for partner keys is **60 requests/minute**. Inbound webhooks have a separate, higher limit.
+
+**Partner-side fix:**
+- Back off and retry with exponential delay (start with 5s, double each retry, cap at 60s).
+- If you legitimately need higher throughput, request a tier upgrade.
+- Read the `Retry-After` header — it tells you the seconds to wait.
+
+---
+
+## gone
+
+**HTTP status:** `410 Gone`
+
+**Causes:** The endpoint or resource was permanently retired. Typically this is a v1 endpoint you should migrate to v2.
+
+**Partner-side fix:** the response `detail` field will name the v2 equivalent.
+
+---
+
+## service-unavailable
+
+**HTTP status:** `503 Service Unavailable`
+
+**Causes:**
+- Downstream dependency is down (Solana RPC, Google Wallet API, Apple PassKit signing service).
+- Internal error during wallet pass generation (the actual pass binary failed to render).
+- Temporary overload — rare.
+
+**Partner-side fix:**
+- Retry the request after a short delay (5–30 seconds). 503 is not a permanent failure.
+- If retries keep failing for the same call, the dependency is broken on our side — open a support ticket.
+
+---
+
+## wallet-temporarily-unavailable
+
+**HTTP status:** `503 Service Unavailable`
+
+**Causes:** Specialized variant of `service-unavailable` for the wallet-pass generation path specifically. Either:
+- Apple PassKit signing key is rotating (rare; usually < 1 minute).
+- Google Wallet API quota exhausted (we'd notice and request quota; you'd notice via this error).
+- The pass type the customer is trying to install has a generation bug we haven't caught.
+
+**Partner-side fix:** retry after 30s. If failures persist for the same `(customer_id, coupon_id)` pair, the issue is reproducible on our side — open a ticket with that pair.
+
+---
+
+## What's NOT in this list
+
+Errors you might see from infrastructure layers (not from our application code):
+- `502 Bad Gateway` from Cloudflare or APISIX — we're either deploying or briefly unreachable.
+- `504 Gateway Timeout` — your client gave up waiting; the request may have still succeeded on our side.
+- `5xx` without an RFC 7807 body — same root cause: something below the Django layer responded.
+
+For these, retry with backoff. They don't have a stable `type` URI because they don't originate from the Zupy application.

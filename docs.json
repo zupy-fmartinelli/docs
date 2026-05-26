@@ -31,7 +31,8 @@
               "guides/zupy-tokens",
               "guides/outbound-webhooks",
               "guides/postman",
-              "guides/partner-onboarding"
+              "guides/partner-onboarding",
+              "errors"
             ]
           }
         ]
