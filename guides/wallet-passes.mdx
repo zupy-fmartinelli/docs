@@ -144,22 +144,102 @@ server-side and we have no per-device telemetry).
 
 ## Send a push notification to the wallet pass
 
+Push an update + message into the customer's wallet pass. The notification **fans out
+automatically to all platforms** the customer has the pass installed on — Apple (APNs silent
+push → iPhone re-downloads the pkpass with the new back-field message) and Google (server-side
+PATCH on the Wallet object → surfaces in the user's Google Wallet feed).
+
 ```
 POST /api/v2/wallet/notifications/
-Content-Type: application/json
-
-{
-  "customer_id": "2abc...",
-  "type": "points_update" | "coupon_available" | "program_update",
-  "message": "Sua mensagem aqui (até 500 chars)"
-}
-→ 202 Accepted { "notification_id": "ksuid...", "status": "queued" }
 ```
 
-The notification fans out automatically to **both** Apple and Google Wallet sides of the
-customer's pass — you don't need to pick a platform. Apple silently re-downloads the pass
-(showing the new `message` on the back); Google updates server-side and surfaces the message in
-the user's Google Wallet feed.
+**Request body**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `customer_id` | string (KSUID) | Yes | The `LoyaltyUser.id` (same one you use everywhere else). |
+| `type` | string enum | Yes | One of `points_update`, `coupon_available`, or `program_update`. Controls how the message is categorized in the customer's wallet feed; the actual text is always your `message`. |
+| `message` | string (≤500 chars) | Yes | The text the customer reads in the wallet pass back-field. Plain text only; emojis fine. |
+
+**Response — 202 Accepted**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `notification_id` | string (KSUID) | Async dispatch ID. Track it in logs; there's no GET endpoint to poll status (the fanout is best-effort). |
+| `status` | string | Always `"queued"` on 202 — the Celery worker takes it from here. |
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/api/v2/wallet/notifications/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "2awTHloSJX7kGGprFerOOsvABcd",
+    "type": "points_update",
+    "message": "Você ganhou 1500 pontos! Saldo: 1520"
+  }'
+```
+
+```python Python
+response = requests.post(
+    f"{BASE_URL}/wallet/notifications/",
+    json={
+        "customer_id": customer_id,
+        "type": "points_update",
+        "message": f"Você ganhou {amount} pontos! Saldo: {new_balance}",
+    },
+    headers=HEADERS,
+)
+notification_id = response.json()["data"]["notification_id"]
+```
+
+```javascript JavaScript
+const response = await fetch(`${BASE_URL}/wallet/notifications/`, {
+  method: "POST",
+  headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+  body: JSON.stringify({
+    customer_id: customerId,
+    type: "points_update",
+    message: `Você ganhou ${amount} pontos! Saldo: ${newBalance}`,
+  }),
+});
+const { data } = await response.json();
+console.log(`Queued: ${data.notification_id}`);
+```
+</CodeGroup>
+
+### When to use each `type`
+
+| `type` | Use when | Example message |
+|--------|----------|-----------------|
+| `points_update` | Points balance changed (earned, spent, manual adjust). Paired with the relevant operation (`/points/add/`, `redeem`, etc.) | `"Você ganhou 1500 pontos! Saldo: 1520"` |
+| `coupon_available` | New coupon was just issued for the customer — let them open the wallet pass and see it | `"Seu cupom Sobremesa Grátis está disponível!"` |
+| `program_update` | Generic program-wide news (campaign, tier change, expiry warning) that isn't tied to a specific transaction | `"Nova campanha — descontos esta semana"` |
+
+The choice doesn't change delivery behavior — it's metadata that helps the customer's wallet UI group similar notifications. Pick the one that best matches the trigger.
+
+### Notification errors
+
+| Status | Type | When |
+|--------|------|------|
+| 202 | — | Queued successfully. The async fanout decides per-platform delivery. |
+| 404 | `not-found` | `customer_id` doesn't exist in your company |
+| 422 | `validation-error` | Invalid `type` (not in the enum), missing/empty `message`, or `message > 500` chars |
+
+<Warning>
+  This is a **best-effort fire-and-forget** dispatch. A 202 means we accepted the request, not that the push reached the customer's device. Reasons it may silently drop later:
+
+  - The customer has no wallet pass installed (verify with [`GET /customers/{id}/wallet-devices/`](#know-if-the-customer-installed-the-pass-and-on-which-platform) first if you need a guarantee).
+  - The customer uninstalled the pass after generation (Apple returns `BadDeviceToken` → registration is purged).
+  - Rate-limit guard: max 10 notifications per customer per hour (Redis-tracked, returns 202 but logs the throttle).
+</Warning>
+
+### What the customer actually sees
+
+- **iPhone (Apple Wallet)**: silent APNs push (no banner) → Wallet quietly re-downloads the pkpass → the back-field `"Última Mensagem"` updates to your `message`. The pass icon may pulse briefly on the lock screen depending on iOS settings.
+- **Android (Google Wallet)**: server-side `objects.patch` → notification appears in the Google Wallet feed with the merchant's class branding. May trigger a system notification on the device depending on the user's Wallet notification settings.
+
+Typical latency: **5-15 seconds** to APNs, **30-60 seconds** to Google. If the iPhone shows the old message after a push, the customer can pull-to-refresh on the pass — that forces a non-conditional `GET /v1/passes/.../` and bypasses any stale cache.
 
 <Note>
   Wallet endpoints require a **read-write** API key (they create passes). Read-only keys get
