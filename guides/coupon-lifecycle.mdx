@@ -14,6 +14,8 @@ Coupons are the core reward delivery mechanism in Zupy. When a customer redeems 
 Every coupon follows this flow:
 
 ```
+(optional) Request + Verify OTP  →  X-OTP-Session token
+                                       ↓
 Browse Rewards → Redeem Reward → Coupon Created (CZ-XXXXXXXX)
                                        ↓
                   List Customer Coupons (active/used/expired)
@@ -22,19 +24,33 @@ Browse Rewards → Redeem Reward → Coupon Created (CZ-XXXXXXXX)
 ```
 
 <Steps>
+  <Step title="(If required) Get an OTP session">
+    Most companies enable `require_otp_for_redemption` and `require_otp_for_coupon_usage` by default — without a valid `X-OTP-Session` header, the redeem and validate calls below return `403 otp-required`. See [OTP Flow](/guides/otp-flow) for the full request → verify dance.
+  </Step>
   <Step title="Browse Available Rewards">
     Query the reward catalog to see what the customer can redeem.
   </Step>
   <Step title="Redeem Reward">
-    Create a coupon by redeeming a reward for a specific customer.
+    Create a coupon by redeeming a reward for a specific customer. Returns the coupon's KSUID `id` **and** the customer-facing `CZ-` code.
   </Step>
   <Step title="List Coupons">
-    View the customer's coupons, filtered by status.
+    View the customer's coupons, filtered by status. Use this to find the KSUID `id` you'll need for validation.
   </Step>
   <Step title="Validate (Use) Coupon">
-    Atomically mark the coupon as used at the point of sale.
+    Atomically mark the coupon as used at the point of sale. Pass the **KSUID `id`** in the path — not the `CZ-` code.
   </Step>
 </Steps>
+
+### Two identifiers, one coupon
+
+Every coupon carries two identifiers — distinct on purpose:
+
+| Identifier | Format | Used for |
+|------------|--------|----------|
+| `id` | KSUID (e.g. `16a33f27fbbc1801d63d56d2027`) | **API operations** — the path parameter on `POST /customers/{id}/coupons/{id}/validate/`. Stable, opaque, never shown to customers. |
+| `coupon_code` | `CZ-XXXXXXXX` (e.g. `CZ-914F15F3`) | **Customer-facing display** — printed on receipts, shown in wallet passes, spoken by the cashier. Human-friendly but never used as an API key. |
+
+Mixing them up is the most common partner-integration bug. Validating with the `CZ-` code returns `404 not-found`.
 
 ## Step 1: Browse Available Rewards
 
@@ -156,12 +172,12 @@ POST /api/v2/customers/{id}/rewards/{reward_id}/redeem/
 | Field | Type | Description |
 |-------|------|-------------|
 | `customer_id` | string | Customer KSUID |
-| `coupon_code` | string | Unique coupon code (format: `CZ-XXXXXXXX`) |
-| `points_used` | integer | Points deducted from balance |
-| `z_tokens_used` | string | Z$ tokens used (null if `use_z_tokens: false`) |
-| `new_balance` | integer | Customer's remaining points balance |
-| `new_z_balance` | string | Customer's remaining Z$ balance (null if `use_z_tokens: false`) |
-| `valid_until` | string | ISO 8601 expiration date |
+| `coupon_code` | string | Unique coupon code (format: `CZ-XXXXXXXX`). Display this to the customer for in-store redemption. |
+| `points_used` | integer | Points deducted from the customer's balance (`0` for marketing rewards) |
+| `z_tokens_used` | string | Z$ tokens consumed by this redemption — `"0.000000"` when `use_z_tokens=false` or the reward is purely points-based |
+| `new_balance` | integer | Customer's remaining **points** balance after the redemption |
+| `new_z_balance` | string | Customer's **current Z$** balance after any token consumption. Always returned (not conditional on `use_z_tokens`) — partners use it to surface the live balance back to the customer. |
+| `valid_until` | string | ISO 8601 expiration date (server-computed from `reward.validity_days`) |
 | `created_at` | string | ISO 8601 coupon creation timestamp |
 
 <CodeGroup>
@@ -214,7 +230,7 @@ console.log(`Valid until: ${coupon.valid_until}`);
     "points_used": 200,
     "z_tokens_used": "0.000000",
     "new_balance": 350,
-    "new_z_balance": null,
+    "new_z_balance": "2418.400000",
     "valid_until": "2026-04-25T00:00:00Z",
     "created_at": "2026-03-25T14:30:00Z"
   },
@@ -230,9 +246,10 @@ console.log(`Valid until: ${coupon.valid_until}`);
 
 | Status | Type | When |
 |--------|------|------|
-| 403 | `otp-required` | OTP verification required but `X-OTP-Session` not provided |
-| 404 | `not-found` | Customer or reward not found |
-| 422 | `validation-error` | Customer doesn't have enough points, or reward already redeemed by this customer |
+| 403 | `otp-required` | OTP policy is on but `X-OTP-Session` was not provided. See [OTP Flow](/guides/otp-flow). |
+| 404 | `not-found` | Customer or reward not found in your company |
+| 422 | `validation-error` | Customer doesn't have enough points — `detail` field explains which constraint failed |
+| 422 | `validation-error` | Marketing reward already redeemed by this customer (free rewards have a 1-per-customer limit). `errors[].detail` = `"Prêmio gratuito já resgatado por este cliente"` |
 
 ## Step 3: List Customer's Coupons
 
@@ -358,6 +375,10 @@ Validate a coupon to mark it as used. This is an **atomic operation** — concur
 POST /api/v2/customers/{id}/coupons/{coupon_id}/validate/
 ```
 
+<Warning>
+  **Important**: the `{coupon_id}` path parameter is the **`id`** field returned by `GET /coupons/issued/` (a KSUID, e.g. `16a33f27fbbc1801d63d56d2027`) — **not** the human-readable `coupon_code` like `CZ-914F15F3`. The KSUID is the canonical key; the `CZ-` code is the customer-facing display string only.
+</Warning>
+
 Send an **empty POST body** (no JSON needed).
 
 **Response fields:**
@@ -433,9 +454,9 @@ console.log(`Remaining uses: ${result.remaining_usages}`);
 
 | Status | Type | When |
 |--------|------|------|
-| 403 | `otp-required` | OTP verification required but `X-OTP-Session` not provided |
-| 404 | `not-found` | Coupon not found or doesn't belong to this customer |
-| 409 | `conflict` | Coupon already fully used or expired |
+| 403 | `otp-required` | OTP verification required but `X-OTP-Session` not provided. See [OTP Flow](/guides/otp-flow). |
+| 404 | `not-found` | Coupon `id` not found or doesn't belong to this customer. Confirm you're passing the KSUID `id` field, not the `CZ-` code. |
+| 409 | `conflict` | Coupon already fully consumed. `detail`: `"Cupom já Used"` (or `"Expired"` / `"Cancelled"`). Re-validating an already-used coupon is **safe and idempotent** — it returns 409, never double-applies the side effect. |
 
 ## Multi-Use Coupons
 
@@ -537,7 +558,7 @@ curl -X GET "https://api.zupy.com/api/v2/coupons/issued/stats/?reward_id=2cx...r
 
 ## Full Example: Complete Coupon Flow
 
-End-to-end flow: browse rewards, redeem, list coupons, and validate.
+End-to-end flow validated in production 2026-05-26: request OTP → verify → browse rewards → redeem → list coupons → validate. Skip the OTP block if your integration's policy disables `require_otp_for_redemption` and `require_otp_for_coupon_usage`.
 
 <CodeGroup>
 ```python Python
@@ -546,8 +567,25 @@ import requests
 BASE_URL = "https://api.zupy.com/api/v2"
 HEADERS = {"X-API-Key": "zupy_pk_your_api_key_here"}
 customer_id = "2awTHloSJX7kGGprFerOOsvABcd"
+customer_phone = "+5511987654321"
 
-# Step 1: Browse rewards the customer can afford
+# ── Step 0 (when OTP is required): get a trusted session ──
+requests.post(
+    f"{BASE_URL}/auth/request-otp/",
+    json={"identifier": customer_phone},
+    headers=HEADERS,
+)
+# Customer receives a 6-digit code via WhatsApp. Collect it from them, then:
+otp_code = input("OTP from customer: ")
+verify = requests.post(
+    f"{BASE_URL}/auth/verify-otp/",
+    json={"identifier": customer_phone, "otp_code": otp_code},
+    headers=HEADERS,
+).json()["data"]
+otp_session = verify["otp_session"]
+AUTHED = {**HEADERS, "X-OTP-Session": otp_session}
+
+# ── Step 1: Browse rewards the customer can afford ──
 response = requests.get(
     f"{BASE_URL}/rewards/",
     params={"customer_id": customer_id, "redeemable": True},
@@ -556,17 +594,18 @@ response = requests.get(
 rewards = response.json()["data"]
 print(f"Found {len(rewards)} redeemable rewards")
 
-# Step 2: Redeem the first available reward
+# ── Step 2: Redeem the first available reward ──
 reward_id = rewards[0]["id"]
 response = requests.post(
     f"{BASE_URL}/customers/{customer_id}/rewards/{reward_id}/redeem/",
     json={"use_z_tokens": False},
-    headers=HEADERS,
+    headers=AUTHED,  # uses the OTP session
 )
 coupon = response.json()["data"]
 print(f"Coupon created: {coupon['coupon_code']}, valid until {coupon['valid_until']}")
+print(f"Customer balance: {coupon['new_balance']} pts, {coupon['new_z_balance']} Z$")
 
-# Step 3: List active coupons
+# ── Step 3: List active coupons (returns the KSUID 'id' field) ──
 response = requests.get(
     f"{BASE_URL}/coupons/issued/",
     params={"customer_id": customer_id, "status": "active"},
@@ -575,61 +614,82 @@ response = requests.get(
 active_coupons = response.json()["data"]
 print(f"{len(active_coupons)} active coupons")
 
-# Step 4: Validate the coupon at the point of sale
-coupon_id = active_coupons[0]["id"]
+# ── Step 4: Validate the coupon at the point of sale ──
+# IMPORTANT: pass the KSUID 'id' field, NOT the CZ-XXX coupon_code.
+coupon_ksuid = active_coupons[0]["id"]
 response = requests.post(
-    f"{BASE_URL}/customers/{customer_id}/coupons/{coupon_id}/validate/",
-    headers=HEADERS,
+    f"{BASE_URL}/customers/{customer_id}/coupons/{coupon_ksuid}/validate/",
+    headers=AUTHED,
 )
 result = response.json()["data"]
 print(f"Coupon {result['coupon_code']} used at {result['validated_at']}")
+print(f"Remaining uses: {result['remaining_usages']} / {result['total_usages_allowed']}")
 ```
 
 ```javascript JavaScript
 const BASE_URL = "https://api.zupy.com/api/v2";
 const API_KEY = "zupy_pk_your_api_key_here";
 const customerId = "2awTHloSJX7kGGprFerOOsvABcd";
+const customerPhone = "+5511987654321";
 
-// Step 1: Browse rewards the customer can afford
+const HEADERS = { "X-API-Key": API_KEY, "Content-Type": "application/json" };
+
+// ── Step 0 (when OTP is required): get a trusted session ──
+await fetch(`${BASE_URL}/auth/request-otp/`, {
+  method: "POST",
+  headers: HEADERS,
+  body: JSON.stringify({ identifier: customerPhone }),
+});
+// Customer receives a 6-digit code via WhatsApp. Collect it, then:
+const otpCode = prompt("OTP from customer:");
+const verifyRes = await fetch(`${BASE_URL}/auth/verify-otp/`, {
+  method: "POST",
+  headers: HEADERS,
+  body: JSON.stringify({ identifier: customerPhone, otp_code: otpCode }),
+});
+const { data: verify } = await verifyRes.json();
+const AUTHED = { ...HEADERS, "X-OTP-Session": verify.otp_session };
+
+// ── Step 1: Browse rewards the customer can afford ──
 let response = await fetch(
   `${BASE_URL}/rewards/?customer_id=${customerId}&redeemable=true`,
-  { headers: { "X-API-Key": API_KEY } }
+  { headers: HEADERS }
 );
 const { data: rewards } = await response.json();
 console.log(`Found ${rewards.length} redeemable rewards`);
 
-// Step 2: Redeem the first available reward
+// ── Step 2: Redeem the first available reward ──
 const rewardId = rewards[0].id;
 response = await fetch(
   `${BASE_URL}/customers/${customerId}/rewards/${rewardId}/redeem/`,
   {
     method: "POST",
-    headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+    headers: AUTHED,  // uses the OTP session
     body: JSON.stringify({ use_z_tokens: false }),
   }
 );
 const { data: coupon } = await response.json();
 console.log(`Coupon created: ${coupon.coupon_code}, valid until ${coupon.valid_until}`);
+console.log(`Balance: ${coupon.new_balance} pts, ${coupon.new_z_balance} Z$`);
 
-// Step 3: List active coupons
+// ── Step 3: List active coupons (returns the KSUID 'id' field) ──
 response = await fetch(
   `${BASE_URL}/coupons/issued/?customer_id=${customerId}&status=active`,
-  { headers: { "X-API-Key": API_KEY } }
+  { headers: HEADERS }
 );
 const { data: activeCoupons } = await response.json();
 console.log(`${activeCoupons.length} active coupons`);
 
-// Step 4: Validate the coupon at the point of sale
-const couponId = activeCoupons[0].id;
+// ── Step 4: Validate the coupon at the point of sale ──
+// IMPORTANT: pass the KSUID 'id' field, NOT the CZ-XXX coupon_code.
+const couponKsuid = activeCoupons[0].id;
 response = await fetch(
-  `${BASE_URL}/customers/${customerId}/coupons/${couponId}/validate/`,
-  {
-    method: "POST",
-    headers: { "X-API-Key": API_KEY },
-  }
+  `${BASE_URL}/customers/${customerId}/coupons/${couponKsuid}/validate/`,
+  { method: "POST", headers: AUTHED }
 );
 const { data: result } = await response.json();
 console.log(`Coupon ${result.coupon_code} used at ${result.validated_at}`);
+console.log(`Remaining: ${result.remaining_usages} / ${result.total_usages_allowed}`);
 ```
 </CodeGroup>
 
