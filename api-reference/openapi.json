@@ -2693,6 +2693,18 @@
             "format": "decimal",
             "readOnly": true,
             "description": "Company Z$ (ZUPYies) balance — usable as marketing-campaign budget."
+          },
+          "program_setup_completed": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "Story 0.2 onboarding gate: `true` once the merchant has finished the loyalty-program setup wizard. Dashboards use it to hide the 'Finalizar Programa' CTA when the company is fully configured."
+          },
+          "airdrop_claimed_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true,
+            "nullable": true,
+            "description": "Timestamp when the merchant claimed the initial Z\\$ 2.000 airdrop. `null` for companies that never went through the campaign-onboarding wizard. The pair `(airdrop_claimed_at, zupy_balance)` lets a partner UI decide whether to surface the airdrop CTA without a state-mutating call."
           }
         },
         "required": [
@@ -2961,9 +2973,19 @@
             "type": "string",
             "readOnly": true
           },
+          "is_email_verified": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "`true` when the customer has confirmed ownership of `email` (e.g. clicked a verification link). `false` for contacts imported from a partner (Repediu, Anota AI…) that were never proved by the owner. Use this to decide whether to trust `email` for transactional communication."
+          },
           "phone": {
             "type": "string",
             "readOnly": true
+          },
+          "is_phone_verified": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "`true` when the customer has confirmed ownership of `phone` via WhatsApp OTP. Same imported-contact caveat as `is_email_verified` — unchecked contacts are 'on file' but never proved."
           },
           "cpf": {
             "type": "string",
