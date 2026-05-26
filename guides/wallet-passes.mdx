@@ -1,0 +1,96 @@
+---
+title: "Wallet Passes"
+description: "Generate Apple Wallet / Google Wallet passes for a customer's loyalty card or coupon via the Zupy API"
+---
+
+Zupy can deliver a customer's **loyalty card** or **coupon** as an Apple Wallet / Google Wallet
+pass. As a partner you only tell Zupy **which customer** and **which platform** — Zupy generates
+the pass from the merchant's existing card/coupon design and template.
+
+<Note>
+  **Generation is reference-only.** The integration cannot personalize the pass (no custom fields,
+  colors, or templates). Zupy builds it from the data and wallet template the merchant already
+  configured — exactly the same pass the customer would get from the program landing page.
+</Note>
+
+## How it works
+
+Both the program landing page and the partner API use the **same** generator
+(`PassGenerationService`). The only difference is delivery:
+
+| Flow | Endpoint | Delivery |
+|------|----------|----------|
+| Landing page (in-browser) | downloads the `.pkpass` directly | streams the file / redirects to Google |
+| **Partner API** | `POST /api/v2/wallet/passes/loyalty/` | returns a `pass_url` you hand to the customer |
+
+The `pass_url` is the same Apple `.pkpass` URL / Google Wallet save link the LoyaltyCard carries.
+The customer opens it to add the card to their wallet.
+
+## Generate a loyalty card pass
+
+```
+POST /api/v2/wallet/passes/loyalty/
+```
+
+**Request body:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `customer_id` | string | **Required.** Customer KSUID (the LoyaltyUser). |
+| `platform` | string | **Required.** `apple` or `google`. |
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.zupy.com/api/v2/wallet/passes/loyalty/" \
+  -H "X-API-Key: zupy_pk_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"customer_id": "2awTHloSJX7kGGprFerOOsvABcd", "platform": "apple"}'
+```
+</CodeGroup>
+
+```json Response (201)
+{
+  "data": {
+    "id": "2cxSLnqYLZ0nJJsuIhuSSvyFGij",
+    "pass_url": "https://api.zupy.com/wallet/apple/2cxSLnqYLZ0nJJsuIhuSSvyFGij.pkpass",
+    "platform": "apple",
+    "created_at": "2026-05-25T18:00:00Z"
+  },
+  "meta": {}
+}
+```
+
+Deliver `pass_url` to the customer (link, button, QR). Opening it adds the card to their wallet.
+
+## Generate a coupon pass
+
+```
+POST /api/v2/wallet/passes/coupons/
+```
+
+Same idea, plus the issued coupon to wrap:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `customer_id` | string | **Required.** Customer KSUID. |
+| `coupon_id` | string | **Required.** Issued coupon KSUID (a `RewardRedemption`, see [Coupon Lifecycle](/guides/coupon-lifecycle)). |
+| `platform` | string | **Required.** `apple` or `google`. |
+
+## Check pass status
+
+```
+GET /api/v2/wallet/passes/{pass_id}/status/
+```
+
+Returns whether the pass was added/removed by the customer (useful for engagement metrics).
+
+## List a customer's passes
+
+```
+GET /api/v2/wallet/passes/?customer_id={id}
+```
+
+<Note>
+  Wallet endpoints require a **read-write** API key (they create passes). Read-only keys get
+  `403` on the create endpoints.
+</Note>
