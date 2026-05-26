@@ -4137,6 +4137,48 @@
             "type": "string",
             "format": "date-time",
             "readOnly": true
+          },
+          "settlement_budget": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,10}(?:\\.\\d{0,2})?$",
+            "readOnly": true,
+            "nullable": true
+          },
+          "customer_split_pct": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Customer's share of the settlement (hardcoded constant 50.00%)."
+          },
+          "operator_split_pct": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+            "readOnly": true,
+            "nullable": true
+          },
+          "publisher_split_pct": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+            "readOnly": true,
+            "nullable": true
+          },
+          "sharer_split_pct": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
+            "readOnly": true,
+            "nullable": true
+          },
+          "z_distributed_total": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Total Z$ already distributed via this reward (used_redemptions × settlement_budget). null for non-marketing rewards."
+          },
+          "origin_type": {
+            "type": "string",
+            "readOnly": true
           }
         },
         "required": [
