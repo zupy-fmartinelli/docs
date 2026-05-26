@@ -309,6 +309,64 @@ The Z\$ top-up can cover at most **20% of the reward's point cost**. If the poin
 
 </Accordion>
 
+## Z\$ Economy on Marketing Coupons (Settlement Splits)
+
+Marketing coupons (rewards with `origin_type=marketing`) are funded by the company's
+Z\$ budget and pay out on every redemption. The split is **public** because every actor
+in the marketplace — including the integration partner — may receive Z\$ from it.
+
+Every redemption distributes `settlement_budget` Z\$ split between four actors. Each
+percentage is a share of the **full `settlement_budget`** (not of a sub-portion):
+
+```
+              settlement_budget (per redemption = 100%)
+                              │
+   ┌──────────────────────────┼──────────────────────────┐
+   │              │           │           │              │
+   │              │           │           │              │
+   │ Customer    Operator    Publisher    Sharer         │
+   │  50.00%   *_split_pct   *_split_pct *_split_pct      │
+   │ (hardcoded)    └─────────┴───────────┘              │
+   │              must sum to exactly 50.00              │
+   └──────────────────────────────────────────────────────┘
+                Customer 50  +  Other 3 splits 50  = 100
+```
+
+- **Customer share is always 50%** — exposed on the API as `customer_split_pct = "50.00"`.
+- The **3 configurable percentages must sum to exactly `50.00`** so that customer + the
+  three together equal 100% of `settlement_budget`. Any individual split can be `0` if
+  the merchant chose to allocate everything to the other actors.
+- **`operator_split_pct` may be the integration partner**, not the merchant — if your
+  integration is the entity publishing the coupon, this is your commission. Always
+  check this field for your share.
+
+### Fields on `GET /api/v2/rewards/`
+
+For each reward (loyalty or marketing) the catalog returns:
+
+| Field | Meaning |
+|-------|---------|
+| `settlement_budget` | Total Z\$ paid out per redemption (the 100% of the pie) |
+| `customer_split_pct` | Always `"50.00"` — the customer's share |
+| `operator_split_pct` | % of `settlement_budget` going to the operator (merchant **or** integration partner) |
+| `publisher_split_pct` | % of `settlement_budget` going to the marketplace publisher |
+| `sharer_split_pct` | % of `settlement_budget` going to whoever shared the viral link |
+| `z_distributed_total` | Total Z\$ already distributed = `used_redemptions × settlement_budget` |
+| `origin_type` | `marketing` (this rule applies) or `loyalty_reward` (points-based redemption) |
+
+### Worked example
+
+A marketing coupon with `settlement_budget = "100.00"`, `operator_split_pct = "0.00"`,
+`publisher_split_pct = "24.00"`, `sharer_split_pct = "26.00"`:
+
+- Customer: `100 × 0.50` = **50 Z\$** (the hardcoded 50%)
+- Operator: `100 × 0.00` = **0 Z\$** (merchant gave up its share)
+- Publisher: `100 × 0.24` = **24 Z\$**
+- Sharer: `100 × 0.26` = **26 Z\$**
+- **Total distributed = 100 Z\$** (full `settlement_budget` ✓)
+
+After 5 used redemptions, `z_distributed_total = "500.00"` (5 × 100).
+
 ## Important Notes & FAQ
 
 <Accordion title="Can Z\$ be transferred between customers?">
