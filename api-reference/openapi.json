@@ -1334,6 +1334,84 @@
         }
       }
     },
+    "/api/v2/customers/{id}/wallet-devices/": {
+      "get": {
+        "operationId": "customers_wallet_devices_retrieve",
+        "description": "List **where the customer has installed your company's wallet passes** — Apple Wallet (per-device list, since PassKit registers each iPhone) and Google Wallet (flat pass list, since Google syncs across devices server-side).\n\nUse the response to decide whether to fire a push via `POST /api/v2/wallet/notifications/`, and to know if the push will reach the customer at all (empty arrays = pass never installed).\n\n**Multi-tenant**: only passes belonging to your company are listed, even if the underlying user has cards from other partners.\n\n### Platform-tracking asymmetry\n\n* **Apple Wallet**: every iPhone that adds the pass calls the PassKit Web Service to register itself + a push token. We surface a per-device list with `device_count` and `pass_count`.\n* **Google Wallet**: Google manages cross-device sync server-side — we only know the pass is **in the user's Google Wallet account** (one or more Android devices). `device_count` is omitted for that reason.",
+        "summary": "List customer wallet platforms (iPhone / Android)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for this customer.",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Customers"
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeWalletDevices"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v2/customers/{id}/z-balance/": {
       "get": {
         "operationId": "customers_z_balance_retrieve",
@@ -3226,6 +3304,21 @@
           "meta"
         ]
       },
+      "EnvelopeWalletDevices": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/WalletDevicesResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
       "EnvelopeZBalance": {
         "type": "object",
         "properties": {
@@ -3239,6 +3332,183 @@
         "required": [
           "data",
           "meta"
+        ]
+      },
+      "WalletDevicesResponse": {
+        "type": "object",
+        "description": "Per-platform inventory of where the customer has installed wallet passes from your company.",
+        "properties": {
+          "customer_id": {
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/WalletDevicesSummary"
+          },
+          "apple_devices": {
+            "type": "array",
+            "description": "One entry per iPhone/Apple device that registered for Apple Wallet pass updates.",
+            "items": {
+              "$ref": "#/components/schemas/AppleWalletDevice"
+            }
+          },
+          "google_passes": {
+            "type": "array",
+            "description": "Flat list of passes present in the customer's Google Wallet account (no per-device fan-out — Google syncs across devices).",
+            "items": {
+              "$ref": "#/components/schemas/GoogleWalletPass"
+            }
+          }
+        },
+        "required": [
+          "customer_id",
+          "summary",
+          "apple_devices",
+          "google_passes"
+        ]
+      },
+      "WalletDevicesSummary": {
+        "type": "object",
+        "properties": {
+          "apple": {
+            "$ref": "#/components/schemas/WalletPlatformSummary"
+          },
+          "google": {
+            "$ref": "#/components/schemas/WalletPlatformSummary"
+          }
+        },
+        "required": [
+          "apple",
+          "google"
+        ]
+      },
+      "WalletPlatformSummary": {
+        "type": "object",
+        "properties": {
+          "installed": {
+            "type": "boolean",
+            "description": "True when the customer has at least one pass installed on this platform."
+          },
+          "device_count": {
+            "type": "integer",
+            "description": "Number of distinct devices on this platform. **Apple only** — omitted for Google, where multi-device sync is server-side."
+          },
+          "pass_count": {
+            "type": "integer",
+            "description": "Total installed-pass registrations on this platform."
+          }
+        },
+        "required": [
+          "installed",
+          "pass_count"
+        ]
+      },
+      "AppleWalletDevice": {
+        "type": "object",
+        "description": "One Apple device that registered for pass updates via the PassKit Web Service.",
+        "properties": {
+          "device_library_identifier": {
+            "type": "string",
+            "description": "Opaque per-device ID assigned by Apple. Use it to deduplicate when the same iPhone registers multiple passes."
+          },
+          "platform_hint": {
+            "type": "string",
+            "enum": ["ios", "macos", "unknown"]
+          },
+          "os_version": {
+            "type": "string",
+            "nullable": true
+          },
+          "device_model": {
+            "type": "string",
+            "nullable": true
+          },
+          "locale": {
+            "type": "string",
+            "nullable": true
+          },
+          "first_registered_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_registered_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "registered_passes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppleRegisteredPass"
+            }
+          }
+        },
+        "required": [
+          "device_library_identifier",
+          "platform_hint",
+          "first_registered_at",
+          "last_registered_at",
+          "registered_passes"
+        ]
+      },
+      "AppleRegisteredPass": {
+        "type": "object",
+        "properties": {
+          "serial_number": {
+            "type": "string"
+          },
+          "pass_type_identifier": {
+            "type": "string",
+            "description": "Apple pass type identifier (e.g. `pass.com.zupy.clube.public`)."
+          },
+          "pass_type": {
+            "type": "string",
+            "enum": ["loyalty", "coupon"],
+            "nullable": true
+          },
+          "reward_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "For coupon passes only — the human-readable name of the underlying reward."
+          },
+          "google_object_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set when the SAME pass is also present in Google Wallet (rare — most users use one platform)."
+          },
+          "last_push_sent": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "serial_number",
+          "pass_type_identifier",
+          "last_push_sent"
+        ]
+      },
+      "GoogleWalletPass": {
+        "type": "object",
+        "description": "One pass present in the customer's Google Wallet account. No per-device data — Google syncs across devices.",
+        "properties": {
+          "serial_number": {
+            "type": "string"
+          },
+          "pass_type": {
+            "type": "string",
+            "enum": ["loyalty", "coupon"]
+          },
+          "reward_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "google_object_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "serial_number",
+          "pass_type",
+          "google_object_id"
         ]
       },
       "Error": {

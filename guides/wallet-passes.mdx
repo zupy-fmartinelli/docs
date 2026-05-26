@@ -90,6 +90,77 @@ Returns whether the pass was added/removed by the customer (useful for engagemen
 GET /api/v2/wallet/passes/?customer_id={id}
 ```
 
+## Know if the customer installed the pass (and on which platform)
+
+Before firing a push notification, you usually want to know whether the customer actually added
+the pass to their wallet — and on which platform — so you can act intelligently (e.g. show an
+"Add to Wallet" prompt instead of pushing into the void, or send an SMS fallback when no wallet
+install exists).
+
+```
+GET /api/v2/customers/{customer_id}/wallet-devices/
+```
+
+The response separates **Apple Wallet** (per-device list, because PassKit registers each iPhone
+explicitly) from **Google Wallet** (flat pass list, because Google syncs across devices
+server-side and we have no per-device telemetry).
+
+```json
+{
+  "data": {
+    "customer_id": "2abc...",
+    "summary": {
+      "apple":  { "installed": true,  "device_count": 1, "pass_count": 1 },
+      "google": { "installed": false,                    "pass_count": 0 }
+    },
+    "apple_devices": [
+      {
+        "device_library_identifier": "5defd6b5d63fd0c3ed16690bbbce9709",
+        "platform_hint": "ios",
+        "locale": "pt-BR",
+        "first_registered_at": "2026-05-26T07:13:25Z",
+        "last_registered_at": "2026-05-26T07:13:25Z",
+        "registered_passes": [
+          {
+            "serial_number": "40d96d49-ad9e-4b65-9675-6333d39ffcfb",
+            "pass_type_identifier": "pass.com.zupy.clube.public",
+            "pass_type": "coupon",
+            "reward_name": "Vale Sobremesa",
+            "last_push_sent": "2026-05-26T07:42:07Z"
+          }
+        ]
+      }
+    ],
+    "google_passes": []
+  },
+  "meta": {}
+}
+```
+
+<Tip>
+  `summary.apple.installed` + `summary.google.installed` is the fastest signal: at least one
+  side `true` means a `POST /api/v2/wallet/notifications/` call will reach the customer.
+</Tip>
+
+## Send a push notification to the wallet pass
+
+```
+POST /api/v2/wallet/notifications/
+Content-Type: application/json
+
+{
+  "customer_id": "2abc...",
+  "type": "points_update" | "coupon_available" | "program_update",
+  "message": "Sua mensagem aqui (até 500 chars)"
+}
+→ 202 Accepted { "notification_id": "ksuid...", "status": "queued" }
+```
+
+The notification fans out automatically to **both** Apple and Google Wallet sides of the
+customer's pass — you don't need to pick a platform. Apple silently re-downloads the pass
+(showing the new `message` on the back); Google updates server-side and surfaces the message in
+the user's Google Wallet feed.
+
 <Note>
   Wallet endpoints require a **read-write** API key (they create passes). Read-only keys get
   `403` on the create endpoints.
