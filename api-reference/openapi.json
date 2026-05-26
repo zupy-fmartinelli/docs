@@ -3630,21 +3630,22 @@
             "type": "string",
             "readOnly": true
           },
-          "welcome_reward_type": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/WelcomeRewardTypeEnum"
-              }
-            ],
+          "welcome_campaign_id": {
+            "type": "string",
             "readOnly": true,
-            "title": "Tipo de Presente de Boas-Vindas",
-            "description": "Type of welcome gift new users receive upon enrollment"
+            "nullable": true,
+            "description": "ID of the welcome campaign that fires on enrollment (null if no campaign attached). Replaces the legacy welcome_points_bonus / welcome_reward_type fields — point awards and gifts are now configured via the campaign object."
           },
-          "welcome_points_bonus": {
-            "type": "integer",
+          "how_it_works": {
+            "type": "string",
             "readOnly": true,
-            "title": "Welcome Bonus Points",
-            "description": "Number of bonus points automatically awarded to new users"
+            "description": "Custom 'Como Funciona' wallet-card text override. Empty string means use the FE-derived default (\"A cada R$X você ganha N pontos…\")."
+          },
+          "status": {
+            "type": "string",
+            "readOnly": true,
+            "enum": ["draft", "published", "archived"],
+            "description": "Per-program lifecycle status. Distinct from is_active (which is the legacy boolean kept for backwards compat)."
           },
           "profile_completion_enabled": {
             "type": "boolean",
@@ -3712,11 +3713,10 @@
           "profile_completion_points",
           "rewards_count",
           "slug",
+          "status",
           "tier_definitions",
           "tiers_enabled",
-          "updated_at",
-          "welcome_points_bonus",
-          "welcome_reward_type"
+          "updated_at"
         ]
       },
       "NullEnum": {
@@ -4449,6 +4449,29 @@
           "origin_type": {
             "type": "string",
             "readOnly": true
+          },
+          "budget_mode": {
+            "type": "string",
+            "readOnly": true,
+            "description": "How the campaign budget is enforced: 'unlimited' (no cap), 'per_redemption' (each redeem consumes settlement_budget Z$), or 'pooled' (shared across all redemptions)."
+          },
+          "campaign_status": {
+            "type": "string",
+            "readOnly": true,
+            "nullable": true,
+            "description": "Lifecycle of the campaign that hosts this reward (draft, active, paused, ended). null for non-marketing rewards."
+          },
+          "campaign_operator_id": {
+            "type": "string",
+            "readOnly": true,
+            "nullable": true,
+            "description": "ID of the partner operator who created/operates this campaign (e.g. an aggregator running the marketing reward on behalf of a merchant). null for direct-merchant rewards."
+          },
+          "campaign_operator_name": {
+            "type": "string",
+            "readOnly": true,
+            "nullable": true,
+            "description": "Human-readable name of the campaign operator (paired with campaign_operator_id)."
           }
         },
         "required": [
