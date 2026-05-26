@@ -1,5 +1,5 @@
 ---
-title: "Webhook Setup"
+title: "Webhook Setup (Inbound — partner → Zupy)"
 description: "Send order data to Zupy for automatic customer enrollment and points processing via webhooks"
 ---
 
@@ -8,6 +8,13 @@ Send order and customer data to Zupy for automatic loyalty processing. Webhooks 
 <Note>
   **Prerequisites**: Your API key (`zupy_pk_*`) and integration slug (e.g., `repediu`). See [Getting Started](/guides/getting-started) if you don't have these yet.
 </Note>
+
+<Tip>
+  **Two webhook surfaces — make sure you're on the right one.** This page covers the **inbound** flow: your system → Zupy. There's a separate **outbound** flow (Zupy → your system) where Zupy notifies you when a customer earns points, redeems a coupon, etc. — see [Outbound Webhooks](/guides/outbound-webhooks). The URLs are deliberately distinct:
+
+  - 🟢 **Inbound (this page)**: `POST /api/v2/webhooks/integrations/{partner}/` — you call this; Zupy ingests.
+  - 🟠 **Outbound**: `GET/PUT /api/v2/integrations/webhooks/` — you configure where Zupy should call.
+</Tip>
 
 ## How It Works
 

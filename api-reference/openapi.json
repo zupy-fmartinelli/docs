@@ -2926,13 +2926,18 @@
       },
       "CouponValidateResponse": {
         "type": "object",
-        "description": "Coupon validation result with current status and remaining usages.",
+        "description": "Coupon validation result with current status, remaining usages, and a settled-state snapshot of the customer's balances. Story W.x: response now mirrors RewardRedeemResponse — partners get customer_id + new_balance + new_z_balance without a follow-up GET.",
         "properties": {
+          "customer_id": {
+            "type": "string",
+            "description": "Customer KSUID (matches the {id} in the URL path)."
+          },
           "coupon_code": {
             "type": "string"
           },
           "status": {
-            "type": "string"
+            "type": "string",
+            "enum": ["validated"]
           },
           "remaining_usages": {
             "type": "integer"
@@ -2943,10 +2948,22 @@
           "validated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "new_balance": {
+            "type": "integer",
+            "description": "Customer's points balance after validation. Validate itself debits 0 pts (points were spent at redemption time); this is the current balance so partners don't need an extra GET /customers/{id}/points/ to confirm settled state."
+          },
+          "new_z_balance": {
+            "type": "string",
+            "format": "decimal",
+            "description": "Customer's current Z$ balance after validation, as a stringified Decimal with 6 places (matches the format used everywhere else in the API)."
           }
         },
         "required": [
+          "customer_id",
           "coupon_code",
+          "new_balance",
+          "new_z_balance",
           "remaining_usages",
           "status",
           "total_usages_allowed",
@@ -4448,21 +4465,24 @@
             "format": "decimal",
             "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
             "readOnly": true,
-            "nullable": true
+            "nullable": true,
+            "description": "**Reserved — always `null` in 2026-05 production data.** This field is part of a 4-way settlement-split surface (customer / operator / publisher / sharer) intended for a future cross-merchant marketplace flow where Z\\$ payouts route to multiple parties on redemption. Today only `customer_split_pct` is populated (constant 50%); the operator/publisher/sharer fields exist in the schema but are not yet wired into the redemption pipeline. **Do not write partner code that depends on a non-null value here yet.**"
           },
           "publisher_split_pct": {
             "type": "string",
             "format": "decimal",
             "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
             "readOnly": true,
-            "nullable": true
+            "nullable": true,
+            "description": "**Reserved — always `null` in 2026-05 production data.** Same caveat as `operator_split_pct`: part of the 4-way settlement surface, not yet wired. Documented here so the schema stays explicit about what's live and what's coming."
           },
           "sharer_split_pct": {
             "type": "string",
             "format": "decimal",
             "pattern": "^-?\\d{0,3}(?:\\.\\d{0,2})?$",
             "readOnly": true,
-            "nullable": true
+            "nullable": true,
+            "description": "**Reserved — always `null` in 2026-05 production data.** Same caveat as `operator_split_pct` / `publisher_split_pct`."
           },
           "z_distributed_total": {
             "type": "string",

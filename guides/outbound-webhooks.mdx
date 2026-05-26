@@ -1,5 +1,5 @@
 ---
-title: "Outbound Webhooks"
+title: "Outbound Webhooks (Zupy → partner)"
 description: "Receive real-time notifications when loyalty events occur — customer enrollments, points earned, reward redemptions, and coupon lifecycle events"
 ---
 
@@ -8,6 +8,13 @@ Receive real-time HTTP notifications when loyalty events occur in your customers
 <Note>
   **Prerequisites**: Your API key (`zupy_pk_*`). See [Getting Started](/guides/getting-started) if you don't have these yet.
 </Note>
+
+<Tip>
+  **Two webhook surfaces — make sure you're on the right one.** This page covers the **outbound** flow: Zupy → your system. There's a separate **inbound** flow (your system → Zupy) where you push order/customer data for processing — see [Webhook Setup (Inbound)](/guides/webhook-setup). The URLs are deliberately distinct:
+
+  - 🟠 **Outbound (this page)**: `GET/PUT /api/v2/integrations/webhooks/` — you configure where Zupy should call.
+  - 🟢 **Inbound**: `POST /api/v2/webhooks/integrations/{partner}/` — you call this; Zupy ingests.
+</Tip>
 
 ## How It Works
 

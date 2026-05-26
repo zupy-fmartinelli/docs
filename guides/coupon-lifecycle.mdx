@@ -400,11 +400,14 @@ Send an **empty POST body** (no JSON needed).
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `coupon_code` | string | The validated coupon code |
-| `status` | string | `"validated"` — confirms the coupon was successfully used |
-| `remaining_usages` | integer | Remaining uses after validation |
-| `total_usages_allowed` | integer | Total uses allowed for this coupon |
-| `validated_at` | string | ISO 8601 timestamp of validation |
+| `customer_id` | string | Customer KSUID (matches the `{id}` in the URL path). |
+| `coupon_code` | string | The validated coupon code. |
+| `status` | string | `"validated"` — confirms the coupon was successfully used. |
+| `remaining_usages` | integer | Remaining uses after validation. |
+| `total_usages_allowed` | integer | Total uses allowed for this coupon. |
+| `validated_at` | string | ISO 8601 timestamp of validation. |
+| `new_balance` | integer | Customer's points balance after validation. Validate itself debits 0 pts (points were spent at redemption time); this is the current balance, returned so partners don't need a follow-up `GET /customers/{id}/points/`. |
+| `new_z_balance` | string | Customer's current Z\$ balance after validation (stringified Decimal with 6 places — same format as `RewardRedeemResponse`). |
 
 <Warning>
   This is an **atomic** operation. The backend uses `select_for_update()` to prevent race conditions. If two concurrent validate calls hit the same coupon, only one will succeed — the other returns `409 Conflict`.
@@ -451,11 +454,14 @@ console.log(`Remaining uses: ${result.remaining_usages}`);
 ```json
 {
   "data": {
+    "customer_id": "2awTHloSJX7kGGprFerOOsvABcd",
     "coupon_code": "CZ-A1B2C3D4",
     "status": "validated",
     "remaining_usages": 0,
     "total_usages_allowed": 1,
-    "validated_at": "2026-03-25T14:30:00Z"
+    "validated_at": "2026-03-25T14:30:00Z",
+    "new_balance": 350,
+    "new_z_balance": "2418.400000"
   },
   "meta": {}
 }

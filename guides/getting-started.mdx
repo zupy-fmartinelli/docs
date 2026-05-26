@@ -298,6 +298,30 @@ console.log(`Balance: ${points.points_balance} ${points.points_name}`);
 
 You've successfully verified your API key, sent order data via webhook, looked up a customer, and checked their points balance.
 
+## Field Glossary — balances and identifiers
+
+To save you the time we spent figuring this out the first time, here are the partner-visible naming conventions in one table:
+
+### Balance fields
+
+| Field | Where it appears | What it means |
+|-------|------------------|---------------|
+| `points_balance` | `GET /customers/{id}/`, `GET /customers/{id}/points/`, OTP verify response | The customer's **current** points balance. The stable, always-queryable field. |
+| `new_balance` | `POST /rewards/{id}/redeem/` response, `POST /coupons/{id}/validate/` response | The customer's balance **immediately after** the operation. Same number as `points_balance` if you GET-after-POST — included so you don't have to. |
+| `current_points` | (rare — Wallet / scanner contexts only) | Synonym for `points_balance`. Will be deprecated. **Do not write new code against this.** |
+| `zupy_balance` | `GET /companies/` response | The **company's** Z\$ balance (marketing-campaign budget pool). Not a customer balance. |
+| `new_z_balance` | `POST /rewards/{id}/redeem/` response, `POST /coupons/{id}/validate/` response | The **customer's** Z\$ balance after the operation. Stringified Decimal with 6 places (e.g. `"2418.400000"`). |
+| `z_tokens_used` | `POST /rewards/{id}/redeem/` response, `POST /coupons/{id}/validate/` response | Z\$ tokens consumed by **this specific operation**. `"0.000000"` (zero-as-string) for points-only redemptions. |
+
+### Coupon identifiers
+
+| Field | Format | When to use |
+|-------|--------|-------------|
+| `id` | KSUID (e.g. `16a33f27fbbc1801d63d56d2027`) | When you obtained it from a prior API call (redeem response or `/coupons/issued/` list). Always works. |
+| `coupon_code` | `CZ-XXXXXXXX` or `CP-XXXXXXXX` (legacy) | When you have a printed code from the customer's receipt. The `validate` endpoint accepts this directly (case-insensitive). |
+
+See [Coupon Lifecycle § Two identifiers, one coupon](/guides/coupon-lifecycle#two-identifiers-one-coupon) for the full rationale.
+
 ## Error Handling
 
 All errors use the [RFC 7807](https://tools.ietf.org/html/rfc7807) Problem Details format:
