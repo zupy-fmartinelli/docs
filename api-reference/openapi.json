@@ -348,7 +348,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeCompanyProfile"
+                  "$ref": "#/components/schemas/CompanyProfile"
                 }
               }
             },
@@ -792,7 +792,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeCustomer"
+                  "$ref": "#/components/schemas/Customer"
                 }
               }
             },
@@ -888,7 +888,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeCouponValidateResponse"
+                  "$ref": "#/components/schemas/CouponValidateResponse"
                 }
               }
             },
@@ -976,7 +976,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopePointsBalance"
+                  "$ref": "#/components/schemas/PointsBalance"
                 }
               }
             },
@@ -1074,7 +1074,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopePointsOperationResponse"
+                  "$ref": "#/components/schemas/PointsOperationResponse"
                 }
               }
             },
@@ -1162,7 +1162,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeListPointsHistory"
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "next": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "previous": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PointsHistory"
+                      }
+                    }
+                  },
+                  "required": [
+                    "count",
+                    "next",
+                    "previous",
+                    "results"
+                  ]
                 }
               }
             },
@@ -1276,7 +1303,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeRewardRedeemResponse"
+                  "$ref": "#/components/schemas/RewardRedeemResponse"
                 }
               }
             },
@@ -1364,7 +1391,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeWalletDevices"
+                  "$ref": "#/components/schemas/WalletDevicesResponse"
                 }
               }
             },
@@ -1442,7 +1469,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeZBalance"
+                  "$ref": "#/components/schemas/ZBalance"
                 }
               }
             },
@@ -1597,7 +1624,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeLoyaltyProgram"
+                  "$ref": "#/components/schemas/LoyaltyProgram"
                 }
               }
             },
@@ -1768,7 +1795,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeRewardCatalog"
+                  "$ref": "#/components/schemas/RewardCatalog"
                 }
               }
             },
@@ -1855,7 +1882,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeWalletNotificationResponse"
+                  "$ref": "#/components/schemas/WalletNotificationResponse"
                 }
               }
             },
@@ -1923,7 +1950,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeListPassListResponse"
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "next": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "previous": {
+                      "type": "string",
+                      "format": "uri",
+                      "nullable": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PassListResponse"
+                      }
+                    }
+                  },
+                  "required": [
+                    "count",
+                    "next",
+                    "previous",
+                    "results"
+                  ]
                 }
               }
             },
@@ -1991,7 +2045,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopePassStatusResponse"
+                  "$ref": "#/components/schemas/PassStatusResponse"
                 }
               }
             },
@@ -2068,7 +2122,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeCouponPassResponse"
+                  "$ref": "#/components/schemas/CouponPassResponse"
                 }
               }
             },
@@ -2155,7 +2209,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EnvelopeWalletPassResponse"
+                  "$ref": "#/components/schemas/WalletPassResponse"
                 }
               }
             },
@@ -2937,7 +2991,9 @@
           },
           "status": {
             "type": "string",
-            "enum": ["validated"]
+            "enum": [
+              "validated"
+            ]
           },
           "remaining_usages": {
             "type": "integer"
@@ -3128,252 +3184,6 @@
         "type": "string",
         "description": "* `none` - Nenhum\n* `percentage` - Percentage\n* `fixed_amount` - Fixed Amount\n* `free_shipping` - Free Shipping\n* `free_item` - Free Item\n* `conditional` - Conditional"
       },
-      "EnvelopeCompanyProfile": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CompanyProfile"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeCouponPassResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CouponPassResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeCouponValidateResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/CouponValidateResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeCustomer": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/Customer"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeListPassListResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PassListResponse"
-            }
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeListPointsHistory": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PointsHistory"
-            }
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeLoyaltyProgram": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/LoyaltyProgram"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopePassStatusResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PassStatusResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopePointsBalance": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PointsBalance"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopePointsOperationResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/PointsOperationResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeRewardCatalog": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/RewardCatalog"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeRewardRedeemResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/RewardRedeemResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeWalletNotificationResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/WalletNotificationResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeWalletPassResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/WalletPassResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeWalletDevices": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/WalletDevicesResponse"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "EnvelopeZBalance": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ZBalance"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
       "WalletDevicesResponse": {
         "type": "object",
         "description": "Per-platform inventory of where the customer has installed wallet passes from your company.",
@@ -3452,7 +3262,11 @@
           },
           "platform_hint": {
             "type": "string",
-            "enum": ["ios", "macos", "unknown"]
+            "enum": [
+              "ios",
+              "macos",
+              "unknown"
+            ]
           },
           "os_version": {
             "type": "string",
@@ -3501,7 +3315,10 @@
           },
           "pass_type": {
             "type": "string",
-            "enum": ["loyalty", "coupon"],
+            "enum": [
+              "loyalty",
+              "coupon"
+            ],
             "nullable": true
           },
           "reward_name": {
@@ -3535,7 +3352,10 @@
           },
           "pass_type": {
             "type": "string",
-            "enum": ["loyalty", "coupon"]
+            "enum": [
+              "loyalty",
+              "coupon"
+            ]
           },
           "reward_name": {
             "type": "string",
@@ -3684,7 +3504,11 @@
           "status": {
             "type": "string",
             "readOnly": true,
-            "enum": ["draft", "published", "archived"],
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
             "description": "Per-program lifecycle status. Distinct from is_active (which is the legacy boolean kept for backwards compat)."
           },
           "profile_completion_enabled": {
@@ -4032,28 +3856,6 @@
             }
           }
         }
-      },
-      "PaginationMeta": {
-        "type": "object",
-        "description": "Cursor-based pagination metadata matching envelope middleware output.",
-        "properties": {
-          "cursor": {
-            "type": "string",
-            "nullable": true
-          },
-          "has_next": {
-            "type": "boolean"
-          },
-          "count": {
-            "type": "integer",
-            "nullable": true
-          }
-        },
-        "required": [
-          "count",
-          "cursor",
-          "has_next"
-        ]
       },
       "PassListResponse": {
         "type": "object",

@@ -65,12 +65,10 @@ console.log(data);
 
 ```json
 {
-  "data": [],
-  "meta": {
-    "cursor": null,
-    "has_next": false,
-    "count": 0
-  }
+  "count": 0,
+  "next": null,
+  "previous": null,
+  "results": []
 }
 ```
 
@@ -167,15 +165,12 @@ console.log(data);
   **Already have your own payload format?** Send it as-is — Zupy accepts any JSON. During onboarding, the Zupy team will create a mapper for your specific field names, just like we did for Repediu, Saipos, and other partners.
 </Tip>
 
-**Success response** (`{data, meta}` envelope):
+**Success response** (campos na raiz):
 
 ```json
 {
-  "data": {
-    "status": "received",
-    "id": "2bxRKmpWJY8lHHqsGfsQQtwCDef"
-  },
-  "meta": {}
+  "status": "received",
+  "id": "2bxRKmpWJY8lHHqsGfsQQtwCDef"
 }
 ```
 
@@ -201,7 +196,7 @@ response = requests.get(
     params={"phone": "5511987654321"},
     headers=HEADERS,
 )
-customers = response.json()["data"]
+customers = response.json()["results"]
 print(f"Found {len(customers)} customer(s)")
 ```
 
@@ -210,16 +205,19 @@ const response = await fetch(
   `${BASE_URL}/customers/?phone=5511987654321`,
   { headers: { "X-API-Key": API_KEY } }
 );
-const { data: customers } = await response.json();
+const { results: customers } = await response.json();
 console.log(`Found ${customers.length} customer(s)`);
 ```
 </CodeGroup>
 
-**Response** (`{data, meta}` envelope):
+**Response** (campos na raiz):
 
 ```json
 {
-  "data": [
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "results": [
     {
       "id": "2awTHloSJX7kGGprFerOOsvABcd",
       "full_name": "Maria Santos",
@@ -239,12 +237,7 @@ console.log(`Found ${customers.length} customer(s)`);
       "program_name": "Clube Pizzaria Exemplo",
       "company_id": "2awTHkVw8X7kGGpr..."
     }
-  ],
-  "meta": {
-    "cursor": null,
-    "has_next": false,
-    "count": 1
-  }
+  ]
 }
 ```
 
@@ -262,7 +255,7 @@ response = requests.get(
     f"{BASE_URL}/customers/{customer_id}/points/",
     headers=HEADERS,
 )
-points = response.json()["data"]
+points = response.json()
 print(f"Balance: {points['points_balance']} {points['points_name']}")
 ```
 
@@ -272,25 +265,22 @@ const response = await fetch(
   `${BASE_URL}/customers/${customerId}/points/`,
   { headers: { "X-API-Key": API_KEY } }
 );
-const { data: points } = await response.json();
+const points = await response.json();
 console.log(`Balance: ${points.points_balance} ${points.points_name}`);
 ```
 </CodeGroup>
 
-**Response** (`{data, meta}` envelope):
+**Response** (campos na raiz):
 
 ```json
 {
-  "data": {
-    "customer_id": "2awTHloSJX7kGGprFerOOsvABcd",
-    "points_balance": 89,
-    "points_earned": 89,
-    "points_spent": 0,
-    "points_name": "Pontos",
-    "last_activity_date": "2026-03-22T14:30:00Z",
-    "tier": "default"
-  },
-  "meta": {}
+  "customer_id": "2awTHloSJX7kGGprFerOOsvABcd",
+  "points_balance": 89,
+  "points_earned": 89,
+  "points_spent": 0,
+  "points_name": "Pontos",
+  "last_activity_date": "2026-03-22T14:30:00Z",
+  "tier": "default"
 }
 ```
 
