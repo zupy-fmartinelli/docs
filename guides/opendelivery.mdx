@@ -171,6 +171,64 @@ Every webhook carries these headers:
   your webhook secret. Reject any request whose signature does not match.
 </Warning>
 
+## 6. Inbound — accrue points from orders
+
+If your platform owns the orders, you can have Zupy **award loyalty points automatically** when a
+sale happens — and **reverse** them if that sale is cancelled. Zupy is the loyalty host: **you send
+two signals, we do the rest** (we never track your order lifecycle — when to send each signal is
+entirely your call).
+
+Send an OpenDelivery [`CustomerEventEnvelope`](https://www.opendelivery.com.br/) to:
+
+```bash Accrue / reverse
+POST https://api.zupy.com/v2/customer-events/
+Authorization: Bearer <your OAuth2 token>   # by_app also sends X-App-MerchantId
+```
+
+| `eventType` | Zupy does |
+| --- | --- |
+| `order.created` | **Awards points** for the order (using the merchant's configured rate) |
+| `order.cancelled` | **Reverses** the points that order awarded |
+
+Both are authenticated with the **same OAuth2 credential** you use for reads (`by_app` or
+`by_merchant`) — no separate scheme. A minimal envelope:
+
+```json order.created
+{
+  "id": "evt-9c1f",
+  "eventType": "order.created",
+  "occurredAt": "2026-07-19T12:00:00Z",
+  "customerIdentifier": { "type": "phone", "value": "+5511999998888" },
+  "orderId": "order-abc123",
+  "payload": { "id": "order-abc123", "totalAmount": 5000 }
+}
+```
+
+<ResponseField name="customerIdentifier" type="object">
+  `{ type, value }` — `type` is `phone` or `email` (a `document`/CPF-only customer is skipped, no
+  lookup). The customer is enrolled automatically if new.
+</ResponseField>
+<ResponseField name="payload.totalAmount" type="number">
+  Order total in **cents** (OpenDelivery convention). Zupy converts to the base currency before
+  applying the points rate.
+</ResponseField>
+
+<Note>
+  **Idempotent by `orderId`.** Re-sending the same `order.created` never double-credits; re-sending
+  `order.cancelled` never double-reverses. A cancel for an order that was never credited is a no-op.
+</Note>
+
+<Info>
+  **Accrual is opt-in per merchant.** A merchant must have an OpenDelivery accrual rate configured;
+  until then, `order.created` is accepted (`204`) but awards nothing. When points are awarded, Zupy
+  emits the `loyalty.points.earned` webhook back to you (§5).
+</Info>
+
+<Tip>
+  A response of `204` means accepted. Unknown OpenDelivery event types are rejected (`422`); other
+  known-but-non-loyalty events (e.g. `order.delivered`) are acknowledged (`202`) and ignored.
+</Tip>
+
 ## Reference
 
 <CardGroup cols={2}>
