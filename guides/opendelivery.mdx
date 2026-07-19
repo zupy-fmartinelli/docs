@@ -1,0 +1,189 @@
+---
+title: "OpenDelivery Compliance"
+description: "Zupy implements the OpenDelivery 2.0 standard for the Customer (Loyalty) capability — discovery manifest, dual authentication, signed webhooks, and read/redeem operations"
+---
+
+<Frame caption="Zupy is an OpenDelivery 2.0-compliant participant">
+  <img src="/images/opendelivery-logo-header.png" alt="OpenDelivery" style={{ background: "#111827", padding: "24px", borderRadius: "12px" }} />
+</Frame>
+
+<Note>
+  **Zupy is OpenDelivery 2.0 compliant** for the **Customer (Loyalty)** capability. If your
+  platform already speaks OpenDelivery, you can integrate with Zupy loyalty using the standard
+  — discover us via our manifest, authenticate with `client_credentials`, and receive signed
+  events. No Zupy-proprietary contract required.
+</Note>
+
+## What OpenDelivery is
+
+[OpenDelivery](https://www.opendelivery.com.br/) is an open Brazilian standard that defines how
+ordering platforms, delivery logistics, and merchant software interoperate. Zupy participates as
+a **Customer capability provider** (loyalty programs, accounts, transactions, rewards, coupons,
+and redemptions), so any OpenDelivery-aware ordering application can read a customer's loyalty
+state and issue redemptions through a documented, non-proprietary interface.
+
+| Attribute | Value |
+| --- | --- |
+| Protocol version | `2.0` |
+| Capability | `customer` (Loyalty), version `1.0.0` |
+| API base URL | `https://api.zupy.com/v2` |
+| Discovery manifest | `https://api.zupy.com/.well-known/opendelivery` |
+| Grant type | `client_credentials` |
+| Client ID generation | `by_app` **and** `by_merchant` (hybrid) |
+
+## 1. Discovery — find us via the manifest
+
+Zupy publishes a public [Discovery](https://www.opendelivery.com.br/) manifest at the well-known
+path. It advertises our protocol version, authentication models, and the exact operations we
+support — no need to coordinate out-of-band.
+
+```bash Discovery request
+curl https://api.zupy.com/.well-known/opendelivery
+```
+
+```json Manifest (live)
+{
+  "appId": "39380028-0002-4d96-a557-fa05550b4a1c",
+  "openDelivery": { "currentVersion": "2.0", "supportedVersions": ["2.0"] },
+  "discovery": { "version": "1.0.0" },
+  "authentication": {
+    "supportedGrantTypes": ["client_credentials"],
+    "clientIdGeneration": ["by_app", "by_merchant"]
+  },
+  "capabilities": {
+    "customer": {
+      "supported": true,
+      "version": "1.0.0",
+      "endpoint": "https://api.zupy.com/v2",
+      "supportedOperations": [
+        "listLoyaltyPrograms", "getLoyaltyProgramById",
+        "listCustomerLoyaltyAccounts", "getLoyaltyAccountById",
+        "listLoyaltyTransactions", "listLoyaltyRewards",
+        "listLoyaltyCoupons", "createLoyaltyRedemption"
+      ],
+      "supportsBatchGet": true,
+      "supportsBatchPost": false,
+      "acceptedGetPeriodicity": "real_time"
+    }
+  }
+}
+```
+
+<Info>
+  `appId` is Zupy's **single, stable participant identity** — the same value appears in every
+  webhook we send (`X-App-Id`). It is not per-partner.
+</Info>
+
+## 2. Authentication — two models, both standard
+
+OpenDelivery allows a provider to declare more than one `clientIdGeneration` model. Zupy declares
+**both**, so you pick the one that fits your integration:
+
+<CardGroup cols={2}>
+  <Card title="by_app (recommended)" icon="plug">
+    One credential for your **application**, valid across **all merchants** linked to it. Best
+    for platforms that integrate many Zupy merchants. Each merchant is activated by the merchant
+    themselves via a toggle in their Zupy dashboard. Provisioned by the Zupy partnerships team.
+  </Card>
+  <Card title="by_merchant (self-serve)" icon="store">
+    One credential **per merchant**, provisioned by the merchant from their own dashboard
+    (`/integrations`). Best when a single merchant wants to connect an app Zupy hasn't formally
+    partnered with yet. No partnership required.
+  </Card>
+</CardGroup>
+
+Both models use the `client_credentials` OAuth2 grant to obtain a bearer token, and both are
+exposed identically at `https://api.zupy.com/v2`.
+
+### Selecting a merchant with `by_app`
+
+A `by_app` token can reach multiple merchants, so each request must name which merchant it targets
+using the `X-App-MerchantId` header. Zupy only serves data for merchants whose toggle links your
+application — anything else is denied.
+
+<ResponseField name="X-App-MerchantId" type="string">
+  The merchant identifier **as your application knows it** (the OpenDelivery `merchantId`). Zupy
+  maps it to the merchant internally. Required on every `by_app` read.
+</ResponseField>
+
+## 3. Merchant identity — two-sided by design
+
+OpenDelivery models a merchant with two identifiers, and Zupy stores **both**:
+
+| Field | Owner | Zupy value |
+| --- | --- | --- |
+| `externalCode` | The software service (Zupy) | `Company.od_merchant_id` (a stable UUID) |
+| `merchantId` | The ordering application (you) | the id **you** assign, carried in `X-App-MerchantId` |
+
+Call `GET /v2/merchants` with your token to list every merchant your credential can reach, each
+returned with both identifiers.
+
+## 4. Supported operations
+
+All eight Customer/Loyalty operations are live at `https://api.zupy.com/v2`. List operations are
+paginated (`{ items, page, pageSize, total }`).
+
+| Operation | Method & path |
+| --- | --- |
+| `listLoyaltyPrograms` | `GET /loyalty/programs` |
+| `getLoyaltyProgramById` | `GET /loyalty/programs/{id}` |
+| `listCustomerLoyaltyAccounts` | `GET /loyalty/accounts` |
+| `getLoyaltyAccountById` | `GET /loyalty/accounts/{id}` |
+| `listLoyaltyTransactions` | `GET /loyalty/transactions` |
+| `listLoyaltyRewards` | `GET /loyalty/rewards` |
+| `listLoyaltyCoupons` | `GET /loyalty/coupons` |
+| `createLoyaltyRedemption` | `POST /loyalty/redemptions` → `202 Accepted` |
+
+<Tip>
+  Redemption is **asynchronous**: `POST /loyalty/redemptions` returns `202` with a
+  `correlationId`. A `409` means the account can't afford the reward. Redemptions are single-unit
+  (`quantity` must be `1`).
+</Tip>
+
+## 5. Webhooks — signed OpenDelivery events
+
+When loyalty state changes, Zupy sends a signed event to your registered webhook URL. Events use
+the OpenDelivery envelope (`id`, `eventType`, `occurredAt`, `accountId`, `customerId`,
+`programId`, `payload`).
+
+| `eventType` | Fired when |
+| --- | --- |
+| `loyalty.points.earned` | The customer earns points |
+| `loyalty.redemption.created` | A reward is redeemed (coupon issued) |
+| `loyalty.coupon.used` | A coupon is consumed at the point of sale |
+| `loyalty.tier.changed` | The customer moves loyalty tier |
+
+Every webhook carries these headers:
+
+<ResponseField name="X-App-Id" type="string">
+  Zupy's participant `appId` — identical across all our webhooks.
+</ResponseField>
+<ResponseField name="X-App-MerchantId" type="string">
+  The merchant this event belongs to (the `merchantId` you assigned).
+</ResponseField>
+<ResponseField name="X-App-Signature" type="string">
+  Lowercase hex **HMAC-SHA256** of the raw request body, signed with your webhook secret — **no**
+  `sha256=` prefix. Verify it before trusting the payload.
+</ResponseField>
+
+<Warning>
+  Always verify `X-App-Signature` against the **raw** body bytes (not a re-serialized JSON) using
+  your webhook secret. Reject any request whose signature does not match.
+</Warning>
+
+## Reference
+
+<CardGroup cols={2}>
+  <Card title="OpenDelivery spec" icon="book" href="https://www.opendelivery.com.br/">
+    The normative OpenDelivery 2.0 specification.
+  </Card>
+  <Card title="Partner Onboarding" icon="rocket" href="/guides/partner-onboarding">
+    What you receive and how to go live.
+  </Card>
+  <Card title="Outbound Webhooks" icon="webhook" href="/guides/outbound-webhooks">
+    Webhook delivery, retries, and signature verification in depth.
+  </Card>
+  <Card title="Get a credential" icon="key" href="mailto:webmaster@zupy.com.br">
+    Contact the Zupy partnerships team for a `by_app` credential.
+  </Card>
+</CardGroup>

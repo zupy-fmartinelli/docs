@@ -30,6 +30,7 @@
               "guides/wallet-passes",
               "guides/zupy-tokens",
               "guides/outbound-webhooks",
+              "guides/opendelivery",
               "guides/postman",
               "guides/partner-onboarding",
               "errors"
