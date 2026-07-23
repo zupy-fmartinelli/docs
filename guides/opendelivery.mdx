@@ -43,8 +43,8 @@ curl https://api.zupy.com/.well-known/opendelivery
 
 ```json Manifest (live)
 {
-  "appId": "39380028-0002-4d96-a557-fa05550b4a1c",
-  "openDelivery": { "currentVersion": "2.0", "supportedVersions": ["2.0"] },
+  "appId": "98790000-9879-8000-9879-000098790000",
+  "openDelivery": { "currentVersion": "2.0", "supportedVersions": ["2.0", "2.0.0-rc"] },
   "discovery": { "version": "1.0.0" },
   "authentication": {
     "supportedGrantTypes": ["client_credentials"],
@@ -56,7 +56,7 @@ curl https://api.zupy.com/.well-known/opendelivery
       "version": "1.0.0",
       "endpoint": "https://api.zupy.com/v2",
       "supportedOperations": [
-        "listLoyaltyPrograms", "getLoyaltyProgramById",
+        "listCustomers", "listLoyaltyPrograms", "getLoyaltyProgramById",
         "listCustomerLoyaltyAccounts", "getLoyaltyAccountById",
         "listLoyaltyTransactions", "listLoyaltyRewards",
         "listLoyaltyCoupons", "createLoyaltyRedemption"
@@ -120,19 +120,36 @@ returned with both identifiers.
 
 ## 4. Supported operations
 
-All eight Customer/Loyalty operations are live at `https://api.zupy.com/v2`. List operations are
-paginated (`{ items, page, pageSize, total }`).
+The Customer/Loyalty operations are live at `https://api.zupy.com/v2`, at the **exact spec
+paths** (a trailing slash is tolerated). List operations are paginated
+(`{ items, page, pageSize, total }`).
 
 | Operation | Method & path |
 | --- | --- |
+| `listMerchants` | `GET /merchants` |
+| `listCustomers` (resolve a person by identifier) | `GET /customers?customerIdentifierType=phone&customerIdentifierValue=+55…` |
 | `listLoyaltyPrograms` | `GET /loyalty/programs` |
 | `getLoyaltyProgramById` | `GET /loyalty/programs/{id}` |
-| `listCustomerLoyaltyAccounts` | `GET /loyalty/accounts` |
+| `listCustomerLoyaltyAccounts` | `GET /customers/{customerId}/loyalty-accounts` |
 | `getLoyaltyAccountById` | `GET /loyalty/accounts/{id}` |
-| `listLoyaltyTransactions` | `GET /loyalty/transactions` |
+| `listLoyaltyTransactions` | `GET /loyalty/accounts/{accountId}/transactions` |
 | `listLoyaltyRewards` | `GET /loyalty/rewards` |
 | `listLoyaltyCoupons` | `GET /loyalty/coupons` |
 | `createLoyaltyRedemption` | `POST /loyalty/redemptions` → `202 Accepted` |
+
+<Note>
+  **Resolving a customer** is order-driven: send a phone/email to `listCustomers`
+  (`customerIdentifierType` + `customerIdentifierValue`) to get the `customerId`, then read
+  `/customers/{customerId}/loyalty-accounts`. Registration itself happens automatically when you
+  report an order (accrual) — see §6.
+</Note>
+
+<Note>
+  **Error shape.** Errors to an OpenDelivery partner are returned as
+  `{ "code": "...", "message": "...", "details": [...] }` (the OpenDelivery `ErrorResponse`;
+  `details` is an array of strings). HTTP codes: `400` (validation), `401` (auth), `404`
+  (not found), `409` (conflict), `429` (rate limit), `500`.
+</Note>
 
 <Tip>
   Redemption is **asynchronous**: `POST /loyalty/redemptions` returns `202` with a
