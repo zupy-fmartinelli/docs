@@ -16,6 +16,15 @@ Receive real-time HTTP notifications when loyalty events occur in your customers
   - 🟢 **Inbound**: `POST /api/v2/webhooks/integrations/{partner}/` — you call this; Zupy ingests.
 </Tip>
 
+<Note>
+  **Integrating via OpenDelivery?** Partners on the [OpenDelivery standard](/guides/opendelivery)
+  receive a different outbound surface: the OD `LoyaltyEventEnvelope` with `X-App-Id` /
+  `X-App-MerchantId` / `X-App-Signature` headers (HMAC hex **without** the `sha256=` prefix, signed
+  with your OAuth2 `client_secret`). This page documents the **native** webhook format only — don't
+  mix the two verification schemes. If you enable both surfaces, you will receive the same fact
+  twice (e.g. `points.earned` **and** `loyalty.points.earned`); pick one.
+</Note>
+
 ## How It Works
 
 Zupy sends an HTTP POST to your configured webhook URL whenever a loyalty event occurs:
@@ -30,10 +39,13 @@ Zupy sends an HTTP POST to your configured webhook URL whenever a loyalty event 
 | Event | Trigger | Key Data |
 |-------|---------|----------|
 | `customer.enrolled` | New customer joins loyalty program | `customer_id`, `program_id`, `name`, `phone` |
+| `customer.tier_changed` | Customer moves loyalty tier | `customer_id`, `old_tier`, `new_tier`, `changed_at` |
 | `points.earned` | Customer receives points | `customer_id`, `points_added`, `new_balance`, `source`, `reference_id`, `awarded_at` |
+| `points.spent` | Customer's points balance decreases | `customer_id`, `points_spent`, `new_balance`, `source`, `reference_id`, `spent_at` |
 | `reward.redeemed` | Customer redeems reward → coupon created | `customer_id`, `coupon_code`, `reward_name`, `points_spent`, `valid_until` |
 | `coupon.used` | Coupon validated/used at store | `customer_id`, `coupon_code`, `reward_name`, `used_at` |
-| `coupon.expiring` | Coupon expires in 3 days | `customer_id`, `coupon_code`, `reward_name`, `days_remaining`, `expires_at` |
+| `coupon.cancelled` | Coupon cancelled | `customer_id`, `coupon_code`, `reward_name`, `cancelled_at` |
+| `coupon.expiring` | Coupon expires in 3 days | `customer_id`, `coupon_code`, `reward_name`, `valid_until`, `expires_in_days` |
 | `coupon.expired` | Coupon has expired | `customer_id`, `coupon_code`, `reward_name`, `expired_at` |
 
 ## Setup
@@ -60,9 +72,12 @@ Zupy sends an HTTP POST to your configured webhook URL whenever a loyalty event 
 
     Available events:
     - `customer.enrolled`
+    - `customer.tier_changed`
     - `points.earned`
+    - `points.spent`
     - `reward.redeemed`
     - `coupon.used`
+    - `coupon.cancelled`
     - `coupon.expiring`
     - `coupon.expired`
   </Step>
@@ -78,12 +93,9 @@ Zupy sends an HTTP POST to your configured webhook URL whenever a loyalty event 
     Response:
     ```json
     {
-      "data": {
-        "success": true,
-        "status_code": 200,
-        "error": null
-      },
-      "meta": {}
+      "success": true,
+      "status_code": 200,
+      "error": null
     }
     ```
   </Step>
@@ -399,8 +411,70 @@ Triggered 3 days before a coupon expires.
     "customer_id": "1651c60abc123def456",
     "coupon_code": "REWARD-ABC123XYZ",
     "reward_name": "Pizza Média Grátis",
-    "days_remaining": 3,
-    "expires_at": "2026-03-25T23:59:59.000000+00:00"
+    "valid_until": "2026-03-25T23:59:59.000000+00:00",
+    "expires_in_days": 3
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="customer.tier_changed">
+
+Triggered when a customer moves loyalty tier.
+
+```json
+{
+  "event": "customer.tier_changed",
+  "webhook_id": "b79f5h4b-cc8g-8afb-e946-gh458e75i7a4",
+  "timestamp": "2026-03-25T17:00:00.123456+00:00",
+  "data": {
+    "customer_id": "1651c60abc123def456",
+    "old_tier": "potential_loyalist",
+    "new_tier": "loyal_customer",
+    "changed_at": "2026-03-25T17:00:00.123456+00:00"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="points.spent">
+
+Triggered when a customer's points balance decreases.
+
+```json
+{
+  "event": "points.spent",
+  "webhook_id": "c8ag6i5c-dd9h-9bgc-fa57-hi569f86j8b5",
+  "timestamp": "2026-03-25T17:30:00.456789+00:00",
+  "data": {
+    "customer_id": "1651c60abc123def456",
+    "points_spent": 200,
+    "new_balance": 150,
+    "source": "reward_redemption",
+    "reference_id": "1651c60abcdef789012",
+    "spent_at": "2026-03-25T17:30:00.456789+00:00"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="coupon.cancelled">
+
+Triggered when a coupon is cancelled.
+
+```json
+{
+  "event": "coupon.cancelled",
+  "webhook_id": "d9bh7j6d-eeai-achd-gb68-ij67ag97k9c6",
+  "timestamp": "2026-03-25T18:00:00.789012+00:00",
+  "data": {
+    "customer_id": "1651c60abc123def456",
+    "coupon_code": "REWARD-ABC123XYZ",
+    "reward_name": "Pizza Média Grátis",
+    "cancelled_at": "2026-03-25T18:00:00.789012+00:00"
   }
 }
 ```
@@ -460,20 +534,20 @@ GET /api/v2/integrations/webhooks/
 
 ```json
 {
-  "data": {
-    "webhook_url": "https://your-server.com/webhooks/zupy",
-    "webhook_events": ["customer.enrolled", "points.earned"],
-    "webhook_secret": "****5678",
-    "available_events": [
-      "customer.enrolled",
-      "points.earned",
-      "reward.redeemed",
-      "coupon.used",
-      "coupon.expiring",
-      "coupon.expired"
-    ]
-  },
-  "meta": {}
+  "webhook_url": "https://your-server.com/webhooks/zupy",
+  "webhook_events": ["customer.enrolled", "points.earned"],
+  "webhook_secret": "****5678",
+  "available_events": [
+    "customer.enrolled",
+    "customer.tier_changed",
+    "points.earned",
+    "points.spent",
+    "reward.redeemed",
+    "coupon.used",
+    "coupon.cancelled",
+    "coupon.expiring",
+    "coupon.expired"
+  ]
 }
 ```
 
@@ -496,20 +570,20 @@ PUT /api/v2/integrations/webhooks/
 
 ```json
 {
-  "data": {
-    "webhook_url": "https://your-server.com/webhooks/zupy",
-    "webhook_events": ["customer.enrolled", "points.earned", "reward.redeemed"],
-    "webhook_secret": "****5678",
-    "available_events": [
-      "customer.enrolled",
-      "points.earned",
-      "reward.redeemed",
-      "coupon.used",
-      "coupon.expiring",
-      "coupon.expired"
-    ]
-  },
-  "meta": {}
+  "webhook_url": "https://your-server.com/webhooks/zupy",
+  "webhook_events": ["customer.enrolled", "points.earned", "reward.redeemed"],
+  "webhook_secret": "****5678",
+  "available_events": [
+    "customer.enrolled",
+    "customer.tier_changed",
+    "points.earned",
+    "points.spent",
+    "reward.redeemed",
+    "coupon.used",
+    "coupon.cancelled",
+    "coupon.expiring",
+    "coupon.expired"
+  ]
 }
 ```
 
@@ -523,11 +597,8 @@ POST /api/v2/integrations/webhooks/test/
 
 ```json
 {
-  "data": {
-    "success": true,
-    "status_code": 200,
-    "error": null
-  },
-  "meta": {}
+  "success": true,
+  "status_code": 200,
+  "error": null
 }
 ```
