@@ -163,12 +163,32 @@ When loyalty state changes, Zupy sends a signed event to your registered webhook
 the OpenDelivery envelope (`id`, `eventType`, `occurredAt`, `accountId`, `customerId`,
 `programId`, `payload`).
 
-| `eventType` | Fired when |
-| --- | --- |
-| `loyalty.points.earned` | The customer earns points |
-| `loyalty.redemption.created` | A reward is redeemed (coupon issued) |
-| `loyalty.coupon.used` | A coupon is consumed at the point of sale |
-| `loyalty.tier.changed` | The customer moves loyalty tier |
+| `eventType` | Fired when | `payload` fields |
+| --- | --- | --- |
+| `loyalty.points.earned` | The customer earns points | `points_added`, `new_balance`, `source`, `reference_id`, `awarded_at` |
+| `loyalty.redemption.created` | A reward is redeemed (coupon issued) | `reward_id`, `reward_name`, `coupon_code`, `points_spent`, `valid_until` |
+| `loyalty.coupon.used` | A coupon is consumed at the point of sale | `coupon_code`, `reward_name`, `used_at` |
+| `loyalty.tier.changed` | The customer moves loyalty tier | `old_tier`, `new_tier`, `changed_at` |
+
+<Note>
+  **Why only four events?** The OpenDelivery `LoyaltyEventType` enum is **closed** — the standard
+  defines exactly five values, and Zupy emits the four that apply to its loyalty model
+  (`loyalty.cashback.earned` is not used; Zupy has no cashback). Zupy never emits an `eventType`
+  outside the spec enum.
+
+  Zupy's [native webhook surface](/guides/outbound-webhooks) carries **nine** event types. The five
+  without an OpenDelivery counterpart — `customer.enrolled`, `points.spent`, `coupon.cancelled`,
+  `coupon.expiring`, `coupon.expired` — are only available there (or via the real-time read
+  endpoints in §4, which always reflect current state). The mapping:
+
+  | Native event | OpenDelivery `eventType` |
+  | --- | --- |
+  | `points.earned` | `loyalty.points.earned` |
+  | `reward.redeemed` | `loyalty.redemption.created` |
+  | `coupon.used` | `loyalty.coupon.used` |
+  | `customer.tier_changed` | `loyalty.tier.changed` |
+  | `customer.enrolled`, `points.spent`, `coupon.cancelled`, `coupon.expiring`, `coupon.expired` | — no OD counterpart (native surface only) |
+</Note>
 
 Every webhook carries these headers:
 
