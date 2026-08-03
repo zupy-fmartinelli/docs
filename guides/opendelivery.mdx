@@ -176,19 +176,40 @@ the OpenDelivery envelope (`id`, `eventType`, `occurredAt`, `accountId`, `custom
   (`loyalty.cashback.earned` is not used; Zupy has no cashback). Zupy never emits an `eventType`
   outside the spec enum.
 
-  Zupy's [native webhook surface](/guides/outbound-webhooks) carries **nine** event types. The five
-  without an OpenDelivery counterpart — `customer.enrolled`, `points.spent`, `coupon.cancelled`,
-  `coupon.expiring`, `coupon.expired` — are only available there (or via the real-time read
-  endpoints in §4, which always reflect current state). The mapping:
+  Zupy's [native webhook surface](/guides/outbound-webhooks) carries **nine** event types. The
+  mapping:
 
-  | Native event | OpenDelivery `eventType` |
-  | --- | --- |
-  | `points.earned` | `loyalty.points.earned` |
-  | `reward.redeemed` | `loyalty.redemption.created` |
-  | `coupon.used` | `loyalty.coupon.used` |
-  | `customer.tier_changed` | `loyalty.tier.changed` |
-  | `customer.enrolled`, `points.spent`, `coupon.cancelled`, `coupon.expiring`, `coupon.expired` | — no OD counterpart (native surface only) |
+  | Native event | OpenDelivery `eventType` | Availability |
+  | --- | --- | --- |
+  | `points.earned` | `loyalty.points.earned` | standard — delivered by default |
+  | `reward.redeemed` | `loyalty.redemption.created` | standard — delivered by default |
+  | `coupon.used` | `loyalty.coupon.used` | standard — delivered by default |
+  | `customer.tier_changed` | `loyalty.tier.changed` | standard — delivered by default |
+  | `points.spent` | `loyalty.points.adjusted` | **Zupy extension** — explicit opt-in |
+  | `coupon.expired` | `loyalty.coupon.expired` | **Zupy extension** — explicit opt-in |
+  | `coupon.cancelled` | `loyalty.coupon.cancelled` | **Zupy extension** — explicit opt-in |
+  | `customer.enrolled`, `coupon.expiring` | — | native surface only |
 </Note>
+
+### Extension events (proposed upstream)
+
+The three **extension** `eventType`s above announce transitions the OpenDelivery schema already
+models (`LoyaltyTransactionType.adjust`; `LoyaltyCoupon.status` → `expired`/`cancelled`) but the
+event enum does not cover — including the points **reversal** triggered by the standard's own
+`order.cancelled` flow. We proposed them upstream in
+[Abrasel-Nacional/opendelivery-v2#25](https://github.com/Abrasel-Nacional/opendelivery-v2/issues/25);
+until adopted, they are a vendor extension.
+
+They use the **same envelope, headers, and signature** as the standard events, but are **never
+delivered by default**: a subscription with empty `webhook_events` (= "all") receives only the four
+spec-enum events. To receive an extension event, list it explicitly in your `webhook_events`
+(e.g. `["loyalty.points.earned", "loyalty.points.adjusted"]`).
+
+| Extension `eventType` | Fired when | `payload` fields |
+| --- | --- | --- |
+| `loyalty.points.adjusted` | Points are debited/reversed (incl. `order.cancelled` reversal) | `points_spent`, `new_balance`, `source`, `reference_id`, `spent_at` |
+| `loyalty.coupon.expired` | An exclusive coupon expires | `coupon_code`, `reward_name`, `expired_at` |
+| `loyalty.coupon.cancelled` | An exclusive coupon is cancelled | `coupon_code`, `reward_name`, `cancelled_at` |
 
 Every webhook carries these headers:
 
