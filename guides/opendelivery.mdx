@@ -97,14 +97,26 @@ exposed identically at `https://api.zupy.com/v2`.
 
 ### Selecting a merchant with `by_app`
 
-A `by_app` token can reach multiple merchants, so each request must name which merchant it targets
-using the `X-App-MerchantId` header. Zupy only serves data for merchants whose toggle links your
-application — anything else is denied.
+A `by_app` token can reach multiple merchants, so each request must name which merchant it targets —
+either with the `X-App-MerchantId` header **or** the `?storeId=` query parameter (equivalent; same
+value). Zupy only serves data for merchants whose toggle links your application — anything else is
+denied.
 
-<ResponseField name="X-App-MerchantId" type="string">
+<ResponseField name="X-App-MerchantId" type="string (header)">
   The merchant identifier **as your application knows it** (the OpenDelivery `merchantId`). Zupy
-  maps it to the merchant internally. Required on every `by_app` read.
+  maps it to the merchant internally.
 </ResponseField>
+<ResponseField name="storeId" type="string (query parameter)">
+  Same value and semantics as the header, as a query parameter — the store filter proposed for the
+  standard in [opendelivery-v2#24](https://github.com/Abrasel-Nacional/opendelivery-v2/issues/24)
+  (precedent: `Order.storeId` / `listOrders`). Use whichever fits your client.
+</ResponseField>
+
+<Warning>
+  Exactly one merchant must be selected per request: with **neither** header nor `storeId` the
+  request is denied (`403`), and if **both** are sent with different values the request is denied as
+  ambiguous — Zupy never silently picks one.
+</Warning>
 
 ## 3. Merchant identity — two-sided by design
 
