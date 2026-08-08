@@ -1,0 +1,19 @@
+# Artefatos de Python gerados pelos testes deste repo (tests/).
+#
+# Motivo de existir (2026-08-08): o container do Django roda como root e escreve
+# tests/__pycache__/ dentro do volume montado. O diretorio fica root:root, o
+# usuario do host nao consegue apaga-lo sem sudo, e o submodulo aparece como
+# sujo (` M docs-mintlify`) em TODO `git status` do repo pai — ruido permanente
+# que atrapalha quem precisa distinguir trabalho em voo de lixo de build.
+#
+# Isto trata o ruido. A causa raiz e o container escrever como root; o conserto
+# definitivo e rodar com `--user $(id -u):$(id -g)`, que e mudanca de tooling.
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambientes e caches de teste, caso apareçam
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
