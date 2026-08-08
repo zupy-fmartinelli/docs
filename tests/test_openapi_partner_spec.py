@@ -2,15 +2,14 @@
 Tests for the partner-facing OpenAPI spec in docs-mintlify.
 Validates that the spec is clean, correct, and matches partner API requirements.
 """
+
 import json
 import os
 import pytest
 
 SPEC_PATH = os.environ.get(
     "OPENAPI_SPEC_PATH",
-    os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", "api-reference", "openapi.json"
-    ),
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "api-reference", "openapi.json"),
 )
 
 
@@ -48,9 +47,7 @@ class TestExcludedEndpoints:
         for path in spec["paths"]:
             path_lower = path.lower()
             for keyword in self.EXCLUDED_KEYWORDS:
-                assert keyword not in path_lower, (
-                    f"Excluded endpoint found: {path} (matched: {keyword})"
-                )
+                assert keyword not in path_lower, f"Excluded endpoint found: {path} (matched: {keyword})"
 
 
 class TestSecuritySchemes:
@@ -72,15 +69,9 @@ class TestSecuritySchemes:
                 if method in ("get", "post", "put", "patch", "delete"):
                     security = details.get("security", [])
                     for sec_item in security:
-                        assert "jwtAuth" not in sec_item, (
-                            f"jwtAuth found on {method.upper()} {path}"
-                        )
-                        assert "cookieAuth" not in sec_item, (
-                            f"cookieAuth found on {method.upper()} {path}"
-                        )
-                        assert "tokenAuth" not in sec_item, (
-                            f"tokenAuth found on {method.upper()} {path}"
-                        )
+                        assert "jwtAuth" not in sec_item, f"jwtAuth found on {method.upper()} {path}"
+                        assert "cookieAuth" not in sec_item, f"cookieAuth found on {method.upper()} {path}"
+                        assert "tokenAuth" not in sec_item, f"tokenAuth found on {method.upper()} {path}"
 
 
 class TestPartnerEndpoints:
@@ -115,9 +106,7 @@ class TestPartnerEndpoints:
     @pytest.mark.parametrize("method,path", EXPECTED_PATHS)
     def test_endpoint_present(self, spec, method, path):
         assert path in spec["paths"], f"Missing path: {path}"
-        assert method.lower() in spec["paths"][path], (
-            f"Missing method {method} on {path}"
-        )
+        assert method.lower() in spec["paths"][path], f"Missing method {method} on {path}"
 
     def test_no_unexpected_paths(self, spec):
         expected = {path for _, path in self.EXPECTED_PATHS}
@@ -131,9 +120,7 @@ class TestResponseEnvelope:
 
     def test_envelope_schemas_exist(self, spec):
         schemas = spec["components"]["schemas"]
-        envelope_schemas = [
-            name for name in schemas if name.startswith("Envelope")
-        ]
+        envelope_schemas = [name for name in schemas if name.startswith("Envelope")]
         assert len(envelope_schemas) >= 10, (
             f"Expected 10+ envelope schemas, found {len(envelope_schemas)}: {envelope_schemas}"
         )
@@ -187,14 +174,10 @@ class TestEnrollmentUrl:
 
     def test_enrollment_url_in_schema(self, spec):
         lp_schema = spec["components"]["schemas"]["LoyaltyProgram"]
-        assert "enrollment_url" in lp_schema["properties"], (
-            "LoyaltyProgram schema missing enrollment_url"
-        )
+        assert "enrollment_url" in lp_schema["properties"], "LoyaltyProgram schema missing enrollment_url"
 
     def test_enrollment_url_format(self, spec):
-        field = spec["components"]["schemas"]["LoyaltyProgram"]["properties"][
-            "enrollment_url"
-        ]
+        field = spec["components"]["schemas"]["LoyaltyProgram"]["properties"]["enrollment_url"]
         assert field.get("format") == "uri"
 
 
