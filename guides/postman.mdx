@@ -115,12 +115,20 @@ This means you can run requests sequentially without manually copying IDs betwee
 | `program_id` | *(auto-populated)* | Loyalty program KSUID |
 | `pass_id` | *(auto-populated)* | Wallet pass KSUID |
 | `otp_session` | *(auto-populated)* | OTP session token |
+| `partner_api_key` | `YOUR_PARTNER_API_KEY_HERE` | Issuer partner key (scopes `partner.*`), used only by the **Issuer Partner** folder |
+| `campaign_id` | *(from the Zupy team)* | Your campaign id, for credits |
+| `partner_reference` | *(auto-generated)* | A fresh `external_reference` on every credit or transfer |
+| `credit_id` | *(auto-populated)* | Credit UUID |
 
 ## Collection Authentication
 
 All requests inherit the `X-API-Key` header from the collection-level authentication. You don't need to set the header on individual requests.
 
 For OTP-protected endpoints, add the `X-OTP-Session` header manually or use the auto-captured `otp_session` variable after verifying an OTP.
+
+The **Issuer Partner (Z\$ credits and transfers)** folder is the exception: it authenticates with `partner_api_key`,
+the key created in the dashboard with `partner.*` scopes. That key only reaches `/api/v2/partner/*`. See the
+[issuer partner guide](/guides/partner-issuer).
 
 ## Next Steps
 

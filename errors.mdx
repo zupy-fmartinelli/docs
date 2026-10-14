@@ -135,6 +135,9 @@ This is rare in production (every active partner key implies an integration), an
 - Check the customer's `points_balance` via `GET /customers/{id}/points/` before initiating a redeem.
 - If supporting partial Z\$ payment, set `use_z_tokens: true` in the redeem body.
 
+**Issuer partner API (`402 Payment Required`):** your partner wallet's Z\$ balance does not cover the credit or the
+transfer. Nothing moved. Top up the wallet, then retry. See the [issuer partner guide](/guides/partner-issuer).
+
 ---
 
 ## conflict
@@ -204,6 +207,140 @@ The `detail` field tells you which case:
 - The pass type the customer is trying to install has a generation bug we haven't caught.
 
 **Partner-side fix:** retry after 30s. If failures persist for the same `(customer_id, coupon_id)` pair, the issue is reproducible on our side — open a ticket with that pair.
+
+---
+
+## Issuer partner API (`/api/v2/partner/*`)
+
+Refusals of the issuer partner API also carry a stable `error_code`, the same as the end of `type`. Nothing is written on any refusal. The full table, with the access errors (`partner-not-active`, `partner-scope-insufficient`…), is in the [issuer partner guide](/guides/partner-issuer). `insufficient-balance` (`402`) is the section above.
+
+### partner-reference-conflict
+
+**HTTP status:** `409 Conflict`
+
+**Cause:** The `external_reference` was already used with different data. The body names the movement that holds it: `credit_id` (credit) or `transfer_id` (transfer).
+
+**Partner-side fix:** Resend the **same** data to get the same movement back (`200`), or use a new reference for a new operation.
+
+### partner-identity-conflict
+
+**HTTP status:** `409 Conflict`
+
+**Cause:** The identifiers you sent point at different people. `identifiers` lists only the kinds that disagree (`phone`, `email`, `cpf`, `wallet`), never values.
+
+**Partner-side fix:** Send identifiers of one person only. Nothing was credited.
+
+### partner-not-funded-on-chain
+
+**HTTP status:** `402 Payment Required`
+
+**Cause:** Your partner wallet has no Z\$ confirmed on-chain yet.
+
+**Partner-side fix:** Wait for the confirmation of the Z\$ package, then retry.
+
+### partner-deactivated-during-request
+
+**HTTP status:** `403 Forbidden`
+
+**Cause:** Your company stopped being an active issuer partner while the request was running.
+
+**Partner-side fix:** Talk to the Zupy team. Nothing was credited.
+
+### campaign-not-found
+
+**HTTP status:** `404 Not Found`
+
+**Cause:** The campaign does not exist or belongs to another partner (both answer the same).
+
+**Partner-side fix:** Use a `campaign_id` the Zupy team gave you.
+
+### campaign-not-creditable
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** The campaign is paused, ended, or outside its dates.
+
+**Partner-side fix:** Check the campaign in the dashboard (Partner → Campaigns).
+
+### customer-not-identified
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** Nobody matches the identifiers, and there is no `phone` or `email` to create the account.
+
+**Partner-side fix:** Send a phone number or an e-mail.
+
+### invalid-quantity
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** `quantity` is not positive, has more than 6 decimals, or rounds to Z\$ 0.
+
+**Partner-side fix:** Send a positive decimal string.
+
+### invalid-reference
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** `external_reference` is empty or longer than 200 characters.
+
+**Partner-side fix:** Send your own id for the operation, up to 200 characters.
+
+### credit-limit-exceeded
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** The credit would exceed a campaign limit. The body has `limit` (`budget_total` or `per_user`), `limit_value`, `used` and `requested`.
+
+**Partner-side fix:** Credit less, or ask the Zupy team to raise the limit.
+
+### credit-refused
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** Any other refusal of a credit.
+
+**Partner-side fix:** Nothing was credited; contact Zupy support with the `instance` and the time.
+
+### transfer-limit-exceeded
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** The transfer would exceed one of your transfer limits (per recipient or total, per day, week or month). The body has `limit`, `limit_value`, `used` and `requested`.
+
+**Partner-side fix:** Send less, or wait for the next period.
+
+### invalid-transfer
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** `amount` is not positive or has more than 2 decimals, the reference is empty or too long, or `reason` exceeds 200 characters.
+
+**Partner-side fix:** Fix the field and retry.
+
+### invalid-transfer-destination
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** The destination company cannot receive this transfer. The answer never says why.
+
+**Partner-side fix:** Check the `company_id` with the company.
+
+### transfer-refused
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** Any other refusal of a transfer.
+
+**Partner-side fix:** Nothing was sent; contact Zupy support with the `instance` and the time.
+
+### movement-refused
+
+**HTTP status:** `422 Unprocessable Entity`
+
+**Cause:** Any other refusal of a partner movement.
+
+**Partner-side fix:** Nothing was moved; contact Zupy support with the `instance` and the time.
 
 ---
 

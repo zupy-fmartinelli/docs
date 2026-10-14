@@ -1,0 +1,450 @@
+---
+title: "Parceiro emissor: créditos e transferências de Z$"
+description: "Guia do Programa de Parceiros Zupy: gere a chave, credite e transfira Z$ pela API, receba os webhooks e trate os erros"
+---
+
+Este guia é para a **empresa parceira emissora** do Programa de Parceiros Zupy: a empresa que distribui Z$ para os
+usuários dela (por exemplo, a cada litro de óleo descartado) e que paga esses Z$ com o saldo da própria carteira.
+
+<Note>
+  Você integra um PDV, um delivery ou outro sistema de pedidos com a Zupy? Esse é o **parceiro de integração**, com
+  outra chave e outras rotas: veja [Partner Onboarding](/guides/partner-onboarding). As rotas deste guia só aceitam a
+  chave de parceiro emissor.
+</Note>
+
+## Antes de começar
+
+Você precisa de três coisas, todas configuradas com a equipe da Zupy:
+
+1. **Perfil de parceiro ativo, com o recurso Emissor.** Sem isso, toda chamada responde `403` com
+   `error_code` `partner-not-active`.
+2. **Saldo de Z$ na carteira da empresa parceira.** Cada crédito e cada transferência sai desse saldo. O saldo
+   aparece no painel em **Integrações → Parceiro Zupy** e o extrato em **Carteira Z$**. A API não expõe o saldo.
+3. **Pelo menos uma campanha**, para creditar. A campanha define a ação (por exemplo, "Descarte correto de óleo"), a
+   unidade (`litro`), o valor de cada unidade em Z$, a vigência e os limites. A equipe da Zupy cria a campanha e
+   informa o `campaign_id` dela. As suas campanhas, com o orçamento consumido, aparecem no painel em
+   **Integrações → Parceiro Zupy → Campanhas**.
+
+**URL base:** `https://api.zupy.com`
+
+## 1. Gerar a chave de API
+
+<Steps>
+  <Step title="Abra o painel do parceiro">
+    Entre no painel da Zupy como administrador da empresa parceira e abra **Integrações → Parceiro Zupy**
+    (`/integrations/partner`). Clique em **Chaves de API**.
+  </Step>
+  <Step title="Crie a chave com as permissões certas">
+    Clique em **Nova chave de API**, dê um nome (por exemplo, "ERP") e marque só as permissões de que a integração
+    precisa:
+
+    | Permissão | Libera |
+    |---|---|
+    | `partner.read` | `GET /api/v2/partner/profile/`, `GET /api/v2/partner/credits/` e `GET /api/v2/partner/credits/{credit_id}/` |
+    | `partner.credit` | `POST /api/v2/partner/credits/` |
+    | `partner.transfer` | `POST /api/v2/partner/transfers/` |
+
+    Não existe permissão curinga: `partner.*` não libera nada.
+  </Step>
+  <Step title="Guarde a chave na hora">
+    A chave completa aparece **uma única vez**. Guarde-a no seu cofre de segredos. Se ela vazar ou se perder, revogue
+    no mesmo lugar e crie outra: a revogação vale na hora.
+  </Step>
+</Steps>
+
+<Warning>
+  A chave de parceiro emissor só alcança as rotas `/api/v2/partner/*`. Qualquer outra rota da API v2 responde `403`
+  com `code` `partner-key-outside-partner-namespace`.
+</Warning>
+
+## 2. Autenticar
+
+Envie a chave no cabeçalho `X-API-Key` em toda chamada. A empresa parceira é sempre a dona da chave: nenhuma rota
+aceita um id de parceiro no corpo, na query ou em outro cabeçalho.
+
+```bash
+curl https://api.zupy.com/api/v2/partner/profile/ \
+  -H "X-API-Key: $ZUPY_PARTNER_KEY"
+```
+
+## 3. Ler o seu perfil
+
+`GET /api/v2/partner/profile/` (permissão `partner.read`) devolve os recursos ligados e as condições comerciais.
+As taxas são frações: `0.2000` é 20%.
+
+```json
+{
+  "status": "active",
+  "activated_at": "2026-10-13T19:00:00Z",
+  "features": {"issuer": true, "commercial": false, "publisher": false, "originator": false, "communication": false},
+  "conditions": {
+    "commercial_model": "",
+    "commission_rate": "0.0000",
+    "originator_rate": "0.0000",
+    "publisher_rate": "0.0000",
+    "coupon_split_rate": "0.0000",
+    "plan_discounts": {}
+  }
+}
+```
+
+O perfil nunca traz PIX, CNPJ ou contatos.
+
+## 4. Creditar Z$ a um usuário
+
+`POST /api/v2/partner/credits/` (permissão `partner.credit`) credita `quantity` unidades da ação de uma campanha
+sua ao usuário que os identificadores apontam. O valor em Z$ é `quantity × unit_value` da campanha.
+
+```bash
+curl -X POST https://api.zupy.com/api/v2/partner/credits/ \
+  -H "X-API-Key: $ZUPY_PARTNER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "campaign_id": 12,
+    "quantity": "1.5",
+    "external_reference": "oleo-2026-000123",
+    "phone": "+5511987654321",
+    "name": "Maria"
+  }'
+```
+
+| Campo | Obrigatório | Regra |
+|---|---|---|
+| `campaign_id` | sim | Inteiro. Uma campanha **sua**; a de outro parceiro responde `404` `campaign-not-found`. |
+| `quantity` | sim | Decimal em texto, maior que zero, até 6 casas. |
+| `external_reference` | sim | O seu id deste crédito, até 200 caracteres. É a chave de idempotência (veja abaixo). |
+| `phone`, `email`, `cpf`, `wallet_address` | pelo menos um | Identificam o usuário. |
+| `name` | não | Usado só se a conta for criada agora. |
+
+**Resposta `201`** (crédito novo):
+
+```json
+{
+  "id": "e59a90a1-e92e-4794-b6bb-43a14f733c4f",
+  "external_reference": "oleo-2026-000123",
+  "campaign_id": 12,
+  "quantity": "1.500000",
+  "unit": "litro",
+  "unit_value": "200.00",
+  "amount": "300.00",
+  "customer_id": "175d2dbcdc002b81f623e1f8706",
+  "status": "settling",
+  "created_at": "2026-10-14T12:55:24.081770Z"
+}
+```
+
+### Como o usuário é identificado
+
+- A Zupy procura o usuário pelos identificadores enviados. Se ninguém for encontrado, cria a conta, **uma vez só**: o
+  mesmo telefone ou e-mail nunca vira duas contas.
+- Para **criar** a conta é preciso `phone` ou `email`. Com só `cpf` ou `wallet_address` de alguém que ainda não tem
+  conta, a resposta é `422` `customer-not-identified`.
+- Se dois identificadores apontarem para pessoas diferentes, nada é creditado: `409` `partner-identity-conflict`,
+  com `identifiers` listando só os **tipos** que discordam (`phone`, `email`, `cpf`, `wallet`), nunca os valores.
+- Identificador malformado (telefone inválido, CPF com dígito errado, carteira Solana inválida, e-mail inválido) é
+  recusado antes de qualquer busca, com `422` `validation-error` apontando o campo.
+
+### Idempotência: `external_reference`
+
+Reenviar o **mesmo** `external_reference` com os **mesmos** dados é seguro: a resposta é `200` com o **mesmo**
+crédito, e nada é creditado de novo. Use isso para repetir uma chamada que expirou ou caiu sem resposta.
+
+| Situação | Resposta |
+|---|---|
+| Referência nova | `201` com o crédito criado |
+| Mesma referência, mesmos dados | `200` com o mesmo crédito |
+| Mesma referência, dados diferentes | `409` `partner-reference-conflict`, com o `credit_id` que já usa a referência |
+
+Crédito e transferência têm espaços de referência separados: a mesma `external_reference` num crédito e numa
+transferência são operações diferentes.
+
+### Como o crédito aparece para o usuário
+
+No extrato do usuário, o crédito mostra a origem e o motivo a partir do nome da empresa parceira e da ação da
+campanha, por exemplo: `Z$ 200 via Biord: Descarte correto de óleo (1 litro)`. O crédito não tem campo de motivo
+livre; o motivo é a ação da campanha.
+
+### Limites da campanha
+
+A campanha pode ter orçamento total e teto por usuário. Um crédito que ultrapassaria um deles é recusado com `422`
+`credit-limit-exceeded`, que traz `limit` (`budget_total` ou `per_user`), `limit_value`, `used` e `requested`. Uma
+campanha pausada, encerrada ou fora da vigência responde `422` `campaign-not-creditable`.
+
+### `status`: o registro on-chain
+
+| `status` | Significado |
+|---|---|
+| `settling` | Os Z$ **já estão disponíveis** para o usuário; o registro on-chain está pendente ou em nova tentativa. |
+| `settled` | Registrado on-chain. |
+| `settlement_failed` | O registro on-chain falhou de vez, depois de esgotar as tentativas. |
+| `unknown` | O registro do movimento não foi encontrado. Fale com o suporte da Zupy. |
+
+## 5. Consultar créditos
+
+- `GET /api/v2/partner/credits/` (permissão `partner.read`): os seus créditos, do mais novo para o mais antigo,
+  paginados por cursor. Siga os links `next` e `previous`. `page_size` vai de 1 a 100 (padrão 25). Filtre pela sua
+  referência com `?external_reference=` (busca exata).
+- `GET /api/v2/partner/credits/{credit_id}/` (permissão `partner.read`): um crédito seu, com o `status` atual. O
+  crédito de outro parceiro responde `404`, igual a um que não existe.
+
+```json
+{
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": "e59a90a1-e92e-4794-b6bb-43a14f733c4f",
+      "external_reference": "oleo-2026-000123",
+      "campaign_id": 12,
+      "quantity": "1.500000",
+      "unit": "litro",
+      "unit_value": "200.00",
+      "amount": "300.00",
+      "customer_id": "175d2dbcdc002b81f623e1f8706",
+      "status": "settling",
+      "created_at": "2026-10-14T12:55:24.081770Z"
+    }
+  ]
+}
+```
+
+## 6. Transferir Z$ a um usuário ou a uma empresa
+
+`POST /api/v2/partner/transfers/` (permissão `partner.transfer`) envia `amount` Z$ da carteira da empresa parceira
+para **exatamente um** destino, sem campanha:
+
+- **um usuário**, pelos identificadores (`phone`, `email`, `cpf`, `wallet_address`), com as mesmas regras de
+  identificação do crédito; **ou**
+- **uma empresa**, por `company_id`. Uma filial é creditada na carteira da **matriz**: a resposta traz
+  `destination_company_id` (a empresa pedida) e `credited_company_id` (a que recebeu). Você credita a empresa, mas
+  nunca lê o saldo dela.
+
+Enviar identificadores de pessoa **e** `company_id` juntos, ou nenhum dos dois, responde `422` `validation-error`.
+
+```bash
+curl -X POST https://api.zupy.com/api/v2/partner/transfers/ \
+  -H "X-API-Key: $ZUPY_PARTNER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "75.50",
+    "external_reference": "sorteio-2026-10-001",
+    "reason": "Prêmio do sorteio de outubro",
+    "email": "maria@example.com"
+  }'
+```
+
+| Campo | Obrigatório | Regra |
+|---|---|---|
+| `amount` | sim | Z$ em texto, maior que zero, até 2 casas. |
+| `external_reference` | sim | O seu id desta transferência, até 200 caracteres. Mesma idempotência do crédito. |
+| `reason` | não | O motivo, até 200 caracteres. Aparece no extrato de quem recebe. |
+| `phone`, `email`, `cpf`, `wallet_address`, `name` | um destino | Destino pessoa. |
+| `company_id` | um destino | Destino empresa. |
+
+**Resposta `201`**, para um usuário:
+
+```json
+{
+  "id": "4b578319-4036-4c68-8cfd-75527f021f19",
+  "external_reference": "sorteio-2026-10-001",
+  "amount": "75.50",
+  "reason": "Prêmio do sorteio de outubro",
+  "customer_id": "175d2dbceed92565299ff0e3bc5",
+  "destination_company_id": null,
+  "credited_company_id": null,
+  "status": "settling",
+  "created_at": "2026-10-14T12:55:24.473452Z"
+}
+```
+
+Para uma empresa, `customer_id` vem `null` e os dois ids de empresa vêm preenchidos.
+
+- **Limites de transferência:** a empresa parceira pode ter tetos por destinatário e no total, por dia, semana ou
+  mês. Uma transferência que ultrapassaria um deles responde `422` `transfer-limit-exceeded`, com `limit`,
+  `limit_value`, `used` e `requested`.
+- **`status`:** os mesmos valores do crédito. Para uma empresa, o registro on-chain tem duas etapas e só fica
+  `settled` quando as duas terminam. Nesse caso, `settlement_failed` **não é final** enquanto a Zupy reenvia a
+  última etapa: o status volta a `settling` e depois vira `settled`.
+- **Não há `GET` de transferências.** Para saber o status atual, reenvie o mesmo `POST` com a mesma
+  `external_reference` e os mesmos dados: a resposta `200` traz a transferência com o status de agora, sem transferir
+  de novo.
+
+## 7. Saldo
+
+A API do parceiro não expõe o saldo. Acompanhe-o no painel (**Integrações → Parceiro Zupy** e **Carteira Z$**).
+Quando o saldo não cobre a operação, nada é movimentado:
+
+- `402` `insufficient-balance`: o saldo de Z$ da carteira não cobre o crédito ou a transferência;
+- `402` `partner-not-funded-on-chain`: a carteira ainda não recebeu Z$ confirmados on-chain (aguarde a confirmação
+  do pacote comprado).
+
+## 8. Webhooks
+
+A Zupy avisa o seu sistema quando um crédito ou uma transferência é **criado**. O aviso sai depois que a operação é
+gravada, nunca dentro da requisição, e nunca para um reenvio idêntico (`200`).
+
+| Evento | Quando |
+|---|---|
+| `partner.credit.created` | um crédito novo foi gravado |
+| `partner.transfer.created` | uma transferência nova foi gravada (para usuário ou empresa) |
+
+### Configurar
+
+No painel, em **Integrações → Parceiro Zupy → Webhook** (`/integrations/webhooks`):
+
+1. Informe a URL do seu endpoint (`https://`, pública). A Zupy recusa entregar para uma URL que resolva para um
+   endereço interno ou privado.
+2. Escolha os eventos. Sem nenhum evento marcado, você recebe todos.
+3. Guarde o segredo de assinatura (`whsec_…`): ele aparece completo só ao ser gerado ou rotacionado.
+4. Use **Enviar teste** para receber um evento `ping` assinado.
+
+### O que chega
+
+`POST` para a sua URL, com `Content-Type: application/json` e estes cabeçalhos:
+
+| Cabeçalho | Conteúdo |
+|---|---|
+| `X-Webhook-Event` | o evento, por exemplo `partner.credit.created` |
+| `X-Webhook-Id` | o id desta entrega (o mesmo em todas as tentativas) |
+| `X-Webhook-Signature` | `sha256=<hex>`: HMAC-SHA256 do corpo bruto com o seu segredo |
+
+```json
+{
+  "data": {
+    "amount": "300.00",
+    "campaign_id": 12,
+    "created_at": "2026-10-14T12:55:24.081770+00:00",
+    "credit_id": "e59a90a1-e92e-4794-b6bb-43a14f733c4f",
+    "customer_id": "175d2dbcdc002b81f623e1f8706",
+    "external_reference": "oleo-2026-000123",
+    "quantity": "1.500000",
+    "unit": "litro"
+  },
+  "event": "partner.credit.created",
+  "event_id": "credit:e59a90a1-e92e-4794-b6bb-43a14f733c4f:created",
+  "timestamp": "2026-10-14T20:00:01+00:00",
+  "webhook_id": "1c0e6a6e-4f5b-4f43-9a55-2a1c1d0f9b11"
+}
+```
+
+O `data` de `partner.transfer.created` traz `transfer_id`, `external_reference`, `amount`, `reason`, `customer_id`,
+`destination_company_id`, `credited_company_id` e `created_at`, e o `event_id` é `transfer:<transfer_id>:created`.
+Nenhum evento traz dado pessoal (telefone, e-mail, CPF ou carteira), saldo ou status on-chain: o status muda depois
+do evento; leia-o em `GET /api/v2/partner/credits/{credit_id}/`.
+
+### Verificar a assinatura
+
+Calcule o HMAC-SHA256 sobre os **bytes recebidos**, sem reformatar o JSON, e compare em tempo constante.
+
+<CodeGroup>
+```python Python
+import hashlib
+import hmac
+
+
+def verify(raw_body: bytes, signature_header: str, secret: str) -> bool:
+    expected = "sha256=" + hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature_header)
+```
+
+```javascript Node.js
+const crypto = require('crypto');
+
+function verify(rawBody, signatureHeader, secret) {
+  const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  const a = Buffer.from(expected);
+  const b = Buffer.from(signatureHeader || '');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+</CodeGroup>
+
+### Tentativas e duplicidade
+
+- Responda `2xx` rápido (o limite é 10 segundos) e processe depois.
+- Sem `2xx`, a Zupy tenta de novo, com espera crescente, até **4 tentativas** no total. Toda tentativa reenvia o
+  **mesmo** corpo, com o mesmo `event_id` e o mesmo `X-Webhook-Id`.
+- **Deduplique pelo `event_id`**: o mesmo evento nunca é gerado duas vezes, mas a mesma entrega pode chegar mais de
+  uma vez.
+
+## 9. Erros
+
+Todo erro vem em JSON no formato RFC 7807 (Problem Details). As recusas de parceiro trazem também um `error_code`
+estável, e o `type` termina nele. Trate pelo `error_code`: o `detail` é texto para pessoas e pode mudar.
+
+```json
+{
+  "type": "https://docs.zupy.com/errors#partner-reference-conflict",
+  "title": "Reference already used",
+  "status": 409,
+  "detail": "Esta referência já foi usada com outros dados. Reenvie os mesmos dados ou use uma referência nova.",
+  "instance": "/api/v2/partner/credits/",
+  "error_code": "partner-reference-conflict",
+  "credit_id": "e59a90a1-e92e-4794-b6bb-43a14f733c4f"
+}
+```
+
+Erro de validação do corpo (campo faltando, tipo errado, identificador malformado) é `422` `validation-error`,
+com `errors` apontando cada campo:
+
+```json
+{
+  "type": "https://docs.zupy.com/errors#validation-error",
+  "title": "Validation Error",
+  "status": 422,
+  "detail": "One or more fields failed validation.",
+  "instance": "/api/v2/partner/credits/",
+  "errors": [{"field": "phone", "detail": "Telefone inválido."}]
+}
+```
+
+### Chave e acesso
+
+| HTTP | `error_code` | Quando |
+|---|---|---|
+| 401 | — | Sem `X-API-Key` (`authentication-required`). |
+| 403 | `partner-key-required` | A credencial não é uma chave criada no painel (por exemplo, a chave `zupy_pk_` de integração de PDV). |
+| 403 | `partner-key-inactive` | A chave foi revogada ou expirou. |
+| 403 | `partner-key-ip-not-allowed` | A chave tem lista de IPs permitidos e a chamada veio de outro endereço. |
+| 403 | `partner-scope-insufficient` | A chave não tem a permissão da rota (por exemplo, `partner.credit`). |
+| 403 | `partner-scope-undeclared` | Operação não disponível para chave de parceiro. |
+| 403 | `partner-not-active` | A empresa da chave não é parceira ativa com o recurso Emissor. |
+| 403 | `partner-key-outside-partner-namespace` | Chave de parceiro numa rota fora de `/api/v2/partner/`. Este corpo é `{"detail", "code"}`. |
+| 429 | — | Limite de requisições (`rate-limit-exceeded`). |
+
+### Créditos e transferências
+
+| HTTP | `error_code` | Quando | Campos extras |
+|---|---|---|---|
+| 409 | `partner-reference-conflict` | `external_reference` já usada com outros dados | `credit_id` ou `transfer_id` |
+| 409 | `partner-identity-conflict` | os identificadores apontam para pessoas diferentes | `identifiers` (só os tipos) |
+| 402 | `insufficient-balance` | o saldo de Z$ não cobre a operação | — |
+| 402 | `partner-not-funded-on-chain` | a carteira ainda não tem Z$ confirmados on-chain | — |
+| 403 | `partner-deactivated-during-request` | a empresa deixou de ser parceira ativa enquanto a requisição rodava | — |
+| 404 | `campaign-not-found` | campanha de outro parceiro, ou inexistente | — |
+| 422 | `campaign-not-creditable` | campanha pausada, encerrada ou fora da vigência | — |
+| 422 | `customer-not-identified` | ninguém encontrado e sem telefone ou e-mail para criar a conta | — |
+| 422 | `invalid-quantity` | quantidade inválida, ou que daria Z$ 0 | — |
+| 422 | `invalid-reference` | referência vazia ou longa demais | — |
+| 422 | `credit-limit-exceeded` | ultrapassaria um limite da campanha | `limit`, `limit_value`, `used`, `requested` |
+| 422 | `credit-refused` | outra recusa do crédito | — |
+| 422 | `transfer-limit-exceeded` | ultrapassaria um limite de transferência | `limit`, `limit_value`, `used`, `requested` |
+| 422 | `invalid-transfer` | valor, referência ou motivo inválidos | — |
+| 422 | `invalid-transfer-destination` | a empresa de destino não pode receber (a resposta não diz por quê) | — |
+| 422 | `transfer-refused` | outra recusa da transferência | — |
+| 422 | `movement-refused` | outra recusa de movimento | — |
+
+Em toda recusa, nada é gravado: nenhum Z$ sai da carteira.
+
+## 10. Limites de requisição
+
+**600 requisições por minuto por empresa parceira**, somando todas as chaves dela. Acima disso, `429`: espere e
+tente de novo. Criar mais chaves não aumenta o limite.
+
+## Próximos passos
+
+- [Referência da API](/api-reference): as rotas na aba **Partner**.
+- [Coleção Postman](/guides/postman): a pasta **Issuer Partner (Z$ credits and transfers)** usa a variável
+  `partner_api_key`.
+- [Erros](/errors): cada `error_code` tem a sua âncora.

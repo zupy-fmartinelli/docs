@@ -2542,6 +2542,488 @@
           }
         ]
       }
+    },
+    "/api/v2/partner/credits/": {
+      "get": {
+        "operationId": "partner_credits_list",
+        "description": "The credits your partner account made, newest first, cursor-paginated (`next`/`previous`). Filter by your own `external_reference`. Scope `partner.read`.",
+        "summary": "List your credits",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "O valor do cursor de paginação.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "external_reference",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exact partner reference."
+          },
+          {
+            "name": "page_size",
+            "required": false,
+            "in": "query",
+            "description": "Número de resultados a serem retornados por página.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "tags": [
+          "Partner"
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedPartnerCreditList"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "partner_credits_create",
+        "description": "Credits `quantity` units of one of your campaigns' action to the user the identifiers point at — found, or created once, never duplicated. **201** a new credit; **200** an identical replay of the same `external_reference` (the same credit is returned, nothing is credited twice). Refusals are `application/problem+json` with a stable `error_code`. Scope `partner.credit`.",
+        "summary": "Credit Z$ to a user",
+        "tags": [
+          "Partner"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCreditRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCreditRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerCreditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCredit"
+                }
+              }
+            },
+            "description": ""
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCredit"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "402": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v2/partner/credits/{credit_id}/": {
+      "get": {
+        "operationId": "partner_credits_retrieve",
+        "description": "One credit your partner account made. A credit of another partner answers 404, the same as a missing one. Scope `partner.read`.",
+        "summary": "Get one credit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "credit_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "Partner"
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerCredit"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v2/partner/transfers/": {
+      "post": {
+        "operationId": "partner_transfers_create",
+        "description": "Sends `amount` Z$ from your partner wallet to exactly one destination: the user the identifiers point at (found, or created once) **or** the company `company_id` (a branch is credited on its parent's wallet; the response names `credited_company_id`). Respects your transfer limits. **201** a new transfer; **200** an identical replay of the same `external_reference`. Scope `partner.transfer`.",
+        "summary": "Transfer Z$ to a user or a company",
+        "tags": [
+          "Partner"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerTransferRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerTransferRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerTransferRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerTransfer"
+                }
+              }
+            },
+            "description": ""
+          },
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerTransfer"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "402": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v2/partner/profile/": {
+      "get": {
+        "operationId": "partner_profile_retrieve",
+        "description": "The features enabled for your partner account and your current commercial conditions. Scope `partner.read`. Rates are fractions (`0.2000` = 20%). Never returns PIX, CNPJ or contact data.",
+        "summary": "Get your partner profile",
+        "tags": [
+          "Partner"
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerProfile"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4717,6 +5199,355 @@
             "description": "Count per origin (loyalty_reward/marketing)"
           }
         }
+      },
+      "PartnerTransferRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,16}(?:\\.\\d{0,2})?$",
+            "description": "Z$ to send, > 0, at most 2 decimals."
+          },
+          "external_reference": {
+            "type": "string",
+            "description": "The partner's own id for this transfer. Same reference + same data = the same transfer.",
+            "maxLength": 200
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why you send it; shown in the user's statement (up to 200 characters).",
+            "maxLength": 200
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 32
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "cpf": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "wallet_address": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "company_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Send to a company instead of a person (exclusive with the person identifiers).",
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "amount",
+          "external_reference"
+        ],
+        "description": "Body of a transfer: at least one person identifier OR `company_id`, never both."
+      },
+      "PartnerProfile": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "activated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "features": {
+            "$ref": "#/components/schemas/PartnerFeatures"
+          },
+          "conditions": {
+            "$ref": "#/components/schemas/PartnerConditions"
+          }
+        },
+        "required": [
+          "activated_at",
+          "conditions",
+          "features",
+          "status"
+        ]
+      },
+      "PartnerFeatures": {
+        "type": "object",
+        "properties": {
+          "issuer": {
+            "type": "boolean"
+          },
+          "commercial": {
+            "type": "boolean"
+          },
+          "publisher": {
+            "type": "boolean"
+          },
+          "originator": {
+            "type": "boolean"
+          },
+          "communication": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "commercial",
+          "communication",
+          "issuer",
+          "originator",
+          "publisher"
+        ]
+      },
+      "PartnerCreditRequest": {
+        "type": "object",
+        "description": "Body of a credit. Your partner account is never in the body: it is the API key's.",
+        "properties": {
+          "campaign_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "quantity": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,18}(?:\\.\\d{0,6})?$",
+            "description": "Units of the campaign's action (e.g. litres), > 0, at most 6 decimals."
+          },
+          "external_reference": {
+            "type": "string",
+            "description": "The partner's own id for this credit. Same reference + same data = the same credit.",
+            "maxLength": 200
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 32
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "cpf": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "wallet_address": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          }
+        },
+        "required": [
+          "campaign_id",
+          "external_reference",
+          "quantity"
+        ]
+      },
+      "PaginatedPartnerCreditList": {
+        "type": "object",
+        "required": [
+          "next",
+          "previous",
+          "results"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "nullable": true,
+            "example": 123
+          },
+          "next": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri"
+          },
+          "previous": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerCredit"
+            }
+          }
+        }
+      },
+      "PartnerConditions": {
+        "type": "object",
+        "properties": {
+          "commercial_model": {
+            "type": "string",
+            "description": "agency, revenda or empty."
+          },
+          "commission_rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,1}(?:\\.\\d{0,4})?$",
+            "description": "Fraction: 0.2000 = 20%."
+          },
+          "originator_rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,1}(?:\\.\\d{0,4})?$"
+          },
+          "publisher_rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,1}(?:\\.\\d{0,4})?$"
+          },
+          "coupon_split_rate": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,1}(?:\\.\\d{0,4})?$"
+          },
+          "plan_discounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Monthly fee discount per plan tier, as a fraction: {\"2\": \"0.20\"}."
+          }
+        },
+        "required": [
+          "commercial_model",
+          "commission_rate",
+          "coupon_split_rate",
+          "originator_rate",
+          "plan_discounts",
+          "publisher_rate"
+        ]
+      },
+      "PartnerTransfer": {
+        "type": "object",
+        "description": "A transfer your partner account made.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "external_reference": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,16}(?:\\.\\d{0,2})?$"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "customer_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "destination_company_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "The company you sent to (`null` for a user)."
+          },
+          "credited_company_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "The company whose wallet received: the parent, when the destination is a branch."
+          },
+          "status": {
+            "type": "string",
+            "readOnly": true,
+            "description": "`settling`: the Z$ is already spendable and its on-chain record is pending; `settled`: recorded on-chain; `settlement_failed`: the on-chain record failed for good; `unknown`: contact Zupy support. For a transfer to a company, `settlement_failed` is not final while Zupy re-sends the last leg: it goes back to `settling`, then `settled`."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "amount",
+          "created_at",
+          "credited_company_id",
+          "customer_id",
+          "destination_company_id",
+          "external_reference",
+          "id",
+          "reason",
+          "status"
+        ]
+      },
+      "PartnerCredit": {
+        "type": "object",
+        "description": "A credit your partner account made.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "external_reference": {
+            "type": "string"
+          },
+          "campaign_id": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,18}(?:\\.\\d{0,6})?$"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_value": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,16}(?:\\.\\d{0,2})?$"
+          },
+          "amount": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,16}(?:\\.\\d{0,2})?$"
+          },
+          "customer_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "readOnly": true,
+            "description": "`settling`: the Z$ is already spendable and its on-chain record is pending; `settled`: recorded on-chain; `settlement_failed`: the on-chain record failed for good; `unknown`: contact Zupy support."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "amount",
+          "campaign_id",
+          "created_at",
+          "customer_id",
+          "external_reference",
+          "id",
+          "quantity",
+          "status",
+          "unit",
+          "unit_value"
+        ]
       }
     },
     "securitySchemes": {
@@ -4770,6 +5601,10 @@
     {
       "name": "Webhook Management",
       "description": "Configure and test outbound webhook delivery"
+    },
+    {
+      "name": "Partner",
+      "description": "Issuer partner API: credit and transfer Z$ with your partner key (scopes `partner.read`, `partner.credit`, `partner.transfer`)."
     }
   ]
 }

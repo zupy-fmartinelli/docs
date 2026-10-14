@@ -1894,6 +1894,280 @@
           }
         }
       ]
+    },
+    {
+      "name": "Issuer Partner (Z$ credits and transfers)",
+      "description": "The issuer partner API (`/api/v2/partner/*`). It uses the PARTNER key created in the dashboard (/integrations/partner → API keys, scopes `partner.read`, `partner.credit`, `partner.transfer`): set `partner_api_key`. That key reaches only these routes; any other v2 route answers 403.",
+      "auth": {
+        "type": "apikey",
+        "apikey": [
+          {
+            "key": "key",
+            "value": "X-API-Key",
+            "type": "string"
+          },
+          {
+            "key": "value",
+            "value": "{{partner_api_key}}",
+            "type": "string"
+          },
+          {
+            "key": "in",
+            "value": "header",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Get Partner Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/partner/profile/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "partner",
+                "profile",
+                ""
+              ]
+            },
+            "description": "Your partner account: enabled features and commercial conditions (rates are fractions, 0.2000 = 20%). Scope `partner.read`."
+          }
+        },
+        {
+          "name": "Credit a User (by phone)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/partner/credits/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "partner",
+                "credits",
+                ""
+              ]
+            },
+            "description": "Credits `quantity` units of your campaign's action to the user the identifiers point at (found, or created once). 201 new credit; 200 identical replay of the same `external_reference`. Scope `partner.credit`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campaign_id\": \"{{campaign_id}}\",\n  \"quantity\": \"1.5\",\n  \"external_reference\": \"{{partner_reference}}\",\n  \"phone\": \"+5511987654321\",\n  \"name\": \"Maria\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Each run is a NEW operation: a fresh reference. Re-sending the SAME reference with the same data returns",
+                  "// the same movement (200), never a second one.",
+                  "pm.environment.set(\"partner_reference\", \"postman-\" + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "    var credit = pm.response.json();",
+                  "    pm.environment.set(\"credit_id\", credit.id);",
+                  "    console.log(\"Auto-set credit_id: \" + credit.id + \" (status \" + credit.status + \")\");",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Credits",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/partner/credits/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "partner",
+                "credits",
+                ""
+              ]
+            },
+            "description": "Your credits, newest first, cursor-paginated (`next`/`previous`). Scope `partner.read`."
+          }
+        },
+        {
+          "name": "Find a Credit by Your Reference",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/partner/credits/?external_reference={{partner_reference}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "partner",
+                "credits",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "external_reference",
+                  "value": "{{partner_reference}}"
+                }
+              ]
+            },
+            "description": "Filter by your own `external_reference` (exact). Scope `partner.read`."
+          }
+        },
+        {
+          "name": "Get One Credit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/partner/credits/{{credit_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "partner",
+                "credits",
+                "{{credit_id}}",
+                ""
+              ]
+            },
+            "description": "One of your credits, with its on-chain `status`. Another partner's id answers 404. Scope `partner.read`."
+          }
+        },
+        {
+          "name": "Transfer Z$ to a User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/partner/transfers/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "partner",
+                "transfers",
+                ""
+              ]
+            },
+            "description": "Sends `amount` Z$ from your partner wallet to the user the identifiers point at. Scope `partner.transfer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"75.50\",\n  \"external_reference\": \"{{partner_reference}}\",\n  \"reason\": \"Prêmio do sorteio de outubro\",\n  \"email\": \"maria@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Each run is a NEW operation: a fresh reference. Re-sending the SAME reference with the same data returns",
+                  "// the same movement (200), never a second one.",
+                  "pm.environment.set(\"partner_reference\", \"postman-\" + Date.now());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Transfer Z$ to a Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/partner/transfers/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "partner",
+                "transfers",
+                ""
+              ]
+            },
+            "description": "Sends `amount` Z$ to the company `company_id` (a branch is credited on its parent). Never both a company and person identifiers. Scope `partner.transfer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"500.00\",\n  \"external_reference\": \"{{partner_reference}}\",\n  \"reason\": \"Apoio à campanha de outubro\",\n  \"company_id\": \"{{company_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Each run is a NEW operation: a fresh reference. Re-sending the SAME reference with the same data returns",
+                  "// the same movement (200), never a second one.",
+                  "pm.environment.set(\"partner_reference\", \"postman-\" + Date.now());"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

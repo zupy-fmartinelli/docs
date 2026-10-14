@@ -101,6 +101,12 @@ class TestPartnerEndpoints:
         ("POST", "/api/v2/wallet/passes/loyalty/"),
         ("GET", "/api/v2/wallet/passes/{pass_id}/status/"),
         ("POST", "/api/v2/webhooks/integrations/{partner}/"),
+        # agency-partnership FU-PARTNER-ISSUER-GUIDE: the issuer partner's API (X-API-Key with partner.* scopes).
+        ("GET", "/api/v2/partner/profile/"),
+        ("GET", "/api/v2/partner/credits/"),
+        ("POST", "/api/v2/partner/credits/"),
+        ("GET", "/api/v2/partner/credits/{credit_id}/"),
+        ("POST", "/api/v2/partner/transfers/"),
     ]
 
     @pytest.mark.parametrize("method,path", EXPECTED_PATHS)
@@ -226,3 +232,59 @@ class TestNoOrphanedSchemas:
         schemas = spec["components"]["schemas"]
         for name in self.INTERNAL_SCHEMAS:
             assert name not in schemas, f"Internal schema found: {name}"
+
+
+class TestIssuerPartnerEndpoints:
+    """FU-PARTNER-ISSUER-GUIDE: the issuer partner's routes, as the backend contract defines them, for the public."""
+
+    PARTNER_OPERATIONS = [
+        ("get", "/api/v2/partner/profile/", "partner_profile_retrieve"),
+        ("get", "/api/v2/partner/credits/", "partner_credits_list"),
+        ("post", "/api/v2/partner/credits/", "partner_credits_create"),
+        ("get", "/api/v2/partner/credits/{credit_id}/", "partner_credits_retrieve"),
+        ("post", "/api/v2/partner/transfers/", "partner_transfers_create"),
+    ]
+    # Internal vocabulary of the backend spec that must never reach the public reference.
+    INTERNAL_MARKERS = ["AD-", "FR4", "FR3", "Story ", "context[", "``", "AD-13", "PartnerProfileService"]
+
+    @pytest.mark.parametrize("method,path,operation_id", PARTNER_OPERATIONS)
+    def test_operation_is_the_backend_one_with_the_partner_key_only(self, spec, method, path, operation_id):
+        operation = spec["paths"][path][method]
+        assert operation["operationId"] == operation_id
+        assert operation["security"] == [{"apiKeyAuth": []}]
+        assert operation["tags"] == ["Partner"]
+
+    def test_the_partner_tag_is_declared(self, spec):
+        assert "Partner" in [tag["name"] for tag in spec["tags"]]
+
+    def test_every_referenced_schema_exists(self, spec):
+        text = json.dumps(spec)
+        import re
+
+        for name in set(re.findall(r'"#/components/schemas/([A-Za-z0-9_]+)"', text)):
+            assert name in spec["components"]["schemas"], f"dangling $ref: {name}"
+
+    def test_no_internal_vocabulary_in_partner_operations_and_schemas(self, spec):
+        public = {path: spec["paths"][path] for _, path, _ in self.PARTNER_OPERATIONS}
+        schemas = {
+            name: body
+            for name, body in spec["components"]["schemas"].items()
+            if name.startswith(("PartnerCredit", "PartnerTransfer", "PartnerProfile", "PartnerFeatures",
+                                "PartnerConditions", "PaginatedPartnerCredit"))
+        }
+        text = json.dumps([public, schemas], ensure_ascii=False)
+        for marker in self.INTERNAL_MARKERS:
+            assert marker not in text, f"internal marker in the public partner reference: {marker!r}"
+
+    def test_the_credit_request_and_response_fields_are_the_serializers(self, spec):
+        schemas = spec["components"]["schemas"]
+        assert set(schemas["PartnerCreditRequest"]["properties"]) == {
+            "campaign_id", "quantity", "external_reference", "phone", "email", "cpf", "wallet_address", "name",
+        }
+        assert set(schemas["PartnerCredit"]["properties"]) == {
+            "id", "external_reference", "campaign_id", "quantity", "unit", "unit_value", "amount", "customer_id",
+            "status", "created_at",
+        }
+        assert set(schemas["PartnerTransferRequest"]["properties"]) == {
+            "amount", "external_reference", "reason", "phone", "email", "cpf", "wallet_address", "name", "company_id",
+        }

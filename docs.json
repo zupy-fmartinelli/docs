@@ -32,6 +32,7 @@
               "guides/outbound-webhooks",
               "guides/opendelivery",
               "guides/postman",
+              "guides/partner-issuer",
               "guides/partner-onboarding",
               "errors"
             ]
