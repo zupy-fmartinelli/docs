@@ -2968,6 +2968,90 @@
         }
       }
     },
+    "/api/v2/partner/campaigns/": {
+      "get": {
+        "operationId": "partner_campaigns_list",
+        "description": "The actions of your company (campaigns inside the API), newest first, cursor-paginated, with the budget consumed (`budget_spent`, the same number as the dashboard). The `id` is the action's code: the `campaign_id` of a credit. Filter by `status` (active, paused, ended). Creating or changing an action is done in the dashboard. Scope `partner.read`.",
+        "summary": "List your actions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "ended",
+                "paused"
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "Partner"
+        ],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PartnerCampaign"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v2/partner/profile/": {
       "get": {
         "operationId": "partner_profile_retrieve",
@@ -5273,13 +5357,19 @@
           },
           "conditions": {
             "$ref": "#/components/schemas/PartnerConditions"
+          },
+          "wallet_balance": {
+            "type": "string",
+            "description": "The Z$ balance of your wallet, 2 places, truncated. A snapshot, not a reservation: a credit or transfer may still answer 402 insufficient-balance.",
+            "readOnly": true
           }
         },
         "required": [
           "activated_at",
           "conditions",
           "features",
-          "status"
+          "status",
+          "wallet_balance"
         ]
       },
       "PartnerFeatures": {
@@ -5547,6 +5637,95 @@
           "status",
           "unit",
           "unit_value"
+        ]
+      },
+      "PartnerCampaign": {
+        "type": "object",
+        "description": "One action of your company, with its reward (`unit_value` Z$ per unit) and the budget consumed. `id` is the action's code (`campaign_id` of a credit).",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "action_type": {
+            "$ref": "#/components/schemas/PartnerPanelActionType"
+          },
+          "unit_value": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,18}(?:\\.\\d{0,2})?$"
+          },
+          "per_user_limit": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,18}(?:\\.\\d{0,2})?$",
+            "nullable": true
+          },
+          "per_user_period": {
+            "type": "string"
+          },
+          "budget_total": {
+            "type": "string",
+            "format": "decimal",
+            "pattern": "^-?\\d{0,18}(?:\\.\\d{0,2})?$",
+            "nullable": true
+          },
+          "budget_spent": {
+            "type": "string",
+            "description": "Consumo pela consulta canônica (``PartnerCreditRepository.spent_by_campaign``, AD-7), via ``context``.",
+            "readOnly": true
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "action_type",
+          "budget_spent",
+          "budget_total",
+          "ends_at",
+          "id",
+          "name",
+          "per_user_limit",
+          "per_user_period",
+          "starts_at",
+          "status",
+          "unit_value"
+        ]
+      },
+      "PartnerPanelActionType": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "code",
+          "name",
+          "unit"
         ]
       }
     },

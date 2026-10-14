@@ -250,17 +250,17 @@ Refusals of the issuer partner API also carry a stable `error_code`, the same as
 
 **HTTP status:** `404 Not Found`
 
-**Cause:** The campaign does not exist or belongs to another partner (both answer the same).
+**Cause:** The action's code (`campaign_id`) does not exist or belongs to another partner (both answer the same).
 
-**Partner-side fix:** Use a `campaign_id` the Zupy team gave you.
+**Partner-side fix:** Use the code of one of your actions (dashboard → Partner → Actions, column Code, or `GET /api/v2/partner/campaigns/`).
 
 ### campaign-not-creditable
 
 **HTTP status:** `422 Unprocessable Entity`
 
-**Cause:** The campaign is paused, ended, or outside its dates.
+**Cause:** The action is paused, ended, or outside its dates.
 
-**Partner-side fix:** Check the campaign in the dashboard (Partner → Campaigns).
+**Partner-side fix:** Check the action in the dashboard (Partner → Actions).
 
 ### customer-not-identified
 
@@ -290,7 +290,7 @@ Refusals of the issuer partner API also carry a stable `error_code`, the same as
 
 **HTTP status:** `422 Unprocessable Entity`
 
-**Cause:** The credit would exceed a campaign limit. The body has `limit` (`budget_total` or `per_user`), `limit_value`, `used` and `requested`.
+**Cause:** The credit would exceed a limit of the action. The body has `limit` (`budget_total` or `per_user`), `limit_value`, `used` and `requested`.
 
 **Partner-side fix:** Credit less, or ask the Zupy team to raise the limit.
 

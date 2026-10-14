@@ -14,16 +14,19 @@ usuários dela (por exemplo, a cada litro de óleo descartado) e que paga esses 
 
 ## Antes de começar
 
-Você precisa de três coisas, todas configuradas com a equipe da Zupy:
+Você precisa de três coisas:
 
-1. **Perfil de parceiro ativo, com o recurso Emissor.** Sem isso, toda chamada responde `403` com
-   `error_code` `partner-not-active`.
+1. **Perfil de parceiro ativo, com o recurso Emissor**, configurado com a equipe da Zupy. Sem isso, toda chamada
+   responde `403` com `error_code` `partner-not-active`.
 2. **Saldo de Z$ na carteira da empresa parceira.** Cada crédito e cada transferência sai desse saldo. O saldo
-   aparece no painel em **Integrações → Parceiro Zupy** e o extrato em **Carteira Z$**. A API não expõe o saldo.
-3. **Pelo menos uma campanha**, para creditar. A campanha define a ação (por exemplo, "Descarte correto de óleo"), a
-   unidade (`litro`), o valor de cada unidade em Z$, a vigência e os limites. A equipe da Zupy cria a campanha e
-   informa o `campaign_id` dela. As suas campanhas, com o orçamento consumido, aparecem no painel em
-   **Integrações → Parceiro Zupy → Campanhas**.
+   aparece no painel em **Integrações → Parceiro Zupy**, o extrato em **Carteira Z$**, e pela API em `wallet_balance`
+   (veja [Saldo](#7-saldo)).
+3. **Pelo menos uma ação**, para creditar. Você mesmo cria no painel, em **Integrações → Parceiro Zupy → Ações →
+   Nova ação**: o que a pessoa faz (por exemplo, "Descarte de óleo"), a unidade (`litro`) e a recompensa em Z$ por
+   unidade (por exemplo, Z$ 2 por litro). A ação vale na hora. Por padrão ela não tem data nem limite; orçamento
+   máximo, limite por pessoa e início/fim ficam em **Opções avançadas**, se você quiser. A lista de ações mostra o
+   **Código** de cada uma: é o `campaign_id` que a API pede, **o código da ação**. Pela API, as suas ações saem em
+   `GET /api/v2/partner/campaigns/` (veja "Listar as suas ações", na seção 3).
 
 **URL base:** `https://api.zupy.com`
 
@@ -40,7 +43,7 @@ Você precisa de três coisas, todas configuradas com a equipe da Zupy:
 
     | Permissão | Libera |
     |---|---|
-    | `partner.read` | `GET /api/v2/partner/profile/`, `GET /api/v2/partner/credits/` e `GET /api/v2/partner/credits/{credit_id}/` |
+    | `partner.read` | `GET /api/v2/partner/profile/`, `GET /api/v2/partner/campaigns/`, `GET /api/v2/partner/credits/` e `GET /api/v2/partner/credits/{credit_id}/` |
     | `partner.credit` | `POST /api/v2/partner/credits/` |
     | `partner.transfer` | `POST /api/v2/partner/transfers/` |
 
@@ -69,8 +72,8 @@ curl https://api.zupy.com/api/v2/partner/profile/ \
 
 ## 3. Ler o seu perfil
 
-`GET /api/v2/partner/profile/` (permissão `partner.read`) devolve os recursos ligados e as condições comerciais.
-As taxas são frações: `0.2000` é 20%.
+`GET /api/v2/partner/profile/` (permissão `partner.read`) devolve os recursos ligados, as condições comerciais e o
+saldo da carteira (`wallet_balance`). As taxas são frações: `0.2000` é 20%.
 
 ```json
 {
@@ -84,16 +87,51 @@ As taxas são frações: `0.2000` é 20%.
     "publisher_rate": "0.0000",
     "coupon_split_rate": "0.0000",
     "plan_discounts": {}
-  }
+  },
+  "wallet_balance": "9800.00"
 }
 ```
 
 O perfil nunca traz PIX, CNPJ ou contatos.
 
+### Listar as suas ações
+
+`GET /api/v2/partner/campaigns/` (permissão `partner.read`) lista as ações da sua empresa, da mais nova para a mais
+antiga, paginadas por cursor (`next`/`previous`; `page_size` de 1 a 100, padrão 25). Filtre por `?status=active`,
+`paused` ou `ended`. O `id` de cada item é **o código da ação**: o `campaign_id` do crédito. `unit_value` é a
+recompensa em Z$ por unidade; `budget_spent` é quanto já saiu (o mesmo número do painel); `budget_total`,
+`per_user_limit` e as datas vêm `null` (e `per_user_period` vazio) quando a ação não tem esse limite.
+
+```json
+{
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 12,
+      "name": "Descarte de óleo",
+      "status": "active",
+      "action_type": {"code": "descarte-de-oleo-cuidar-do-planeta", "name": "Descarte de óleo", "unit": "litro",
+                      "category": "cuidar_do_planeta"},
+      "unit_value": "2.00",
+      "per_user_limit": null,
+      "per_user_period": "",
+      "budget_total": "5000.00",
+      "budget_spent": "1240.00",
+      "starts_at": null,
+      "ends_at": null
+    }
+  ]
+}
+```
+
+Criar, editar, pausar e encerrar ações é pelo painel; a API só lê.
+
 ## 4. Creditar Z$ a um usuário
 
-`POST /api/v2/partner/credits/` (permissão `partner.credit`) credita `quantity` unidades da ação de uma campanha
-sua ao usuário que os identificadores apontam. O valor em Z$ é `quantity × unit_value` da campanha.
+`POST /api/v2/partner/credits/` (permissão `partner.credit`) credita `quantity` unidades de uma ação sua ao usuário
+que os identificadores apontam. O valor em Z$ é `quantity × unit_value` (a recompensa por unidade da ação).
 
 ```bash
 curl -X POST https://api.zupy.com/api/v2/partner/credits/ \
@@ -110,7 +148,7 @@ curl -X POST https://api.zupy.com/api/v2/partner/credits/ \
 
 | Campo | Obrigatório | Regra |
 |---|---|---|
-| `campaign_id` | sim | Inteiro. Uma campanha **sua**; a de outro parceiro responde `404` `campaign-not-found`. |
+| `campaign_id` | sim | Inteiro: **o código da ação** (a coluna Código da lista de ações, ou o `id` em `GET /api/v2/partner/campaigns/`). Uma ação **sua**; a de outro parceiro responde `404` `campaign-not-found`. |
 | `quantity` | sim | Decimal em texto, maior que zero, até 6 casas. |
 | `external_reference` | sim | O seu id deste crédito, até 200 caracteres. É a chave de idempotência (veja abaixo). |
 | `phone`, `email`, `cpf`, `wallet_address` | pelo menos um | Identificam o usuário. |
@@ -160,15 +198,15 @@ transferência são operações diferentes.
 
 ### Como o crédito aparece para o usuário
 
-No extrato do usuário, o crédito mostra a origem e o motivo a partir do nome da empresa parceira e da ação da
-campanha, por exemplo: `Z$ 200 via Biord: Descarte correto de óleo (1 litro)`. O crédito não tem campo de motivo
-livre; o motivo é a ação da campanha.
+No extrato do usuário, o crédito mostra a origem e o motivo a partir do nome da empresa parceira e da ação, por
+exemplo: `Z$ 200 via Biord: Descarte de óleo (1 litro)`. O crédito não tem campo de motivo livre; o motivo é a ação.
 
-### Limites da campanha
+### Limites da ação
 
-A campanha pode ter orçamento total e teto por usuário. Um crédito que ultrapassaria um deles é recusado com `422`
-`credit-limit-exceeded`, que traz `limit` (`budget_total` ou `per_user`), `limit_value`, `used` e `requested`. Uma
-campanha pausada, encerrada ou fora da vigência responde `422` `campaign-not-creditable`.
+Por padrão a ação não tem limite. Se você definiu, em Opções avançadas, um orçamento máximo ou um limite por pessoa
+(os dois em Z$), um crédito que ultrapassaria um deles é recusado com `422` `credit-limit-exceeded`, que traz `limit`
+(`budget_total` ou `per_user`), `limit_value`, `used` e `requested`. Uma ação pausada, encerrada ou fora das datas
+responde `422` `campaign-not-creditable`. Mudar a recompensa vale para os próximos créditos; os já feitos não mudam.
 
 ### `status`: o registro on-chain
 
@@ -212,7 +250,7 @@ campanha pausada, encerrada ou fora da vigência responde `422` `campaign-not-cr
 ## 6. Transferir Z$ a um usuário ou a uma empresa
 
 `POST /api/v2/partner/transfers/` (permissão `partner.transfer`) envia `amount` Z$ da carteira da empresa parceira
-para **exatamente um** destino, sem campanha:
+para **exatamente um** destino, sem ação:
 
 - **um usuário**, pelos identificadores (`phone`, `email`, `cpf`, `wallet_address`), com as mesmas regras de
   identificação do crédito; **ou**
@@ -272,7 +310,9 @@ Para uma empresa, `customer_id` vem `null` e os dois ids de empresa vêm preench
 
 ## 7. Saldo
 
-A API do parceiro não expõe o saldo. Acompanhe-o no painel (**Integrações → Parceiro Zupy** e **Carteira Z$**).
+O saldo da carteira sai em `wallet_balance`, no `GET /api/v2/partner/profile/`: Z$ com 2 casas, lido na hora. É um
+**retrato, não uma reserva**: entre a leitura e o crédito o saldo pode mudar, e a resposta que vale é a do crédito ou
+da transferência. No painel, o saldo aparece em **Integrações → Parceiro Zupy** e o extrato em **Carteira Z$**.
 Quando o saldo não cobre a operação, nada é movimentado:
 
 - `402` `insufficient-balance`: o saldo de Z$ da carteira não cobre o crédito ou a transferência;
@@ -422,12 +462,12 @@ com `errors` apontando cada campo:
 | 402 | `insufficient-balance` | o saldo de Z$ não cobre a operação | — |
 | 402 | `partner-not-funded-on-chain` | a carteira ainda não tem Z$ confirmados on-chain | — |
 | 403 | `partner-deactivated-during-request` | a empresa deixou de ser parceira ativa enquanto a requisição rodava | — |
-| 404 | `campaign-not-found` | campanha de outro parceiro, ou inexistente | — |
-| 422 | `campaign-not-creditable` | campanha pausada, encerrada ou fora da vigência | — |
+| 404 | `campaign-not-found` | o código da ação é de outro parceiro, ou não existe | — |
+| 422 | `campaign-not-creditable` | ação pausada, encerrada ou fora das datas | — |
 | 422 | `customer-not-identified` | ninguém encontrado e sem telefone ou e-mail para criar a conta | — |
 | 422 | `invalid-quantity` | quantidade inválida, ou que daria Z$ 0 | — |
 | 422 | `invalid-reference` | referência vazia ou longa demais | — |
-| 422 | `credit-limit-exceeded` | ultrapassaria um limite da campanha | `limit`, `limit_value`, `used`, `requested` |
+| 422 | `credit-limit-exceeded` | ultrapassaria um limite da ação | `limit`, `limit_value`, `used`, `requested` |
 | 422 | `credit-refused` | outra recusa do crédito | — |
 | 422 | `transfer-limit-exceeded` | ultrapassaria um limite de transferência | `limit`, `limit_value`, `used`, `requested` |
 | 422 | `invalid-transfer` | valor, referência ou motivo inválidos | — |

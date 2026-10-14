@@ -21,6 +21,7 @@ OPERATIONS = {
     ("POST", "/api/v2/partner/credits/"),
     ("GET", "/api/v2/partner/credits/{credit_id}/"),
     ("POST", "/api/v2/partner/transfers/"),
+    ("GET", "/api/v2/partner/campaigns/"),  # Story 3.6
 }
 
 

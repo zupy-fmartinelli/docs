@@ -1941,6 +1941,50 @@
           }
         },
         {
+          "name": "List Your Actions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var first = pm.response.json().results[0];",
+                  "    if (first) {",
+                  "        pm.environment.set(\"campaign_id\", first.id);",
+                  "        console.log(\"Auto-set campaign_id (the action's code): \" + first.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v2/partner/campaigns/?status=active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "partner",
+                "campaigns",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            },
+            "description": "Your actions (created in the dashboard), newest first, with the reward per unit and the budget consumed. The `id` is the action's code: the `campaign_id` of a credit. Scope `partner.read`."
+          }
+        },
+        {
           "name": "Credit a User (by phone)",
           "request": {
             "method": "POST",

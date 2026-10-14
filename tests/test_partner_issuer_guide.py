@@ -71,7 +71,7 @@ def test_every_movement_error_type_has_an_anchor_on_the_errors_page(code):
 def test_the_guide_covers_every_partner_route():
     guide = read("guides", "partner-issuer.mdx")
     for route in ["/api/v2/partner/profile/", "/api/v2/partner/credits/", "/api/v2/partner/credits/{credit_id}/",
-                  "/api/v2/partner/transfers/"]:
+                  "/api/v2/partner/transfers/", "/api/v2/partner/campaigns/"]:
         assert route in guide
 
 
@@ -81,3 +81,15 @@ def test_the_guide_says_empresa_never_restaurante():
 
 def test_the_old_integration_onboarding_points_to_the_issuer_guide():
     assert "/guides/partner-issuer" in read("guides", "partner-onboarding.mdx")
+
+
+def test_story_3_6_the_partner_creates_its_actions_and_reads_its_balance():
+    """Story 3.6: the partner creates its actions in the dashboard and reads its balance by key. The two sentences
+    that said otherwise are gone; the guide says "ação" and calls campaign_id "o código da ação" (PO 2026-10-14)."""
+    guide = read("guides", "partner-issuer.mdx")
+    assert "A equipe da Zupy cria a campanha" not in guide
+    assert "A API não expõe o saldo" not in guide
+    assert "wallet_balance" in guide
+    assert "o código da ação" in guide
+    assert "Nova ação" in guide
+    assert not re.search(r"\bcampanhas?\b", guide, flags=re.I), "the partner sees ações, never campanhas"
