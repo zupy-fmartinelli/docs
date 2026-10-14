@@ -26,7 +26,7 @@ Você precisa de três coisas:
    unidade (por exemplo, Z$ 2 por litro). A ação vale na hora. Por padrão ela não tem data nem limite; orçamento
    máximo, limite por pessoa e início/fim ficam em **Opções avançadas**, se você quiser. A lista de ações mostra o
    **Código** de cada uma: é o `campaign_id` que a API pede, **o código da ação**. Pela API, as suas ações saem em
-   `GET /api/v2/partner/campaigns/` (veja "Listar as suas ações", na seção 3).
+   `GET /api/v2/partner/actions/` (veja "Listar as suas ações", na seção 3).
 
 **URL base:** `https://api.zupy.com`
 
@@ -43,7 +43,7 @@ Você precisa de três coisas:
 
     | Permissão | Libera |
     |---|---|
-    | `partner.read` | `GET /api/v2/partner/profile/`, `GET /api/v2/partner/campaigns/`, `GET /api/v2/partner/credits/` e `GET /api/v2/partner/credits/{credit_id}/` |
+    | `partner.read` | `GET /api/v2/partner/profile/`, `GET /api/v2/partner/actions/`, `GET /api/v2/partner/credits/` e `GET /api/v2/partner/credits/{credit_id}/` |
     | `partner.credit` | `POST /api/v2/partner/credits/` |
     | `partner.transfer` | `POST /api/v2/partner/transfers/` |
 
@@ -96,7 +96,7 @@ O perfil nunca traz PIX, CNPJ ou contatos.
 
 ### Listar as suas ações
 
-`GET /api/v2/partner/campaigns/` (permissão `partner.read`) lista as ações da sua empresa, da mais nova para a mais
+`GET /api/v2/partner/actions/` (permissão `partner.read`) lista as ações da sua empresa, da mais nova para a mais
 antiga, paginadas por cursor (`next`/`previous`; `page_size` de 1 a 100, padrão 25). Filtre por `?status=active`,
 `paused` ou `ended`. O `id` de cada item é **o código da ação**: o `campaign_id` do crédito. `unit_value` é a
 recompensa em Z$ por unidade; `budget_spent` é quanto já saiu (o mesmo número do painel); `budget_total`,
@@ -148,7 +148,7 @@ curl -X POST https://api.zupy.com/api/v2/partner/credits/ \
 
 | Campo | Obrigatório | Regra |
 |---|---|---|
-| `campaign_id` | sim | Inteiro: **o código da ação** (a coluna Código da lista de ações, ou o `id` em `GET /api/v2/partner/campaigns/`). Uma ação **sua**; a de outro parceiro responde `404` `campaign-not-found`. |
+| `campaign_id` | sim | Inteiro: **o código da ação** (a coluna Código da lista de ações, ou o `id` em `GET /api/v2/partner/actions/`). Uma ação **sua**; a de outro parceiro responde `404` `campaign-not-found`. |
 | `quantity` | sim | Decimal em texto, maior que zero, até 6 casas. |
 | `external_reference` | sim | O seu id deste crédito, até 200 caracteres. É a chave de idempotência (veja abaixo). |
 | `phone`, `email`, `cpf`, `wallet_address` | pelo menos um | Identificam o usuário. |

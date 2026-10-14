@@ -108,7 +108,7 @@ class TestPartnerEndpoints:
         ("GET", "/api/v2/partner/credits/{credit_id}/"),
         ("POST", "/api/v2/partner/transfers/"),
         # Story 3.6: the partner's actions (campaigns inside) by key.
-        ("GET", "/api/v2/partner/campaigns/"),
+        ("GET", "/api/v2/partner/actions/"),
     ]
 
     @pytest.mark.parametrize("method,path", EXPECTED_PATHS)
@@ -245,7 +245,7 @@ class TestIssuerPartnerEndpoints:
         ("post", "/api/v2/partner/credits/", "partner_credits_create"),
         ("get", "/api/v2/partner/credits/{credit_id}/", "partner_credits_retrieve"),
         ("post", "/api/v2/partner/transfers/", "partner_transfers_create"),
-        ("get", "/api/v2/partner/campaigns/", "partner_campaigns_list"),
+        ("get", "/api/v2/partner/actions/", "partner_actions_list"),
     ]
     # Internal vocabulary of the backend spec that must never reach the public reference.
     INTERNAL_MARKERS = ["AD-", "FR4", "FR3", "Story ", "context[", "``", "AD-13", "PartnerProfileService"]
@@ -298,8 +298,8 @@ def test_the_profile_has_the_wallet_balance(spec):
     assert "wallet_balance" in spec["components"]["schemas"]["PartnerProfile"]["properties"]
 
 
-def test_the_campaign_item_is_the_panels(spec):
-    assert set(spec["components"]["schemas"]["PartnerCampaign"]["properties"]) == {
+def test_the_action_item_is_the_panels(spec):
+    assert set(spec["components"]["schemas"]["PartnerAction"]["properties"]) == {
         "id", "name", "status", "action_type", "unit_value", "per_user_limit", "per_user_period", "budget_total",
         "budget_spent", "starts_at", "ends_at",
     }

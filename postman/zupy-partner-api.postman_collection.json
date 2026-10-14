@@ -1963,7 +1963,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v2/partner/campaigns/?status=active",
+              "raw": "{{base_url}}/api/v2/partner/actions/?status=active",
               "host": [
                 "{{base_url}}"
               ],
@@ -1971,7 +1971,7 @@
                 "api",
                 "v2",
                 "partner",
-                "campaigns",
+                "actions",
                 ""
               ],
               "query": [

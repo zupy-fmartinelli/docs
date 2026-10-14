@@ -2968,10 +2968,10 @@
         }
       }
     },
-    "/api/v2/partner/campaigns/": {
+    "/api/v2/partner/actions/": {
       "get": {
-        "operationId": "partner_campaigns_list",
-        "description": "The actions of your company (campaigns inside the API), newest first, cursor-paginated, with the budget consumed (`budget_spent`, the same number as the dashboard). The `id` is the action's code: the `campaign_id` of a credit. Filter by `status` (active, paused, ended). Creating or changing an action is done in the dashboard. Scope `partner.read`.",
+        "operationId": "partner_actions_list",
+        "description": "The actions of your company newest first, cursor-paginated, with the budget consumed (`budget_spent`, the same number as the dashboard). The `id` is the action's code: the `campaign_id` of a credit. Filter by `status` (active, paused, ended). Creating or changing an action is done in the dashboard. Scope `partner.read`.",
         "summary": "List your actions",
         "parameters": [
           {
@@ -3002,7 +3002,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PartnerCampaign"
+                    "$ref": "#/components/schemas/PartnerAction"
                   }
                 }
               }
@@ -5639,7 +5639,30 @@
           "unit_value"
         ]
       },
-      "PartnerCampaign": {
+      "PartnerPanelActionType": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "code",
+          "name",
+          "unit"
+        ]
+      },
+      "PartnerAction": {
         "type": "object",
         "description": "One action of your company, with its reward (`unit_value` Z$ per unit) and the budget consumed. `id` is the action's code (`campaign_id` of a credit).",
         "properties": {
@@ -5703,29 +5726,6 @@
           "starts_at",
           "status",
           "unit_value"
-        ]
-      },
-      "PartnerPanelActionType": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "unit": {
-            "type": "string"
-          },
-          "category": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "category",
-          "code",
-          "name",
-          "unit"
         ]
       }
     },

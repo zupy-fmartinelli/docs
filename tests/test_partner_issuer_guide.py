@@ -71,7 +71,7 @@ def test_every_movement_error_type_has_an_anchor_on_the_errors_page(code):
 def test_the_guide_covers_every_partner_route():
     guide = read("guides", "partner-issuer.mdx")
     for route in ["/api/v2/partner/profile/", "/api/v2/partner/credits/", "/api/v2/partner/credits/{credit_id}/",
-                  "/api/v2/partner/transfers/", "/api/v2/partner/campaigns/"]:
+                  "/api/v2/partner/transfers/", "/api/v2/partner/actions/"]:
         assert route in guide
 
 
