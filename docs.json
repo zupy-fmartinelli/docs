@@ -77,7 +77,7 @@
     "primary": {
       "type": "button",
       "label": "Get API Key",
-      "href": "https://app.zupy.com/developers/api-keys"
+      "href": "https://app.zupy.com/integrations/partner"
     }
   },
   "contextual": {
