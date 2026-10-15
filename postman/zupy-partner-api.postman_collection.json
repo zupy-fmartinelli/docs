@@ -2189,7 +2189,7 @@
             "description": "Sends `amount` Z$ to the company `company_id` (a branch is credited on its parent). Never both a company and person identifiers. Scope `partner.transfer`.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"amount\": \"500.00\",\n  \"external_reference\": \"{{partner_reference}}\",\n  \"reason\": \"Apoio à campanha de outubro\",\n  \"company_id\": \"{{company_id}}\"\n}",
+              "raw": "{\n  \"amount\": \"500.00\",\n  \"external_reference\": \"{{partner_reference}}\",\n  \"reason\": \"Apoio à ação de reciclagem de outubro\",\n  \"company_id\": \"{{company_id}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
