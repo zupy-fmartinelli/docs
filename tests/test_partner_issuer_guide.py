@@ -22,8 +22,8 @@ MOVEMENT_CODES = [
     "insufficient-balance",
     "partner-not-funded-on-chain",
     "partner-deactivated-during-request",
-    "campaign-not-found",
-    "campaign-not-creditable",
+    "action-not-found",  # Story 2.13: was campaign-not-found
+    "action-not-creditable",  # Story 2.13: was campaign-not-creditable
     "customer-not-identified",
     "invalid-quantity",
     "invalid-reference",
@@ -93,3 +93,25 @@ def test_story_3_6_the_partner_creates_its_actions_and_reads_its_balance():
     assert "o código da ação" in guide
     assert "Nova ação" in guide
     assert not re.search(r"\bcampanhas?\b", guide, flags=re.I), "the partner sees ações, never campanhas"
+
+
+def test_story_2_13_one_name_a_required_reason_and_the_user_data():
+    """Story 2.13 (AC1, AC2, AC3, AC6, AC8): the guide says action_id everywhere, the transfer always says why, and the
+    user data the partner may send only fills what is empty — phone and e-mail identify, they never update."""
+    guide = read("guides", "partner-issuer.mdx")
+    assert "campaign_id" not in guide
+    assert "campaign-not-" not in guide
+    assert '"action_id": 12' in guide
+    assert '"action_name"' in guide
+    assert "`reason` | sim" in guide
+    for field in ("`birth_date`", "`gender`", "`address`"):
+        assert field in guide
+    assert "só preenche o que está vazio" in guide
+    assert "nunca são gravados numa conta que já existe" in guide
+
+
+def test_story_2_13_the_errors_page_and_the_postman_guide_speak_of_action_id():
+    errors = read("errors.mdx")
+    assert "campaign-not-" not in errors
+    assert "campaign_id" not in errors
+    assert "campaign_id" not in read("guides", "postman.mdx")

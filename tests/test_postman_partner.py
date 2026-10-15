@@ -68,4 +68,5 @@ def test_bodies_use_only_serializer_fields(folder, schema):
 
 def test_the_environment_has_the_partner_variables():
     keys = {value["key"] for value in json.load(open(ENVIRONMENT))["values"]}
-    assert {"partner_api_key", "campaign_id", "credit_id"} <= keys
+    assert {"partner_api_key", "action_id", "credit_id"} <= keys  # Story 2.13: was campaign_id
+    assert "campaign_id" not in keys

@@ -1951,8 +1951,8 @@
                   "if (pm.response.code === 200) {",
                   "    var first = pm.response.json().results[0];",
                   "    if (first) {",
-                  "        pm.environment.set(\"campaign_id\", first.id);",
-                  "        console.log(\"Auto-set campaign_id (the action's code): \" + first.id);",
+                  "        pm.environment.set(\"action_id\", first.id);",
+                  "        console.log(\"Auto-set action_id (the action's code): \" + first.id);",
                   "    }",
                   "}"
                 ]
@@ -1981,7 +1981,7 @@
                 }
               ]
             },
-            "description": "Your actions (created in the dashboard), newest first, with the reward per unit and the budget consumed. The `id` is the action's code: the `campaign_id` of a credit. Scope `partner.read`."
+            "description": "Your actions (created in the dashboard), newest first, with the reward per unit and the budget consumed. The `id` is the action's code: the `action_id` of a credit. Scope `partner.read`."
           }
         },
         {
@@ -2007,10 +2007,10 @@
                 ""
               ]
             },
-            "description": "Credits `quantity` units of your campaign's action to the user the identifiers point at (found, or created once). 201 new credit; 200 identical replay of the same `external_reference`. Scope `partner.credit`.",
+            "description": "Credits `quantity` units of one of your actions (`action_id`) to the user the identifiers point at (found, or created once). 201 new credit; 200 identical replay of the same `external_reference`. Scope `partner.credit`.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"campaign_id\": \"{{campaign_id}}\",\n  \"quantity\": \"1.5\",\n  \"external_reference\": \"{{partner_reference}}\",\n  \"phone\": \"+5511987654321\",\n  \"name\": \"Maria\"\n}",
+              "raw": "{\n  \"action_id\": \"{{action_id}}\",\n  \"quantity\": \"1.5\",\n  \"external_reference\": \"{{partner_reference}}\",\n  \"phone\": \"+5511987654321\",\n  \"name\": \"Maria\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

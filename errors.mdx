@@ -246,15 +246,15 @@ Refusals of the issuer partner API also carry a stable `error_code`, the same as
 
 **Partner-side fix:** Talk to the Zupy team. Nothing was credited.
 
-### campaign-not-found
+### action-not-found
 
 **HTTP status:** `404 Not Found`
 
-**Cause:** The action's code (`campaign_id`) does not exist or belongs to another partner (both answer the same).
+**Cause:** The action's code (`action_id`) does not exist or belongs to another partner (both answer the same).
 
 **Partner-side fix:** Use the code of one of your actions (dashboard → Partner → Actions, column Code, or `GET /api/v2/partner/actions/`).
 
-### campaign-not-creditable
+### action-not-creditable
 
 **HTTP status:** `422 Unprocessable Entity`
 

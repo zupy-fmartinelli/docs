@@ -25,7 +25,7 @@ Você precisa de três coisas:
    Nova ação**: o que a pessoa faz (por exemplo, "Descarte de óleo"), a unidade (`litro`) e a recompensa em Z$ por
    unidade (por exemplo, Z$ 2 por litro). A ação vale na hora. Por padrão ela não tem data nem limite; orçamento
    máximo, limite por pessoa e início/fim ficam em **Opções avançadas**, se você quiser. A lista de ações mostra o
-   **Código** de cada uma: é o `campaign_id` que a API pede, **o código da ação**. Pela API, as suas ações saem em
+   **Código** de cada uma: é o `action_id` que a API pede, **o código da ação**. Pela API, as suas ações saem em
    `GET /api/v2/partner/actions/` (veja "Listar as suas ações", na seção 3).
 
 **URL base:** `https://api.zupy.com`
@@ -98,7 +98,7 @@ O perfil nunca traz PIX, CNPJ ou contatos.
 
 `GET /api/v2/partner/actions/` (permissão `partner.read`) lista as ações da sua empresa, da mais nova para a mais
 antiga, paginadas por cursor (`next`/`previous`; `page_size` de 1 a 100, padrão 25). Filtre por `?status=active`,
-`paused` ou `ended`. O `id` de cada item é **o código da ação**: o `campaign_id` do crédito. `unit_value` é a
+`paused` ou `ended`. O `id` de cada item é **o código da ação**: o `action_id` do crédito. `unit_value` é a
 recompensa em Z$ por unidade; `budget_spent` é quanto já saiu (o mesmo número do painel); `budget_total`,
 `per_user_limit` e as datas vêm `null` (e `per_user_period` vazio) quando a ação não tem esse limite.
 
@@ -138,21 +138,22 @@ curl -X POST https://api.zupy.com/api/v2/partner/credits/ \
   -H "X-API-Key: $ZUPY_PARTNER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "campaign_id": 12,
+    "action_id": 12,
     "quantity": "1.5",
     "external_reference": "oleo-2026-000123",
     "phone": "+5511987654321",
-    "name": "Maria"
+    "name": "Maria",
+    "birth_date": "1990-05-17"
   }'
 ```
 
 | Campo | Obrigatório | Regra |
 |---|---|---|
-| `campaign_id` | sim | Inteiro: **o código da ação** (a coluna Código da lista de ações, ou o `id` em `GET /api/v2/partner/actions/`). Uma ação **sua**; a de outro parceiro responde `404` `campaign-not-found`. |
+| `action_id` | sim | Inteiro: **o código da ação** (a coluna Código da lista de ações, ou o `id` em `GET /api/v2/partner/actions/`). Uma ação **sua**; a de outro parceiro responde `404` `action-not-found`. |
 | `quantity` | sim | Decimal em texto, maior que zero, até 6 casas. |
 | `external_reference` | sim | O seu id deste crédito, até 200 caracteres. É a chave de idempotência (veja abaixo). |
 | `phone`, `email`, `cpf`, `wallet_address` | pelo menos um | Identificam o usuário. |
-| `name` | não | Usado só se a conta for criada agora. |
+| `name`, `cpf`, `birth_date`, `gender`, `address` | não | Dados do usuário. Só preenchem o que está vazio: veja "Dados do usuário", abaixo. |
 
 **Resposta `201`** (crédito novo):
 
@@ -160,7 +161,7 @@ curl -X POST https://api.zupy.com/api/v2/partner/credits/ \
 {
   "id": "e59a90a1-e92e-4794-b6bb-43a14f733c4f",
   "external_reference": "oleo-2026-000123",
-  "campaign_id": 12,
+  "action_id": 12,
   "quantity": "1.500000",
   "unit": "litro",
   "unit_value": "200.00",
@@ -182,10 +183,36 @@ curl -X POST https://api.zupy.com/api/v2/partner/credits/ \
 - Identificador malformado (telefone inválido, CPF com dígito errado, carteira Solana inválida, e-mail inválido) é
   recusado antes de qualquer busca, com `422` `validation-error` apontando o campo.
 
+<Note>
+  O campo do código da ação se chama `action_id`. Um corpo que ainda manda o nome antigo dele é recusado com `422`
+  `validation-error`, com a mensagem de que o campo foi renomeado. Ele nunca é ignorado em silêncio.
+</Note>
+
+### Dados do usuário
+
+Junto com os identificadores, você pode mandar o que sabe da pessoa. Todos os campos são opcionais e valem no crédito
+e na transferência a um usuário:
+
+| Campo | Formato |
+|---|---|
+| `name` | Nome. |
+| `cpf` | CPF com dígitos válidos. |
+| `birth_date` | Data de nascimento, `AAAA-MM-DD`. |
+| `gender` | `male`, `female`, `non_binary`, `other` ou `prefer_not_to_say`. |
+| `address` | `{"street", "number", "complement", "district", "city", "state", "postal_code"}`; só `street` é obrigatório dentro dele, e `state` é a UF (`SP`). |
+
+A regra é uma só: **a Zupy só preenche o que está vazio.** Numa conta nova, tudo entra. Numa conta que já existe, um
+nome, uma data de nascimento, um gênero ou um CPF já preenchidos nunca mudam, e o endereço entra como um endereço
+enviado pela sua empresa, sem tocar no endereço que a própria pessoa cadastrou. **Telefone e e-mail identificam a
+pessoa e nunca são gravados numa conta que já existe.** Um valor inválido (data no futuro, gênero fora da lista) é
+`422` `validation-error`, e nada é gravado.
+
 ### Idempotência: `external_reference`
 
 Reenviar o **mesmo** `external_reference` com os **mesmos** dados é seguro: a resposta é `200` com o **mesmo**
-crédito, e nada é creditado de novo. Use isso para repetir uma chamada que expirou ou caiu sem resposta.
+crédito, e nada é creditado de novo. Use isso para repetir uma chamada que expirou ou caiu sem resposta. Os dados do
+usuário não contam como "dados" aqui: a mesma referência com outra data de nascimento, por exemplo, é o mesmo crédito
+(`200`), e os dados do usuário de um reenvio não são aplicados.
 
 | Situação | Resposta |
 |---|---|
@@ -200,13 +227,14 @@ transferência são operações diferentes.
 
 No extrato do usuário, o crédito mostra a origem e o motivo a partir do nome da empresa parceira e da ação, por
 exemplo: `Z$ 200 via Biord: Descarte de óleo (1 litro)`. O crédito não tem campo de motivo livre; o motivo é a ação.
+O mesmo texto aparece no extrato de Z$ da sua empresa e no webhook (`action_name`).
 
 ### Limites da ação
 
 Por padrão a ação não tem limite. Se você definiu, em Opções avançadas, um orçamento máximo ou um limite por pessoa
 (os dois em Z$), um crédito que ultrapassaria um deles é recusado com `422` `credit-limit-exceeded`, que traz `limit`
 (`budget_total` ou `per_user`), `limit_value`, `used` e `requested`. Uma ação pausada, encerrada ou fora das datas
-responde `422` `campaign-not-creditable`. Mudar a recompensa vale para os próximos créditos; os já feitos não mudam.
+responde `422` `action-not-creditable`. Mudar a recompensa vale para os próximos créditos; os já feitos não mudam.
 
 ### `status`: o registro on-chain
 
@@ -234,7 +262,7 @@ responde `422` `campaign-not-creditable`. Mudar a recompensa vale para os próxi
     {
       "id": "e59a90a1-e92e-4794-b6bb-43a14f733c4f",
       "external_reference": "oleo-2026-000123",
-      "campaign_id": 12,
+      "action_id": 12,
       "quantity": "1.500000",
       "unit": "litro",
       "unit_value": "200.00",
@@ -276,8 +304,9 @@ curl -X POST https://api.zupy.com/api/v2/partner/transfers/ \
 |---|---|---|
 | `amount` | sim | Z$ em texto, maior que zero, até 2 casas. |
 | `external_reference` | sim | O seu id desta transferência, até 200 caracteres. Mesma idempotência do crédito. |
-| `reason` | não | O motivo, até 200 caracteres. Aparece no extrato de quem recebe. |
-| `phone`, `email`, `cpf`, `wallet_address`, `name` | um destino | Destino pessoa. |
+| `reason` | sim | O motivo, de 1 a 200 caracteres. Vazio ou só com espaços é `422` `validation-error`. Aparece no histórico e na busca do usuário, e no extrato da empresa que recebe. |
+| `phone`, `email`, `cpf`, `wallet_address` | um destino | Destino pessoa. |
+| `name`, `birth_date`, `gender`, `address` | não | Só para destino pessoa: os dados do usuário (seção 4), que só preenchem o vazio. Com `company_id`, são recusados. |
 | `company_id` | um destino | Destino empresa. |
 
 **Resposta `201`**, para um usuário:
@@ -297,6 +326,9 @@ curl -X POST https://api.zupy.com/api/v2/partner/transfers/ \
 ```
 
 Para uma empresa, `customer_id` vem `null` e os dois ids de empresa vêm preenchidos.
+
+O motivo é obrigatório em toda transferência nova. Reenviar uma transferência antiga que foi feita sem motivo também
+recebe `422`: mande o motivo e uma `external_reference` nova.
 
 - **Limites de transferência:** a empresa parceira pode ter tetos por destinatário e no total, por dia, semana ou
   mês. Uma transferência que ultrapassaria um deles responde `422` `transfer-limit-exceeded`, com `limit`,
@@ -352,8 +384,9 @@ No painel, em **Integrações → Parceiro Zupy → Webhook** (`/integrations/we
 ```json
 {
   "data": {
+    "action_id": 12,
+    "action_name": "Descarte de óleo",
     "amount": "300.00",
-    "campaign_id": 12,
     "created_at": "2026-10-14T12:55:24.081770+00:00",
     "credit_id": "e59a90a1-e92e-4794-b6bb-43a14f733c4f",
     "customer_id": "175d2dbcdc002b81f623e1f8706",
@@ -368,7 +401,8 @@ No painel, em **Integrações → Parceiro Zupy → Webhook** (`/integrations/we
 }
 ```
 
-O `data` de `partner.transfer.created` traz `transfer_id`, `external_reference`, `amount`, `reason`, `customer_id`,
+`action_name` é o mesmo texto que o usuário vê no histórico para esse crédito. O `data` de
+`partner.transfer.created` traz `transfer_id`, `external_reference`, `amount`, `reason`, `customer_id`,
 `destination_company_id`, `credited_company_id` e `created_at`, e o `event_id` é `transfer:<transfer_id>:created`.
 Nenhum evento traz dado pessoal (telefone, e-mail, CPF ou carteira), saldo ou status on-chain: o status muda depois
 do evento; leia-o em `GET /api/v2/partner/credits/{credit_id}/`.
@@ -462,8 +496,8 @@ com `errors` apontando cada campo:
 | 402 | `insufficient-balance` | o saldo de Z$ não cobre a operação | — |
 | 402 | `partner-not-funded-on-chain` | a carteira ainda não tem Z$ confirmados on-chain | — |
 | 403 | `partner-deactivated-during-request` | a empresa deixou de ser parceira ativa enquanto a requisição rodava | — |
-| 404 | `campaign-not-found` | o código da ação é de outro parceiro, ou não existe | — |
-| 422 | `campaign-not-creditable` | ação pausada, encerrada ou fora das datas | — |
+| 404 | `action-not-found` | o código da ação é de outro parceiro, ou não existe | — |
+| 422 | `action-not-creditable` | ação pausada, encerrada ou fora das datas | — |
 | 422 | `customer-not-identified` | ninguém encontrado e sem telefone ou e-mail para criar a conta | — |
 | 422 | `invalid-quantity` | quantidade inválida, ou que daria Z$ 0 | — |
 | 422 | `invalid-reference` | referência vazia ou longa demais | — |

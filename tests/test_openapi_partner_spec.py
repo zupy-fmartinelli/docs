@@ -273,7 +273,7 @@ class TestIssuerPartnerEndpoints:
             name: body
             for name, body in spec["components"]["schemas"].items()
             if name.startswith(("PartnerCredit", "PartnerTransfer", "PartnerProfile", "PartnerFeatures",
-                                "PartnerConditions", "PaginatedPartnerCredit"))
+                                "PartnerConditions", "PaginatedPartnerCredit", "PartnerAction", "PartnerCustomer"))
         }
         text = json.dumps([public, schemas], ensure_ascii=False)
         for marker in self.INTERNAL_MARKERS:
@@ -281,16 +281,27 @@ class TestIssuerPartnerEndpoints:
 
     def test_the_credit_request_and_response_fields_are_the_serializers(self, spec):
         schemas = spec["components"]["schemas"]
+        # Story 2.13: action_id (was campaign_id) and the optional user data that only fills what is empty.
+        profile = {"birth_date", "gender", "address"}
         assert set(schemas["PartnerCreditRequest"]["properties"]) == {
-            "campaign_id", "quantity", "external_reference", "phone", "email", "cpf", "wallet_address", "name",
-        }
+            "action_id", "quantity", "external_reference", "phone", "email", "cpf", "wallet_address", "name",
+        } | profile
+        assert "action_id" in schemas["PartnerCreditRequest"]["required"]
         assert set(schemas["PartnerCredit"]["properties"]) == {
-            "id", "external_reference", "campaign_id", "quantity", "unit", "unit_value", "amount", "customer_id",
+            "id", "external_reference", "action_id", "quantity", "unit", "unit_value", "amount", "customer_id",
             "status", "created_at",
         }
         assert set(schemas["PartnerTransferRequest"]["properties"]) == {
             "amount", "external_reference", "reason", "phone", "email", "cpf", "wallet_address", "name", "company_id",
-        }
+        } | profile
+        assert "reason" in schemas["PartnerTransferRequest"]["required"]
+
+    def test_story_2_13_no_campaign_id_in_the_partner_reference(self, spec):
+        public = {path: spec["paths"][path] for _, path, _ in self.PARTNER_OPERATIONS}
+        schemas = {name: body for name, body in spec["components"]["schemas"].items() if name.startswith("Partner")}
+        text = json.dumps([public, schemas], ensure_ascii=False)
+        assert "campaign_id" not in text
+        assert "campaign-not-" not in text
 
 
 def test_the_profile_has_the_wallet_balance(spec):

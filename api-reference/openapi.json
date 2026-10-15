@@ -2639,7 +2639,7 @@
       },
       "post": {
         "operationId": "partner_credits_create",
-        "description": "Credits `quantity` units of one of your campaigns' action to the user the identifiers point at — found, or created once, never duplicated. **201** a new credit; **200** an identical replay of the same `external_reference` (the same credit is returned, nothing is credited twice). Refusals are `application/problem+json` with a stable `error_code`. Scope `partner.credit`.",
+        "description": "Credits `quantity` units of one of your actions (`action_id`) to the user the identifiers point at — found, or created once, never duplicated. **201** a new credit; **200** an identical replay of the same `external_reference` (the same credit is returned, nothing is credited twice). Refusals are `application/problem+json` with a stable `error_code`. Scope `partner.credit`.",
         "summary": "Credit Z$ to a user",
         "tags": [
           "Partner"
@@ -2971,7 +2971,7 @@
     "/api/v2/partner/actions/": {
       "get": {
         "operationId": "partner_actions_list",
-        "description": "The actions of your company newest first, cursor-paginated, with the budget consumed (`budget_spent`, the same number as the dashboard). The `id` is the action's code: the `campaign_id` of a credit. Filter by `status` (active, paused, ended). Creating or changing an action is done in the dashboard. Scope `partner.read`.",
+        "description": "The actions of your company newest first, cursor-paginated, with the budget consumed (`budget_spent`, the same number as the dashboard). The `id` is the action's code: the `action_id` of a credit. Filter by `status` (active, paused, ended). Creating or changing an action is done in the dashboard. Scope `partner.read`.",
         "summary": "List your actions",
         "parameters": [
           {
@@ -5300,8 +5300,9 @@
           },
           "reason": {
             "type": "string",
-            "description": "Why you send it; shown in the user's statement (up to 200 characters).",
-            "maxLength": 200
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Required: why you send it, 1 to 200 characters (blank or only spaces is refused). Shown in the user's history and search, and in the statement of the company that receives it."
           },
           "phone": {
             "type": "string",
@@ -5328,6 +5329,34 @@
             "nullable": true,
             "maxLength": 255
           },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "ISO `YYYY-MM-DD`. Fills the person's birth date only when it is empty."
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "male",
+              "female",
+              "non_binary",
+              "other",
+              "prefer_not_to_say",
+              null
+            ],
+            "description": "Fills the person's gender only when it is empty."
+          },
+          "address": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PartnerCustomerAddress"
+              }
+            ],
+            "nullable": true,
+            "description": "Added as an address sent by your company; the customer's own address is never touched."
+          },
           "company_id": {
             "type": "string",
             "nullable": true,
@@ -5337,9 +5366,10 @@
         },
         "required": [
           "amount",
-          "external_reference"
+          "external_reference",
+          "reason"
         ],
-        "description": "Body of a transfer: at least one person identifier OR `company_id`, never both."
+        "description": "Body of a transfer: at least one person identifier OR `company_id`, never both. To a person, the same optional user data as a credit (it only fills what is empty); with `company_id` it is refused."
       },
       "PartnerProfile": {
         "type": "object",
@@ -5401,17 +5431,18 @@
       },
       "PartnerCreditRequest": {
         "type": "object",
-        "description": "Body of a credit. Your partner account is never in the body: it is the API key's.",
+        "description": "Body of a credit. Your partner account is never in the body: it is the API key's. The user data (`name`, `cpf`, `birth_date`, `gender`, `address`) only fills what is empty on the person; `phone` and `email` identify the person and never change an existing account.",
         "properties": {
-          "campaign_id": {
+          "action_id": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "description": "The action's code: the Code column of your actions list in the dashboard, or the `id` in `GET /api/v2/partner/actions/`. A body with the former name of this field is refused with a 422."
           },
           "quantity": {
             "type": "string",
             "format": "decimal",
             "pattern": "^-?\\d{0,18}(?:\\.\\d{0,6})?$",
-            "description": "Units of the campaign's action (e.g. litres), > 0, at most 6 decimals."
+            "description": "Units of the action (e.g. litres), > 0, at most 6 decimals."
           },
           "external_reference": {
             "type": "string",
@@ -5442,12 +5473,78 @@
             "type": "string",
             "nullable": true,
             "maxLength": 255
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "ISO `YYYY-MM-DD`. Fills the person's birth date only when it is empty."
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "male",
+              "female",
+              "non_binary",
+              "other",
+              "prefer_not_to_say",
+              null
+            ],
+            "description": "Fills the person's gender only when it is empty."
+          },
+          "address": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PartnerCustomerAddress"
+              }
+            ],
+            "nullable": true,
+            "description": "Added as an address sent by your company; the customer's own address is never touched."
           }
         },
         "required": [
-          "campaign_id",
+          "action_id",
           "external_reference",
           "quantity"
+        ]
+      },
+      "PartnerCustomerAddress": {
+        "type": "object",
+        "description": "An address of the person, as your company knows it. Added as an address sent by your company.",
+        "properties": {
+          "street": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "number": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "complement": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "district": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 2,
+            "description": "UF, e.g. `SP`."
+          },
+          "postal_code": {
+            "type": "string",
+            "maxLength": 10
+          }
+        },
+        "required": [
+          "street"
         ]
       },
       "PaginatedPartnerCreditList": {
@@ -5592,7 +5689,7 @@
           "external_reference": {
             "type": "string"
           },
-          "campaign_id": {
+          "action_id": {
             "type": "integer"
           },
           "quantity": {
@@ -5627,8 +5724,8 @@
           }
         },
         "required": [
+          "action_id",
           "amount",
-          "campaign_id",
           "created_at",
           "customer_id",
           "external_reference",
@@ -5664,7 +5761,7 @@
       },
       "PartnerAction": {
         "type": "object",
-        "description": "One action of your company, with its reward (`unit_value` Z$ per unit) and the budget consumed. `id` is the action's code (`campaign_id` of a credit).",
+        "description": "One action of your company, with its reward (`unit_value` Z$ per unit) and the budget consumed. `id` is the action's code (the `action_id` of a credit).",
         "properties": {
           "id": {
             "type": "integer"
@@ -5700,7 +5797,7 @@
           },
           "budget_spent": {
             "type": "string",
-            "description": "Consumo pela consulta canônica (``PartnerCreditRepository.spent_by_campaign``, AD-7), via ``context``.",
+            "description": "Z$ already credited through this action: the same number the dashboard shows.",
             "readOnly": true
           },
           "starts_at": {
