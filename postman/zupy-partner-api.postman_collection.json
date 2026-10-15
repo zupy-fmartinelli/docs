@@ -2164,6 +2164,54 @@
           ]
         },
         {
+          "name": "Transfer Z$ to a User with an Action",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v2/partner/transfers/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v2",
+                "partner",
+                "transfers",
+                ""
+              ]
+            },
+            "description": "Sends `amount` Z$ to the user and records the action it is for (`action_id`, the code from \"List Your Actions\") with an informative `quantity`. The amount is still `amount`: nothing is computed from the action, and `reason` may be omitted (it becomes the action's name). If Zupy set up a default action for your company, a transfer without `action_id` is recorded with it. Scope `partner.transfer`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"10.00\",\n  \"external_reference\": \"{{partner_reference}}\",\n  \"action_id\": \"{{action_id}}\",\n  \"quantity\": \"0.5\",\n  \"email\": \"maria@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Each run is a NEW operation: a fresh reference. Re-sending the SAME reference with the same data returns",
+                  "// the same movement (200), never a second one.",
+                  "pm.environment.set(\"partner_reference\", \"postman-\" + Date.now());"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Transfer Z$ to a Company",
           "request": {
             "method": "POST",

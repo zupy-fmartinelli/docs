@@ -291,10 +291,13 @@ class TestIssuerPartnerEndpoints:
             "id", "external_reference", "action_id", "quantity", "unit", "unit_value", "amount", "customer_id",
             "status", "created_at",
         }
+        # Story 6.2 (GR23): the transfer may record an action; the reason left "required" (it may be omitted with one).
         assert set(schemas["PartnerTransferRequest"]["properties"]) == {
             "amount", "external_reference", "reason", "phone", "email", "cpf", "wallet_address", "name", "company_id",
+            "action_id", "quantity",
         } | profile
-        assert "reason" in schemas["PartnerTransferRequest"]["required"]
+        assert "reason" not in schemas["PartnerTransferRequest"]["required"]
+        assert {"action_id", "action_name", "quantity", "unit"} <= set(schemas["PartnerTransfer"]["required"])
 
     def test_story_2_13_no_campaign_id_in_the_partner_reference(self, spec):
         public = {path: spec["paths"][path] for _, path, _ in self.PARTNER_OPERATIONS}
@@ -314,3 +317,14 @@ def test_the_action_item_is_the_panels(spec):
         "id", "name", "status", "action_type", "unit_value", "per_user_limit", "per_user_period", "budget_total",
         "budget_spent", "starts_at", "ends_at",
     }
+
+
+def test_story_6_2_the_actions_list_is_declared_paginated(spec):
+    """Story 6.2 (AC7): the API always answered {count, next, previous, results}; the reference said a bare array."""
+    operation = spec["paths"]["/api/v2/partner/actions/"]["get"]
+    schema = operation["responses"]["200"]["content"]["application/json"]["schema"]
+    assert schema == {"$ref": "#/components/schemas/PaginatedPartnerActionList"}
+    page = spec["components"]["schemas"]["PaginatedPartnerActionList"]
+    assert set(page["properties"]) == {"count", "next", "previous", "results"}
+    assert page["properties"]["results"]["items"] == {"$ref": "#/components/schemas/PartnerAction"}
+    assert {parameter["name"] for parameter in operation["parameters"]} == {"cursor", "page_size", "status"}

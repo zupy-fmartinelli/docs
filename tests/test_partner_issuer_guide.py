@@ -103,7 +103,7 @@ def test_story_2_13_one_name_a_required_reason_and_the_user_data():
     assert "campaign-not-" not in guide
     assert '"action_id": 12' in guide
     assert '"action_name"' in guide
-    assert "`reason` | sim" in guide
+    assert "`reason` | sem ação" in guide  # Story 6.2 (GR23): with an action the reason may be omitted
     for field in ("`birth_date`", "`gender`", "`address`"):
         assert field in guide
     assert "só preenche o que está vazio" in guide
@@ -115,3 +115,17 @@ def test_story_2_13_the_errors_page_and_the_postman_guide_speak_of_action_id():
     assert "campaign-not-" not in errors
     assert "campaign_id" not in errors
     assert "campaign_id" not in read("guides", "postman.mdx")
+
+
+def test_story_6_2_the_transfer_records_the_action_and_the_amount_is_the_partners():
+    """Story 6.2 (AC6): section 6 no longer says "sem ação"; it shows action_id + quantity, the default action and the
+    four new keys of the response and of the webhook."""
+    guide = read("guides", "partner-issuer.mdx")
+    section = guide.split("## 6. Transferir", 1)[1].split("## 7.", 1)[0]
+    assert "sem ação:" not in section
+    assert '"action_id": 12' in section and '"quantity": "0.5"' in section
+    assert "O valor continua sendo o `amount`" in section
+    assert "ação padrão" in section
+    for key in ('"action_name": null', '"unit": null'):
+        assert key in section
+    assert "`action_id`, `action_name`, `quantity` e `unit`" in guide
